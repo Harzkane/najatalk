@@ -3,6 +3,7 @@ import express from "express";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
+import threadRoutes from "./routes/threads.js";
 import dbRoutes from "./routes/db.js";
 
 dotenv.config();
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 3000;
 app.use(express.json());
 connectDB(process.env.MONGO_URI);
 app.use("/auth", authRoutes);
+app.use("/threads", threadRoutes);
 app.use("/", dbRoutes); // Welcome route
 
 app.listen(PORT, () => {
