@@ -109,10 +109,17 @@ export const verifyEmail = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findOne({
       email: decoded.email,
-      verificationToken: token,
     });
-    if (!user)
+
+    if (!user) return res.status(400).json({ message: "User no dey!" });
+    if (user.isVerified)
+      return res.json({
+        message: "Email already verified—NaijaTalk dey open!",
+      });
+
+    if (user.verificationToken !== token) {
       return res.status(400).json({ message: "Verification token no good!" });
+    }
 
     user.isVerified = true;
     user.verificationToken = null;
@@ -120,6 +127,7 @@ export const verifyEmail = async (req, res) => {
 
     res.json({ message: "Email verified—NaijaTalk dey open for you now!" });
   } catch (err) {
+    console.error("Verify error:", err);
     res.status(500).json({ message: "Verification scatter: " + err.message });
   }
 };
