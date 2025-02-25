@@ -1,3 +1,4 @@
+// frontend/src/app/(authenticated)/threads/page.tsx
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -26,6 +27,7 @@ export default function Threads() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [title, setTitle] = useState<string>("");
   const [body, setBody] = useState<string>("");
+  const [category, setCategory] = useState<string>("General"); // Add this
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const router = useRouter();
@@ -39,7 +41,6 @@ export default function Threads() {
   const fetchThreads = async () => {
     try {
       const res = await axios.get<Thread[]>("/api/threads");
-      // Fetch full thread data with replies
       const threadsWithReplies = await Promise.all(
         res.data.map(async (thread) => {
           const replyRes = await axios.get<Thread>(
@@ -70,12 +71,13 @@ export default function Threads() {
       const token = localStorage.getItem("token");
       const res = await axios.post<{ message: string; thread: Thread }>(
         "/api/threads",
-        { title, body },
+        { title, body, category }, // Add category
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       setTitle("");
       setBody("");
+      setCategory("General"); // Reset to default
       setThreads([{ ...res.data.thread, replies: [] }, ...threads]);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -113,6 +115,16 @@ export default function Threads() {
             onChange={(e) => setBody(e.target.value)}
             className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-32"
           />
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
+          >
+            <option value="General">General</option>
+            <option value="Gist">Gist</option>
+            <option value="Politics">Politics</option>
+            <option value="Romance">Romance</option>
+          </select>
           <button
             type="submit"
             className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
@@ -142,15 +154,11 @@ export default function Threads() {
               </p>
               {thread.replies.length > 0 && (
                 <div className="mt-2 space-y-2">
-                  {thread.replies.slice(0, 2).map(
-                    (
-                      reply // Show first 2 replies
-                    ) => (
-                      <p key={reply._id} className="text-sm text-gray-600">
-                        {reply.body} — {reply.userId?.email || "Unknown Oga"}
-                      </p>
-                    )
-                  )}
+                  {thread.replies.slice(0, 2).map((reply) => (
+                    <p key={reply._id} className="text-sm text-gray-600">
+                      {reply.body} — {reply.userId?.email || "Unknown Oga"}
+                    </p>
+                  ))}
                   {thread.replies.length > 2 && (
                     <Link
                       href={`/threads/${thread._id}`}
