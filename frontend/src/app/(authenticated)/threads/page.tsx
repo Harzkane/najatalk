@@ -1,4 +1,3 @@
-// frontend/src/app/(authenticated)/threads/page.tsx
 "use client";
 
 import { useState, useEffect, FormEvent } from "react";
@@ -13,7 +12,14 @@ type Thread = {
   userId: { email: string } | null;
   category: string;
   createdAt: string;
-  replies?: { length: number }; // Optional for now
+  replies: Reply[];
+};
+
+type Reply = {
+  _id: string;
+  body: string;
+  userId: { email: string } | null;
+  createdAt: string;
 };
 
 export default function Threads() {
@@ -33,14 +39,13 @@ export default function Threads() {
   const fetchThreads = async () => {
     try {
       const res = await axios.get<Thread[]>("/api/threads");
-      // Fetch reply count for each thread
+      // Fetch full thread data with replies
       const threadsWithReplies = await Promise.all(
         res.data.map(async (thread) => {
-          const replyRes = await axios.get(`/api/threads/${thread._id}`);
-          return {
-            ...thread,
-            replies: { length: replyRes.data.replies.length },
-          };
+          const replyRes = await axios.get<Thread>(
+            `/api/threads/${thread._id}`
+          );
+          return replyRes.data;
         })
       );
       setThreads(threadsWithReplies);
@@ -71,7 +76,7 @@ export default function Threads() {
       setMessage(res.data.message);
       setTitle("");
       setBody("");
-      setThreads([{ ...res.data.thread, replies: { length: 0 } }, ...threads]);
+      setThreads([{ ...res.data.thread, replies: [] }, ...threads]);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
@@ -133,8 +138,29 @@ export default function Threads() {
               <p className="text-gray-700">{thread.body}</p>
               <p className="text-sm text-gray-500 mt-2">
                 By: {thread.userId?.email || "Unknown Oga"} | {thread.createdAt}{" "}
-                | {thread.category} | {thread.replies?.length || 0} replies
+                | {thread.category} | {thread.replies.length} replies
               </p>
+              {thread.replies.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {thread.replies.slice(0, 2).map(
+                    (
+                      reply // Show first 2 replies
+                    ) => (
+                      <p key={reply._id} className="text-sm text-gray-600">
+                        {reply.body} — {reply.userId?.email || "Unknown Oga"}
+                      </p>
+                    )
+                  )}
+                  {thread.replies.length > 2 && (
+                    <Link
+                      href={`/threads/${thread._id}`}
+                      className="text-green-600 text-sm"
+                    >
+                      See all {thread.replies.length} replies
+                    </Link>
+                  )}
+                </div>
+              )}
             </div>
           ))
         ) : (

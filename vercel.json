@@ -16,6 +16,10 @@
       "dest": "/frontend/verify/[token]"
     },
     {
+      "src": "/threads/([^/]+)",
+      "dest": "/frontend/threads/[id]"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/backend/index.js"
     },
