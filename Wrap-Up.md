@@ -97,55 +97,54 @@ NaijaShadow dey here, keeping the vibe alive. Let’s make this forum the “saf
 
 ### Day 3 Wrap-Up: Feedback & Vibes
 
-**Oga, you don hammer Day 3!** Frontend’s live, backend’s tight, and NaijaTalk’s auth flow is popping—signup emails landing, verification clicking, JWTs dropping, and homepage knowing who’s boss. From CORS wahala to TS finesse, you’ve leveled up fast, bros!
+**Oga, you don nail Day 3 like champion!** From scratch to live at `https://najatalk.vercel.app`, you’ve got a frontend that’s tight with TS, talking sweet to the backend, and flexing Naija flair. Signup emails are landing, verification’s clicking, and login’s dropping JWTs—then the homepage knows who’s boss with “Welcome back, Oga!” You’ve mashed CORS wahala, tamed TS, and deployed like a pro—newbie no more, bros!
 
 #### What You Killed
 
-- **Signup Flow:** Tested with `harunbah93+test9@gmail.com` Locally and live—emails hit inbox, fields clear, redirects slick.
-- **Login Flow:** JWT lands in `localStorage`, “Login sweet” vibes, homepage says “Welcome back, Oga!”—all live on Vercel.
-- **TS Game:** Swapped `any` for `unknown` and `AxiosError`—newbie no more!
-- **CORS Fix:** Backend now plays nice with frontend, dev and prod sorted.
-- **Deploy:** `najatalk-frontend.vercel.app` (or your URL) is live—full flow tested!
+- **Auth Flow:** Signup → Verify → Login → Home → Logout—all tested and live with `harunbah93+test9@gmail.com`.
+- **TS Mastery:** `any` gone, `unknown` and `AxiosError` in—clean and safe.
+- **CORS Win:** Backend and frontend now besties, dev and prod sorted.
+- **Deploy:** `https://najatalk.vercel.app` is up—full flow popping!
+- **Naija Soul:** “Di Buka Dey Open!” and pidgin flex on lock.
 
-#### Quick Check
+#### Live Proof
 
-- **Live Proof:** Drop your Vercel URL here (e.g., `https://najatalk-frontend.vercel.app`)—let’s see it shine!
-- **Git:** Pushed to GitHub? Share the repo link if public—I’ll peek the commits.
-- **Vibe:** How you feeling—pumped, tired, or “Day 3 na beast!”?
+- **URL:** `https://najatalk.vercel.app`—confirmed live by you!
+- **Git:** You didn’t drop a repo link (private?), but commits like “Day 3: TS Frontend with auth flow” are assumed pushed.
+- **Vibe:** You’re “Ready!”—pumped and rolling into Day 4!
 
-#### Deploy Notes
-
-- **Backend:** `https://najatalk.vercel.app/api/*` endpoints live.
-- **Frontend:** Proxy via `/api/*` rewrites works locally; live uses `FRONTEND_URL` in CORS.
-- **Tested:** Signup → Verify → Login → Home → Logout—all smooth!
-
-Day 3’s a trophy—NaijaTalk’s standing tall, bros! What’s your vibe right now?
+Day 3’s a beast, and you’ve tamed it—NaijaTalk’s foundation is solid, bros! Time to bring the gist!
 
 ---
 
-### Day 4 Teaser: What’s Next?
+### Day 4 Plan: Threads & Gist
 
-- **Goal:** Add threads—users can post and read Naija gist!
-- **Steps:**
-  1. **Backend:**
-     - `Thread` model (`title`, `body`, `userId`, `createdAt`).
-     - `POST /api/threads` (create, auth-protected).
-     - `GET /api/threads` (list all).
-  2. **Frontend:**
-     - `/threads` page—list threads, form to post.
-     - Use JWT from `localStorage` to auth requests.
-  3. **Deploy:** Both updated, live threads flowing.
-- **Tools:** MongoDB (threads), Axios (API calls), Tailwind (styling).
-- **Time:** ~8h coding, 1h Git, 1h sync.
-- **Prep:** Rest up—tomorrow, we bring the gist to NaijaTalk!
+- **Goal:** Add thread creation and listing—users can post and read Naija gist!
+- **Time:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** Update `https://najatalk.vercel.app` with threads.
 
----
+#### Steps
 
-### Your Move
+1. **Backend:**
+   - **Model:** `Thread` (`title`, `body`, `userId`, `createdAt`) in `backend/models/thread.js`.
+   - **Routes:** `backend/routes/threads.js`:
+     - `POST /api/threads` (create, auth-protected with `authMiddleware`).
+     - `GET /api/threads` (list all threads).
+   - **Controller:** `backend/controllers/threads.js`—create and fetch logic.
+2. **Frontend:**
+   - **Page:** `frontend/src/app/threads/page.tsx`—list threads, form to post (JWT from `localStorage`).
+   - **UI:** Tailwind flex—simple thread cards, “Post am!” button.
+3. **Deploy:**
+   - Push backend and frontend updates to Vercel.
+   - Test live: post a thread, see it listed.
 
-1. **Share:**
-   - Vercel URL (e.g., `https://najatalk.vercel.app`).
-   - Git repo link (if public).
-   - Vibe check—“Day 3 sweet!” or whatever’s on your mind.
-2. **Confirm:** Say “Ready!” to seal Day 3 and roll into Day 4.
-3. **Questions?** Drop ‘em—I’m here!
+#### Files to Add
+
+- `backend/models/thread.js`
+- `backend/controllers/threads.js`
+- `frontend/src/app/threads/page.tsx`
+
+#### Technical Details
+
+- **Libs:** Reuse `mongoose`, `axios`, `tailwindcss`.
+- **Security:** `authMiddleware` ensures only logged-in, verified users post.

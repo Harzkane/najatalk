@@ -1,5 +1,6 @@
 // backend/controllers/threads.js
 import Thread from "../models/thread.js";
+import Reply from "../models/reply.js";
 
 export const createThread = async (req, res) => {
   const { title, body } = req.body;
@@ -31,12 +32,35 @@ export const getThreads = async (req, res) => {
   }
 };
 
+export const createReply = async (req, res) => {
+  const { id } = req.params; // threadId
+  const { body } = req.body;
+  try {
+    if (!body) return res.status(400).json({ message: "Reply body no dey!" });
+
+    const reply = new Reply({
+      body,
+      userId: req.user._id, // From authMiddleware
+      threadId: id,
+    });
+    await reply.save();
+
+    res.status(201).json({ message: "Reply posted—gist dey grow!", reply });
+  } catch (err) {
+    res.status(500).json({ message: "Reply scatter: " + err.message });
+  }
+};
+
 export const getThreadById = async (req, res) => {
   const { id } = req.params;
   try {
-    const thread = await Thread.findById(id).populate("userId", "email");
+    const thread = await Thread.findById(id).populate("userId", "email").lean();
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
-    res.json(thread);
+
+    const replies = await Reply.find({ threadId: id })
+      .populate("userId", "email")
+      .sort({ createdAt: -1 });
+    res.json({ ...thread, replies });
   } catch (err) {
     res.status(500).json({ message: "Fetch wahala: " + err.message });
   }

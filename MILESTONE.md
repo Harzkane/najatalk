@@ -191,43 +191,33 @@ How’s the vibe? Ready to see “NaijaTalk” auth dominate live on Vercel? Let
 
 ======================================================
 
-### Day 3 Teaser
-
-- **Goal:** Start frontend (najatalk/frontend)—basic React app to hit these endpoints.
-- **Steps:**
-  - Setup React in monorepo.
-  - Simple login/signup forms calling /auth/\*.
-  - Deploy frontend with Vercel.
-
----
-
-### Day 3 Milestones Achieved
+### Day 3 Milestones Achieved (Finalized)
 
 - **Date:** February 25, 2025
 - **Objective:** Build a Next.js frontend with TypeScript, connect to backend auth endpoints, deploy live.
 - **Time Spent:** ~10h (8h coding, 1h Git, 1h sync/troubleshooting).
-- **Live URL:** `https://najatalk-frontend.vercel.app` (assuming your Vercel deploy).
+- **Live URL:** `https://najatalk.vercel.app`
 
 #### Files Completed/Updated
 
 - **`frontend/next.config.mjs`:**
-  - Added `output: "standalone"`, proxy rewrites for `/api/*` to backend.
+  - Configured `output: "standalone"`, `/api/*` rewrites to backend (local proxy).
 - **`frontend/src/app/page.tsx`:**
-  - Home route with login state check, logout functionality.
+  - Home route with `isLoggedIn` check, logout button.
 - **`frontend/src/app/(auth)/signup/page.tsx`:**
-  - Signup form, hits `/api/auth/signup`, clears fields, redirects.
+  - Signup form, hits `/api/auth/signup`, clears fields, redirects to `/login`.
 - **`frontend/src/app/(auth)/login/page.tsx`:**
-  - Login form, hits `/api/auth/login`, saves JWT, redirects.
+  - Login form, hits `/api/auth/login`, saves JWT, redirects to `/`.
 - **`frontend/src/app/(auth)/auth/verify/[token]/page.tsx`:**
-  - Dynamic verify route, hits `/api/auth/verify/:token`.
+  - Dynamic verify route, hits `/api/auth/verify/:token`, redirects to `/login`.
 - **`backend/index.js`:**
-  - Added CORS with dynamic `origin` via `FRONTEND_URL`.
+  - Added `cors` with dynamic `origin` (`FRONTEND_URL` or `http://localhost:3000`).
 
 #### Achievements with Endpoints
 
 1. **Signup:**
    - **Endpoint:** `POST /api/auth/signup`
-   - **Result:** Saves user, sends email, redirects to `/login`.
+   - **Result:** Saves user, sends email, clears fields, redirects to `/login`.
    - **Response:** `"Signup good—check your email to verify!"`
 2. **Verification:**
    - **Endpoint:** `GET /api/auth/verify/:token`
@@ -239,17 +229,15 @@ How’s the vibe? Ready to see “NaijaTalk” auth dominate live on Vercel? Let
    - **Response:** `{ "token": "eyJhbGciOiJIUzI1Ni...", "message": "Login sweet—welcome back!" }`
 4. **Homepage:**
    - **Route:** `/`
-   - **Result:** Shows “Sign Up/Login” when logged out, “Welcome back, Oga!” + “Logout” when logged in.
+   - **Result:** “Sign Up/Login” for guests, “Welcome back, Oga!” + “Logout” for logged-in users.
 5. **Bugs Fixed:**
-   - CORS errors crushed with `cors` middleware.
-   - TS `any` swapped for `unknown`/`AxiosError`.
+   - CORS errors squashed with `cors` middleware.
+   - TS `any` replaced with `unknown` and `AxiosError`.
 
-- **Status:** 100% locally (`localhost:3000`), deployed to Vercel.
+- **Status:** Fully functional in dev (`localhost:3000`) and prod (`https://najatalk.vercel.app`).
 
 #### Technical Details
 
 - **Frontend Libs:** `next@15.1.7`, `react@19`, `axios@1.7.9`, `tailwindcss@3.4.1`, `typescript@5`.
 - **Backend Libs:** `cors@2.8.5` added.
-- **Cost:** $0—Vercel free tier.
-
----
+- **Cost:** $0—Vercel free tier, MongoDB Atlas free tier.
