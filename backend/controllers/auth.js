@@ -9,11 +9,6 @@ export const signup = async (req, res) => {
   try {
     if (!email || !password)
       return res.status(400).json({ message: "Email or password no dey!" });
-    // console.log(
-    //   "Signup email creds:",
-    //   process.env.EMAIL_USER,
-    //   process.env.EMAIL_PASS
-    // );
 
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
       throw new Error("Email creds no dey—check .env!");
@@ -65,7 +60,7 @@ export const signup = async (req, res) => {
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Verify Your NaijaTalk Account",
-      text: `Oga, click dis link to verify: https://najatalk.vercel.app/auth/verify/${verificationToken}`,
+      text: `Oga, click dis link to verify: ${process.env.FRONTEND_URL}/verify/${verificationToken}`, // Updated to /verify/
     };
     console.log("Sending email to:", email);
     const emailResult = await transporter.sendMail(mailOptions);

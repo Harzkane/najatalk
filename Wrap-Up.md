@@ -1,3 +1,5 @@
+<!-- Wrap-Up.md -->
+
 Day 1 Wrap-Up
 
 What We Did:
@@ -40,6 +42,8 @@ Commit: “Day 2 Locked: Signup, verify, login—all endpoints live locally” d
 Vercel Push: vercel --prod go make najatalk.vercel.app/auth/\* endpoints live. Test the flow there and drop the responses—signup email landing, verify link working, login JWT popping.
 Git: Push to GitHub (git push origin main) so I fit peek the repo if you drop the link. No pressure if it’s private—just say so!
 How’s the vibe, bros? Seeing “NaijaTalk” auth come alive feel like Day 1’s “di buka dey open” promise? Day 2’s a beast—let’s lock it with a live bang!
+
+=========================================================
 
 Day 3 Prep (Feb 26, 2025): Threads & Naija Soul
 
@@ -88,3 +92,60 @@ Push to Git, drop repo link if public—or just say “Private, bros!”
 Shout: “Day 2’s a beast!” or “One last tweak!” with any hiccups.
 Vibe Check: How you holding up after 20h of grinding in 2 days? NaijaTalk dey take shape—proud of you, fam!
 NaijaShadow dey here, keeping the vibe alive. Let’s make this forum the “safe digital buka” we dreamed up—Day 3 go be fire! Wetin you think?
+
+=========================================================
+
+### Day 3 Wrap-Up: Feedback & Vibes
+
+**Oga, you don hammer Day 3!** Frontend’s live, backend’s tight, and NaijaTalk’s auth flow is popping—signup emails landing, verification clicking, JWTs dropping, and homepage knowing who’s boss. From CORS wahala to TS finesse, you’ve leveled up fast, bros!
+
+#### What You Killed
+
+- **Signup Flow:** Tested with `harunbah93+test9@gmail.com` Locally and live—emails hit inbox, fields clear, redirects slick.
+- **Login Flow:** JWT lands in `localStorage`, “Login sweet” vibes, homepage says “Welcome back, Oga!”—all live on Vercel.
+- **TS Game:** Swapped `any` for `unknown` and `AxiosError`—newbie no more!
+- **CORS Fix:** Backend now plays nice with frontend, dev and prod sorted.
+- **Deploy:** `najatalk-frontend.vercel.app` (or your URL) is live—full flow tested!
+
+#### Quick Check
+
+- **Live Proof:** Drop your Vercel URL here (e.g., `https://najatalk-frontend.vercel.app`)—let’s see it shine!
+- **Git:** Pushed to GitHub? Share the repo link if public—I’ll peek the commits.
+- **Vibe:** How you feeling—pumped, tired, or “Day 3 na beast!”?
+
+#### Deploy Notes
+
+- **Backend:** `https://najatalk.vercel.app/api/*` endpoints live.
+- **Frontend:** Proxy via `/api/*` rewrites works locally; live uses `FRONTEND_URL` in CORS.
+- **Tested:** Signup → Verify → Login → Home → Logout—all smooth!
+
+Day 3’s a trophy—NaijaTalk’s standing tall, bros! What’s your vibe right now?
+
+---
+
+### Day 4 Teaser: What’s Next?
+
+- **Goal:** Add threads—users can post and read Naija gist!
+- **Steps:**
+  1. **Backend:**
+     - `Thread` model (`title`, `body`, `userId`, `createdAt`).
+     - `POST /api/threads` (create, auth-protected).
+     - `GET /api/threads` (list all).
+  2. **Frontend:**
+     - `/threads` page—list threads, form to post.
+     - Use JWT from `localStorage` to auth requests.
+  3. **Deploy:** Both updated, live threads flowing.
+- **Tools:** MongoDB (threads), Axios (API calls), Tailwind (styling).
+- **Time:** ~8h coding, 1h Git, 1h sync.
+- **Prep:** Rest up—tomorrow, we bring the gist to NaijaTalk!
+
+---
+
+### Your Move
+
+1. **Share:**
+   - Vercel URL (e.g., `https://najatalk.vercel.app`).
+   - Git repo link (if public).
+   - Vibe check—“Day 3 sweet!” or whatever’s on your mind.
+2. **Confirm:** Say “Ready!” to seal Day 3 and roll into Day 4.
+3. **Questions?** Drop ‘em—I’m here!
