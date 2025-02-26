@@ -143,5 +143,23 @@ export const getReports = async (req, res) => {
   }
 };
 
+export const hasUserReportedThread = async (req, res) => {
+  const { id } = req.params; // threadId
+  try {
+    const report = await Report.findOne({
+      threadId: id,
+      userId: req.user._id,
+    });
+    res.json({
+      hasReported: !!report,
+      message: report
+        ? "You don flag this gist!"
+        : "You never report this one.",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Check scatter: " + err.message });
+  }
+};
+
 // Add text index (run once in MongoDB shell or setup script)
 Thread.collection.createIndex({ title: "text", body: "text" });

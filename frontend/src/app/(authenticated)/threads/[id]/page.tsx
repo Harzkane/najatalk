@@ -1,7 +1,7 @@
 // frontend/src/app/(authenticated)/threads/[id]/page.tsx
 "use client";
 
-import { useState, useEffect, FormEvent } from "react";
+import { useState, useEffect, FormEvent, useCallback } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -30,31 +30,49 @@ export default function ThreadDetail() {
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showReplyBox, setShowReplyBox] = useState(false); // Toggle reply box
+  const [showReplyBox, setShowReplyBox] = useState(false);
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
-  const { id } = useParams<{ id: string }>();
+  const { id } = useParams();
   const router = useRouter();
 
-  useEffect(() => {
-    const fetchThread = async () => {
-      try {
-        const res = await axios.get<Thread>(`/api/threads/${id}`);
-        setThread(res.data);
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          setMessage(err.response?.data?.message || "Thread no dey!");
-        } else {
-          setMessage("Thread fetch scatter o!");
-        }
+  const fetchThread = useCallback(async () => {
+    try {
+      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      setThread(res.data);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Thread no dey!");
+      } else {
+        setMessage("Thread fetch scatter o!");
       }
-    };
+    }
+  }, [id]);
 
+  useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
     fetchThread();
-  }, [id]);
+  }, [id, fetchThread]);
+
+  useEffect(() => {
+    const checkReported = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await axios.get<{ hasReported: boolean; message: string }>(
+          `/api/threads/${id}/hasReported`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setIsReported(res.data.hasReported);
+      } catch (err) {
+        console.error("Failed to check report status:", err);
+      }
+    };
+    fetchThread(); // Refresh thread data
+    checkReported();
+  }, [id, fetchThread]); // Add fetchThread to deps
 
   const handleReply = async (e: FormEvent) => {
     e.preventDefault();
@@ -79,7 +97,7 @@ export default function ThreadDetail() {
       );
       setMessage(res.data.message || "Reply posted—gist dey grow!");
       setReplyBody("");
-      setShowReplyBox(false); // Close box on success
+      setShowReplyBox(false);
       setThread((prev) =>
         prev ? { ...prev, replies: [res.data.reply, ...prev.replies] } : null
       );
@@ -104,40 +122,6 @@ export default function ThreadDetail() {
     setIsLoggedIn(false);
     router.push("/login");
   };
-
-  // const handleReport = async () => {
-  //   if (!isLoggedIn) {
-  //     setMessage("Abeg login first!");
-  //     return;
-  //   }
-
-  //   const reason = prompt("Why you dey report this gist?");
-  //   if (!reason?.trim()) {
-  //     setMessage("Abeg, give reason!");
-  //     return;
-  //   }
-
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     const res = await axios.post<{ message: string }>(
-  //       `/api/threads/${id}/report`,
-  //       { reason },
-  //       { headers: { Authorization: `Bearer ${token}` } }
-  //     );
-  //     setMessage(res.data.message);
-  //   } catch (err: unknown) {
-  //     if (axios.isAxiosError(err)) {
-  //       setMessage(err.response?.data?.message || "Report scatter o!");
-  //       if (err.response?.status === 401) {
-  //         setMessage("Token don expire—abeg login again!");
-  //         localStorage.removeItem("token");
-  //         setTimeout(() => router.push("/login"), 1000);
-  //       }
-  //     } else {
-  //       setMessage("Report scatter o!");
-  //     }
-  //   }
-  // };
 
   const handleReport = async () => {
     if (!isLoggedIn) {
@@ -253,7 +237,6 @@ export default function ThreadDetail() {
                     <span className="text-xs">Reply</span>
                   </button>
                   <button
-                    // onClick={() => alert("Report feature coming soon!")}
                     className={`flex items-center gap-1 text-xs ${
                       isReported ? "text-gray-400" : "hover:text-red-600"
                     }`}
@@ -270,44 +253,6 @@ export default function ThreadDetail() {
                       {isReported ? "Reported" : "Report"}
                     </span>
                   </button>
-
-                  {isLoggedIn && isReporting && (
-                    <div className="fixed bottom-6 right-6 w-96 bg-white p-4 rounded-lg shadow-lg border border-gray-200 z-50">
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-semibold text-green-800">
-                          Report This Gist
-                        </h3>
-                        <button
-                          onClick={() => {
-                            setIsReporting(false);
-                            setReportReason("");
-                          }}
-                          className="text-gray-500 hover:text-gray-700"
-                        >
-                          <span
-                            className="material-icons-outlined"
-                            style={{ fontSize: "16px" }}
-                          >
-                            close
-                          </span>
-                        </button>
-                      </div>
-                      <textarea
-                        placeholder="Why you dey report this gist?"
-                        value={reportReason}
-                        onChange={(e) => setReportReason(e.target.value)}
-                        className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800 text-sm"
-                      />
-                      <button
-                        onClick={submitReport}
-                        disabled={isSubmitting}
-                        className="w-full bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 disabled:bg-red-400 text-sm"
-                      >
-                        {isSubmitting ? "Reporting..." : "Send Report"}
-                      </button>
-                    </div>
-                  )}
-
                   <button
                     className="hover:text-green-600 flex items-center gap-1 text-xs"
                     onClick={() => alert("Like feature coming soon!")}
@@ -381,6 +326,44 @@ export default function ThreadDetail() {
               </div>
             )}
 
+            {/* Floating Report Box */}
+            {isLoggedIn && isReporting && (
+              <div className="fixed bottom-6 right-6 w-96 bg-white p-4 rounded-lg shadow-lg border border-gray-200 z-50">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="text-sm font-semibold text-green-800">
+                    Report This Gist
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setIsReporting(false);
+                      setReportReason("");
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <span
+                      className="material-icons-outlined"
+                      style={{ fontSize: "16px" }}
+                    >
+                      close
+                    </span>
+                  </button>
+                </div>
+                <textarea
+                  placeholder="Why you dey report this gist?"
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800 text-sm"
+                />
+                <button
+                  onClick={submitReport}
+                  disabled={isSubmitting}
+                  className="w-full bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 disabled:bg-red-400 text-sm"
+                >
+                  {isSubmitting ? "Reporting..." : "Send Report"}
+                </button>
+              </div>
+            )}
+
             {/* Replies Section */}
             {thread.replies.length > 0 && (
               <div className="mb-6">
@@ -420,8 +403,13 @@ export default function ThreadDetail() {
                             <span className="text-xs">Reply</span>
                           </button>
                           <button
-                            className="hover:text-red-600 flex items-center gap-1 text-xs"
-                            onClick={() => alert("Report feature coming soon!")}
+                            className={`flex items-center gap-1 text-xs ${
+                              isReported
+                                ? "text-gray-400"
+                                : "hover:text-red-600"
+                            }`}
+                            onClick={handleReport}
+                            disabled={isReported}
                           >
                             <span
                               className="material-icons-outlined"
@@ -429,7 +417,9 @@ export default function ThreadDetail() {
                             >
                               flag
                             </span>
-                            <span className="text-xs">Report</span>
+                            <span className="text-xs">
+                              {isReported ? "Reported" : "Report"}
+                            </span>
                           </button>
                           <button
                             className="hover:text-green-600 flex items-center gap-1 text-xs"

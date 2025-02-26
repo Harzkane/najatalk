@@ -1,6 +1,6 @@
 // frontend/src/components/threads/ThreadCard.tsx
 import Link from "next/link";
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 
@@ -118,6 +118,23 @@ const ThreadCard: FC<ThreadCardProps> = ({
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const checkReported = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      try {
+        const res = await axios.get<{ hasReported: boolean; message: string }>(
+          `/api/threads/${thread._id}/hasReported`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setIsReported(res.data.hasReported);
+      } catch (err) {
+        console.error("Failed to check report status:", err);
+      }
+    };
+    checkReported();
+  }, [thread._id]);
 
   const handleReport = async () => {
     const token = localStorage.getItem("token");

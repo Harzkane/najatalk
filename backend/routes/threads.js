@@ -8,6 +8,7 @@ import {
   searchThreads,
   reportThread,
   getReports,
+  hasUserReportedThread,
 } from "../controllers/threads.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -20,5 +21,6 @@ router.get("/reports", authMiddleware, getReports);
 router.get("/:id", getThreadById);
 router.post("/:id/replies", authMiddleware, createReply);
 router.post("/:id/report", authMiddleware, reportThread);
+router.get("/:id/hasReported", authMiddleware, hasUserReportedThread);
 
 export default router;
