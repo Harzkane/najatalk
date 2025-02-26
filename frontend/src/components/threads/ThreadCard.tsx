@@ -43,6 +43,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
   const [showRepliesExpanded, setShowRepliesExpanded] = useState(true); // false collapse all replies in thread page
+  const [isReporting, setIsReporting] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [isReported, setIsReported] = useState(false);
   const router = useRouter();
 
   // Type guard to check if thread is a Thread (not a Reply)
@@ -122,24 +125,33 @@ const ThreadCard: FC<ThreadCardProps> = ({
       router.push("/login");
       return;
     }
+    setIsReporting(true); // Show form
+  };
 
-    const reason = prompt("Why you dey report this gist?");
-    if (!reason?.trim()) {
+  const submitReport = async () => {
+    if (!reportReason.trim()) {
       setReplyError("Abeg, give reason!");
       return;
     }
 
+    setIsSubmitting(true);
+    setReplyError("");
+
     try {
+      const token = localStorage.getItem("token");
       await axios.post(
         `/api/threads/${thread._id}/report`,
-        { reason },
+        { reason: reportReason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setReplyError(""); // Clear any prior error
-      alert("Report sent—mods go check am!");
+      setReportReason("");
+      setIsReporting(false);
+      setIsReported(true); // Mark as reported
     } catch (err: unknown) {
       console.error("Report failed:", err);
       setReplyError("Report scatter o!");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -202,9 +214,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <span className="text-xs">Reply</span>
           </button>
           <button
-            className="hover:text-red-600 flex items-center gap-1 text-xs"
             // onClick={() => alert("Report feature coming soon!")}
             onClick={handleReport}
+            className={`flex items-center gap-1 text-xs ${
+              isReported ? "text-gray-400" : "hover:text-red-600"
+            }`}
+            disabled={isReported}
           >
             <span
               className="material-icons-outlined"
@@ -212,7 +227,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               flag
             </span>
-            <span className="text-xs">Report</span>
+            <span className="text-xs">
+              {isReported ? "Reported" : "Report"}
+            </span>
           </button>
           <button
             className="hover:text-green-600 flex items-center gap-1 text-xs"
@@ -239,6 +256,41 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <span className="text-xs">Share</span>
           </button>
         </div>
+
+        {isReporting && !isReply && (
+          <div className="mt-3 border-t border-gray-200 pt-3">
+            <textarea
+              className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              placeholder="Why you dey report this gist?"
+              rows={3}
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+            {replyError && (
+              <p className="text-red-500 text-xs mt-1">{replyError}</p>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
+                onClick={() => {
+                  setIsReporting(false);
+                  setReportReason("");
+                  setReplyError("");
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
+                onClick={submitReport}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Reporting..." : "Send Report"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {showReplyDialog && !isReply && (
           <div className="mt-3 border-t border-gray-200 pt-3">

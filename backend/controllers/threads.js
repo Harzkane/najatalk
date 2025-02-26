@@ -129,5 +129,19 @@ export const reportThread = async (req, res) => {
   }
 };
 
+export const getReports = async (req, res) => {
+  try {
+    const reports = await Report.find()
+      .populate("threadId", "title")
+      .populate("userId", "email")
+      .sort({ createdAt: -1 });
+    if (!reports.length)
+      return res.json({ message: "No reports yet—clean slate!" });
+    res.json({ reports, message: "Reports dey here—check am!" });
+  } catch (err) {
+    res.status(500).json({ message: "Fetch scatter: " + err.message });
+  }
+};
+
 // Add text index (run once in MongoDB shell or setup script)
 Thread.collection.createIndex({ title: "text", body: "text" });
