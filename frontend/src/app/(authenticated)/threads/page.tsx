@@ -1,10 +1,13 @@
-// frontend/src/app/(authenticated)/threads/page.tsx
 "use client";
 
-import { useState, useEffect, FormEvent, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import ThreadCard from "@/components/threads/ThreadCard";
+import SearchBar from "@/components/threads/SearchBar";
+import NewThreadButton from "@/components/threads/NewThreadButton";
+import formatDate from "@/utils/formatDate";
 
 type Thread = {
   _id: string;
@@ -13,7 +16,7 @@ type Thread = {
   userId: { email: string } | null;
   category: string;
   createdAt: string;
-  replies?: Reply[]; // Optional
+  replies?: Reply[];
 };
 
 type Reply = {
@@ -28,37 +31,91 @@ type SearchResponse = {
   message: string;
 };
 
-export default function Threads() {
+// Create a client component that uses the search params
+function ThreadsContent() {
   const [threads, setThreads] = useState<Thread[]>([]);
-  const [title, setTitle] = useState<string>("");
-  const [body, setBody] = useState<string>("");
-  const [category, setCategory] = useState<string>("General");
+  const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
+  const [replyBody, setReplyBody] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const threadId = searchParams.get("id");
 
-  const handleSearch = useCallback(async () => {
-    try {
-      const res = await axios.get<SearchResponse>(
-        `/api/threads/search?q=${searchQuery}`
-      );
-      setThreads(res.data.threads);
-      setMessage(res.data.message);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
-        setMessage(err.response?.data?.message || "Search scatter o!");
-      } else {
-        setMessage("No gist match—try another search!");
-      }
-    }
-  }, [searchQuery]);
+  const newThreadButtonRef = useRef<HTMLButtonElement>(null);
+
+  const trendingTopics = [
+    "Suya joints",
+    "NYSC camp",
+    "Lagos traffic",
+    "Best jollof",
+  ];
 
   useEffect(() => {
+    const savedSearches = localStorage.getItem("recentSearches");
+    if (savedSearches) {
+      setRecentSearches(JSON.parse(savedSearches));
+    }
+
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
-    fetchThreads();
-  }, []);
+
+    if (threadId) {
+      fetchSingleThread(threadId);
+    } else {
+      fetchThreads();
+    }
+  }, [threadId]);
+
+  const fetchSingleThread = async (id: string) => {
+    try {
+      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      setSelectedThread(res.data);
+      setThreads([]);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Thread no dey!");
+      } else {
+        setMessage("Thread fetch scatter o!");
+      }
+    }
+  };
+
+  const handleSearch = useCallback(
+    async (query: string) => {
+      setSearchQuery(query);
+      try {
+        const res = await axios.get<SearchResponse>(
+          `/api/threads/search?q=${query}`
+        );
+        setThreads(res.data.threads);
+        setMessage(res.data.message);
+        setSelectedThread(null);
+
+        if (query.trim()) {
+          const updatedSearches = [
+            query,
+            ...recentSearches.filter((s) => s !== query),
+          ].slice(0, 5);
+          setRecentSearches(updatedSearches);
+          localStorage.setItem(
+            "recentSearches",
+            JSON.stringify(updatedSearches)
+          );
+        }
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+          setMessage(err.response?.data?.message || "Search scatter o!");
+        } else {
+          setMessage("No gist match—try another search!");
+        }
+      }
+    },
+    [recentSearches]
+  );
 
   const fetchThreads = async () => {
     try {
@@ -77,6 +134,7 @@ export default function Threads() {
         })
       );
       setThreads(threadsWithReplies);
+      setSelectedThread(null);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
@@ -86,8 +144,11 @@ export default function Threads() {
     }
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleSubmitThread = async (
+    title: string,
+    body: string,
+    category: string
+  ) => {
     if (!isLoggedIn) {
       setMessage("Abeg login first!");
       setTimeout(() => router.push("/login"), 1000);
@@ -102,10 +163,9 @@ export default function Threads() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
-      setTitle("");
-      setBody("");
-      setCategory("General");
-      setThreads([{ ...res.data.thread, replies: [] }, ...threads]);
+      if (!selectedThread) {
+        await fetchThreads();
+      }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
@@ -121,103 +181,365 @@ export default function Threads() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h1 className="text-4xl font-bold text-green-800 mb-6 text-center">
-        NaijaTalk Threads—Drop Your Gist!
-      </h1>
+  const handleReply = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      setMessage("Abeg login first!");
+      return;
+    }
 
-      <div className="max-w-2xl mx-auto mb-6">
-        <input
-          type="text"
-          placeholder="Search gist (e.g., best suya joint)"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full p-3 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-        />
-        <button
-          onClick={handleSearch}
-          className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
-        >
-          Search am!
-        </button>
+    if (!replyBody.trim() || !selectedThread) {
+      setMessage("Reply cannot be empty!");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post<{ message: string; reply: Reply }>(
+        `/api/threads/${selectedThread._id}/replies`,
+        { body: replyBody },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage(res.data.message || "Reply posted—gist dey grow!");
+      setReplyBody("");
+
+      setSelectedThread((prev) =>
+        prev
+          ? {
+              ...prev,
+              replies: [res.data.reply, ...(prev.replies || [])],
+            }
+          : null
+      );
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Reply scatter o!");
+        if (err.response?.status === 401) {
+          setMessage("Token don expire—abeg login again!");
+          localStorage.removeItem("token");
+          setTimeout(() => router.push("/login"), 1000);
+        }
+      } else {
+        setMessage("Reply scatter o!");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6 pb-20">
+      {/* Header */}
+      <div className="max-w-5xl mx-auto mb-3">
+        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
+          <div className="flex justify-between items-center">
+            <h1 className="text-4xl font-bold text-gray-50 text-center">
+              {selectedThread
+                ? selectedThread.title
+                : "NaijaTalk Threads—Drop Your Gist!"}
+            </h1>
+            <div className="flex items-center space-x-4">
+              <Link
+                href="/"
+                className="text-green-100 hover:text-white text-sm font-medium"
+              >
+                Home
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {isLoggedIn && (
-        <form onSubmit={handleSubmit} className="mb-8 max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Thread Title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-          />
-          <textarea
-            placeholder="Wetin dey your mind?"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-32"
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600"
-          >
-            <option value="General">General</option>
-            <option value="Gist">Gist</option>
-            <option value="Politics">Politics</option>
-            <option value="Romance">Romance</option>
-          </select>
-          <button
-            type="submit"
-            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
-          >
-            Post am!
-          </button>
-        </form>
-      )}
+      {/* Main Content */}
+      <div className="max-w-5xl mx-auto">
+        {!selectedThread && (
+          <div className="bg-white p-4 rounded-lg shadow-md mb-3">
+            <SearchBar
+              onSearch={handleSearch}
+              recentSearches={recentSearches}
+              trendingTopics={trendingTopics}
+            />
+          </div>
+        )}
 
-      {message && (
-        <p className="text-center text-sm text-gray-600 mb-6">{message}</p>
-      )}
+        {message && (
+          <p className="text-center text-sm text-gray-600 mb-3 bg-white p-2 rounded-lg">
+            {message}
+            {searchQuery && !selectedThread ? `: "${searchQuery}"` : ""}
+          </p>
+        )}
 
-      <div className="max-w-2xl mx-auto space-y-4">
-        {threads.length ? (
-          threads.map((thread) => (
-            <div key={thread._id} className="bg-white p-4 rounded-lg shadow-md">
-              <Link href={`/threads/${thread._id}`}>
-                <h2 className="text-xl font-semibold text-green-800 hover:underline">
-                  {thread.title}
-                </h2>
-              </Link>
-              <p className="text-gray-700">{thread.body}</p>
-              <p className="text-sm text-gray-500 mt-2">
-                By: {thread.userId?.email || "Unknown Oga"} | {thread.createdAt}{" "}
-                | {thread.category} | {thread.replies?.length ?? 0} replies
-              </p>
-              {(thread.replies?.length ?? 0) > 0 && (
-                <div className="mt-2 space-y-2">
-                  {(thread.replies ?? []).slice(0, 2).map((reply) => (
-                    <p key={reply._id} className="text-sm text-gray-600">
-                      {reply.body} — {reply.userId?.email || "Unknown Oga"}
-                    </p>
-                  ))}
-                  {(thread.replies?.length ?? 0) > 2 && (
-                    <Link
-                      href={`/threads/${thread._id}`}
-                      className="text-green-600 text-sm"
-                    >
-                      See all {thread.replies?.length ?? 0} replies
-                    </Link>
-                  )}
+        {selectedThread ? (
+          <div className="space-y-4">
+            <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-4">
+              <div className="p-3 bg-gray-200 pb-2">
+                <div className="flex flex-wrap items-baseline gap-x-1">
+                  <span className="text-green-800 font-bold text-base">
+                    {selectedThread.title}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    by{" "}
+                    <span className="font-medium">
+                      {selectedThread.userId?.email || "Unknown Oga"}
+                    </span>
+                    : {formatDate(selectedThread.createdAt)} •{" "}
+                    {selectedThread.category}
+                  </span>
                 </div>
-              )}
+              </div>
+              <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
+                <p>{selectedThread.body}</p>
+                <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
+                  <button
+                    onClick={() =>
+                      document.getElementById("replyForm")?.focus()
+                    }
+                    className="hover:text-blue-600 flex items-center gap-1 text-xs"
+                  >
+                    <span
+                      className="material-icons-outlined"
+                      style={{ fontSize: "12px" }}
+                    >
+                      reply
+                    </span>
+                    <span className="text-xs">Reply</span>
+                  </button>
+                  <button
+                    className="hover:text-red-600 flex items-center gap-1 text-xs"
+                    onClick={() => alert("Report feature coming soon!")}
+                  >
+                    <span
+                      className="material-icons-outlined"
+                      style={{ fontSize: "12px" }}
+                    >
+                      flag
+                    </span>
+                    <span className="text-xs">Report</span>
+                  </button>
+                  <button
+                    className="hover:text-green-600 flex items-center gap-1 text-xs"
+                    onClick={() => alert("Like feature coming soon!")}
+                  >
+                    <span
+                      className="material-icons-outlined"
+                      style={{ fontSize: "12px" }}
+                    >
+                      thumb_up
+                    </span>
+                    <span className="text-xs">Like</span>
+                  </button>
+                  <button
+                    className="hover:text-purple-600 flex items-center gap-1 text-xs"
+                    onClick={() => {
+                      const url = `${window.location.origin}/threads?id=${selectedThread._id}`;
+                      navigator.clipboard
+                        .writeText(url)
+                        .then(() => alert("Link copied to clipboard!"))
+                        .catch((err) =>
+                          console.error("Could not copy text: ", err)
+                        );
+                    }}
+                  >
+                    <span
+                      className="material-icons-outlined"
+                      style={{ fontSize: "12px" }}
+                    >
+                      share
+                    </span>
+                    <span className="text-xs">Share</span>
+                  </button>
+                </div>
+              </div>
             </div>
-          ))
+
+            {isLoggedIn && (
+              <form onSubmit={handleReply} className="mb-6">
+                <textarea
+                  id="replyForm"
+                  placeholder="Drop your reply..."
+                  value={replyBody}
+                  onChange={(e) => setReplyBody(e.target.value)}
+                  className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
+                >
+                  {isSubmitting ? "Posting..." : "Reply am!"}
+                </button>
+              </form>
+            )}
+
+            {selectedThread.replies && selectedThread.replies.length > 0 ? (
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-green-800 mb-2">
+                  Replies
+                </h3>
+                {selectedThread.replies.map((reply) => (
+                  <div key={reply._id} className="mb-2">
+                    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                      <div className="p-3 bg-gray-200 pb-2">
+                        <div className="flex flex-wrap items-baseline gap-x-1">
+                          <span className="text-blue-800 font-bold text-base">
+                            Re: {selectedThread.title}
+                          </span>
+                          <span className="text-xs text-gray-600">
+                            by
+                            <span className="font-medium">
+                              {reply.userId?.email || "Unknown Oga"}
+                            </span>
+                            : {formatDate(reply.createdAt)}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
+                        <p>{reply.body}</p>
+                        <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
+                          <button
+                            onClick={() =>
+                              document.getElementById("replyForm")?.focus()
+                            }
+                            className="hover:text-blue-600 flex items-center gap-1 text-xs"
+                          >
+                            <span
+                              className="material-icons-outlined"
+                              style={{ fontSize: "12px" }}
+                            >
+                              reply
+                            </span>
+                            <span className="text-xs">Reply</span>
+                          </button>
+                          <button
+                            className="hover:text-red-600 flex items-center gap-1 text-xs"
+                            onClick={() => alert("Report feature coming soon!")}
+                          >
+                            <span
+                              className="material-icons-outlined"
+                              style={{ fontSize: "12px" }}
+                            >
+                              flag
+                            </span>
+                            <span className="text-xs">Report</span>
+                          </button>
+                          <button
+                            className="hover:text-green-600 flex items-center gap-1 text-xs"
+                            onClick={() => alert("Like feature coming soon!")}
+                          >
+                            <span
+                              className="material-icons-outlined"
+                              style={{ fontSize: "12px" }}
+                            >
+                              thumb_up
+                            </span>
+                            <span className="text-xs">Like</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 p-4 rounded-md text-center mt-4">
+                <p className="text-gray-600">No replies yet—be the first!</p>
+              </div>
+            )}
+
+            <div className="mt-6 text-center">
+              <Link
+                href="/threads"
+                className="text-blue-600 hover:underline text-sm"
+              >
+                ← Back to all threads
+              </Link>
+            </div>
+          </div>
         ) : (
-          <p className="text-center text-gray-600">No gist yet—be the first!</p>
+          <div className="space-y-1">
+            {threads.length ? (
+              threads.map((thread) => (
+                <ThreadCard
+                  key={thread._id}
+                  thread={thread}
+                  formatDate={formatDate}
+                  showReplies={true}
+                  onReplyAdded={fetchThreads}
+                />
+              ))
+            ) : (
+              <div className="bg-white border border-gray-200 p-4 rounded-md text-center">
+                <p className="text-gray-600 mb-4">No gist yet—be the first!</p>
+                {isLoggedIn ? (
+                  <button
+                    onClick={() => {
+                      if (newThreadButtonRef.current) {
+                        newThreadButtonRef.current.click();
+                      }
+                    }}
+                    className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
+                  >
+                    <span
+                      className="material-icons-outlined mr-1"
+                      style={{ fontSize: "16px" }}
+                    >
+                      add
+                    </span>
+                    Start a New Thread
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => router.push("/login")}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto"
+                  >
+                    <span
+                      className="material-icons-outlined mr-1"
+                      style={{ fontSize: "16px" }}
+                    >
+                      login
+                    </span>
+                    Login to Post
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
       </div>
+
+      <NewThreadButton
+        isLoggedIn={isLoggedIn}
+        onSubmit={handleSubmitThread}
+        buttonRef={newThreadButtonRef}
+      />
     </div>
+  );
+}
+
+// Create a loading fallback component
+function ThreadsLoading() {
+  return <div className="text-center p-10">Loading gist...</div>;
+}
+
+// Export the main component that uses suspense
+export default function Threads() {
+  return (
+    <Suspense fallback={<ThreadsLoading />}>
+      <ThreadsContent />
+    </Suspense>
   );
 }

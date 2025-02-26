@@ -184,3 +184,52 @@ Day 4’s a beast—NaijaTalk’s the spot for gist now, bros!
 - **Prep:** Rest up—tomorrow, we clean up the streets!
 
 ---
+
+### Day 5 Wrap-Up (Final)
+
+- **Date:** February 26, 2025
+- **Objective:** Add search, polish categories, enhance UI—start moderation.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Achievements
+
+1. **Search:**
+   - **Endpoint:** `GET /api/threads/search?q=<query>`—finds “suya”, “Tinubu”, etc.
+   - **UI:** `SearchBar` with recent searches, trending topics—slick!
+2. **Categories:**
+   - **Fix:** Backend saves `category`—e.g., “Tinubu vs Obi” in “Politics”.
+   - **UI:** Picker in `NewThreadButton`, filter on homepage—done!
+3. **UI:**
+   - **Home:** Categories sidebar, thread table with replies, “New Thread” button—Naija soul on lock!
+   - **Threads:** `ThreadCard` with reply previews—mobile-first, bold green vibes.
+4. **Bugs Fixed:**
+   - Category stuck on “General”—now saves from `req.body`.
+   - TS `undefined` errors—`replies` guarded with `??`.
+
+#### Vibe
+
+- **Live:** `https://najatalk.vercel.app`—threads like “Tinubu vs Obi” shining!
+- **You:** “Working great!”—Day 5’s a banger, bros!
+
+---
+
+### Day 6 Plan: Moderation & Polish
+
+- **Goal:** Finish Week 2’s **Moderation (15h)**—report threads, start anti-scam logic.
+- **Time:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Steps
+
+1. **Backend:**
+   - **Model:** `Report`—track reports (done earlier).
+   - **Endpoint:** `POST /api/threads/:id/report`—save reports with reason.
+2. **Frontend:**
+   - Replace “Report” alert with real form in `ThreadCard` and `threads/[id]/page.tsx`.
+   - Show “Reported” status after submission.
+3. **Polish:**
+   - Add pidgin toggle (e.g., “Post am!” vs “Submit”)—UI bonus.
+4. **Deploy:** Test live reporting.
+
+---

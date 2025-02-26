@@ -1,17 +1,21 @@
 // backend/controllers/threads.js
 import Thread from "../models/thread.js";
 import Reply from "../models/reply.js";
+import Report from "../models/report.js";
 
 export const createThread = async (req, res) => {
-  const { title, body } = req.body;
+  const { title, body, category } = req.body; // Add category here
   try {
     if (!title || !body)
       return res.status(400).json({ message: "Title or body no dey!" });
 
+    console.log("Creating thread with:", { title, body, category }); // Debug log
+
     const thread = new Thread({
       title,
       body,
-      userId: req.user._id, // From authMiddleware
+      userId: req.user._id,
+      category: category || "General", // Explicit fallback
     });
     await thread.save();
 
@@ -100,6 +104,28 @@ export const searchThreads = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Search scatter: " + err.message });
+  }
+};
+
+export const reportThread = async (req, res) => {
+  const { id } = req.params; // threadId
+  const { reason } = req.body;
+  try {
+    if (!reason) return res.status(400).json({ message: "Abeg, tell us why!" });
+
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const report = new Report({
+      threadId: id,
+      userId: req.user._id,
+      reason,
+    });
+    await report.save();
+
+    res.status(201).json({ message: "Report sent—mods go check am!" });
+  } catch (err) {
+    res.status(500).json({ message: "Report scatter: " + err.message });
   }
 };
 
