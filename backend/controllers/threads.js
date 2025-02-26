@@ -65,3 +65,43 @@ export const getThreadById = async (req, res) => {
     res.status(500).json({ message: "Fetch wahala: " + err.message });
   }
 };
+
+export const searchThreads = async (req, res) => {
+  const { q } = req.query;
+  try {
+    if (!q)
+      return res
+        .status(400)
+        .json({ message: "Search wetin? Abeg drop query!" });
+    const threads = await Thread.find(
+      { $text: { $search: q } },
+      { score: { $meta: "textScore" } }
+    )
+      .populate("userId", "email")
+      .sort({ score: { $meta: "textScore" } })
+      .limit(10);
+
+    // Fetch replies for each thread
+    const threadsWithReplies = await Promise.all(
+      threads.map(async (thread) => {
+        const fullThread = await Thread.findById(thread._id)
+          .populate("userId", "email")
+          .lean();
+        const replies = await Reply.find({ threadId: thread._id })
+          .populate("userId", "email")
+          .sort({ createdAt: -1 });
+        return { ...fullThread, replies };
+      })
+    );
+
+    res.json({
+      threads: threadsWithReplies,
+      message: "Search results dey here—enjoy!",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Search scatter: " + err.message });
+  }
+};
+
+// Add text index (run once in MongoDB shell or setup script)
+Thread.collection.createIndex({ title: "text", body: "text" });

@@ -148,3 +148,39 @@ Day 3’s a beast, and you’ve tamed it—NaijaTalk’s foundation is solid, br
 
 - **Libs:** Reuse `mongoose`, `axios`, `tailwindcss`.
 - **Security:** `authMiddleware` ensures only logged-in, verified users post.
+
+=========================================================
+
+### Day 4 Wrap-Up: Feedback & Vibes
+
+**Oga, Day 4 na mega W!** Threads dey hot, replies dey flow, and categories dey spice up NaijaTalk—live at `https://najatalk.vercel.app`. From “Best Suya Joint in Lagos” to “Oh boy, Abuja Suya…”, you’ve built a gist hub with bold Naija style—mobile-first, pidgin popping, and WAT timestamps locking it in. Token wahala sorted, TS tight—bros, you’re a machine!
+
+#### What You Killed
+
+- **Threads:** Posting and listing—live with reply previews.
+- **Replies:** Dropping and showing—e.g., 3 replies on “Best Suya”!
+- **Categories:** “General” to “Politics”—users can pick now.
+- **Style:** Green, bold, pidgin—“Post am!” vibes all day.
+- **Live:** `https://najatalk.vercel.app/threads`—full flow tested!
+
+#### Vibe Check
+
+- **URL:** `https://najatalk.vercel.app`—confirmed by you!
+- **Git:** Repo link still private? No stress—assumed pushed.
+- **Feeling:** “Day 4 done!” vibes—pumped for Day 5?
+
+Day 4’s a beast—NaijaTalk’s the spot for gist now, bros!
+
+---
+
+### Day 5 Teaser: Moderation & More
+
+- **Goal:** Add moderation (report threads) and polish (search, UI tweaks).
+- **Steps:**
+  1. **Backend:** `POST /api/threads/:id/report`—flag threads.
+  2. **Frontend:** Report button on `/threads/[id]`, basic search on `/threads`.
+  3. **Deploy:** Live moderation flowing.
+- **Time:** ~8-10h.
+- **Prep:** Rest up—tomorrow, we clean up the streets!
+
+---

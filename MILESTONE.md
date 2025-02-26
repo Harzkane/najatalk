@@ -241,3 +241,46 @@ How’s the vibe? Ready to see “NaijaTalk” auth dominate live on Vercel? Let
 - **Frontend Libs:** `next@15.1.7`, `react@19`, `axios@1.7.9`, `tailwindcss@3.4.1`, `typescript@5`.
 - **Backend Libs:** `cors@2.8.5` added.
 - **Cost:** $0—Vercel free tier, MongoDB Atlas free tier.
+
+### Day 4 Milestones Achieved
+
+- **Date:** February 25, 2025
+- **Objective:** Add threads, replies, and categories—Naija style with WAT timestamps.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Files Updated/Added
+
+- **`backend/models/reply.js`:**
+  - New model for replies—`body`, `userId`, `threadId`, WAT `createdAt`.
+- **`backend/controllers/threads.js`:**
+  - Added `createReply`, updated `getThreadById` with replies.
+- **`backend/routes/threads.js`:**
+  - Added `POST /:id/replies`.
+- **`frontend/src/app/(authenticated)/threads/page.tsx`:**
+  - Lists threads with reply previews, categories, links to details.
+- **`frontend/src/app/(authenticated)/threads/[id]/page.tsx`:**
+  - Thread details with reply form and list.
+
+#### Achievements
+
+1. **Threads:**
+   - **Endpoint:** `POST /api/threads`, `GET /api/threads`
+   - **Result:** Post and list threads—e.g., “Best Suya Joint in Lagos” live!
+2. **Replies:**
+   - **Endpoint:** `POST /api/threads/:id/replies`, `GET /api/threads/:id`
+   - **Result:** Post replies (e.g., “Oh boy, Abuja Suya…”), show on `/threads/[id]`.
+3. **Categories:**
+   - **Result:** Added picker—“General,” “Gist,” “Politics,” “Romance”—threads tagged.
+4. **Naija Style:**
+   - Bold, green UI, mobile-first, pidgin buttons (“Post am!”)—WAT timestamps live.
+5. **Bugs Fixed:**
+   - Token expiry handled—redirects to login.
+   - `userId` null errors—fallback to “Unknown Oga”.
+
+- **Status:** Dev and prod 100%—`https://najatalk.vercel.app/threads`.
+
+#### Technical Details
+
+- **Libs:** `mongoose` (replies), `axios` (API), `tailwindcss` (style).
+- **Cost:** $0—Vercel free tier.

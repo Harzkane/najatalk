@@ -5,6 +5,7 @@ import {
   getThreads,
   getThreadById,
   createReply,
+  searchThreads,
 } from "../controllers/threads.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -12,6 +13,7 @@ const router = express.Router();
 
 router.post("/", authMiddleware, createThread);
 router.get("/", getThreads);
+router.get("/search", searchThreads);
 router.get("/:id", getThreadById);
 router.post("/:id/replies", authMiddleware, createReply);
 
