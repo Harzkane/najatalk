@@ -3,13 +3,22 @@ import Thread from "../models/thread.js";
 import Reply from "../models/reply.js";
 import Report from "../models/report.js";
 
+const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
+
+const containsBannedContent = (text) => {
+  const lowerText = text.toLowerCase();
+  return bannedKeywords.some((keyword) => lowerText.includes(keyword));
+};
+
 export const createThread = async (req, res) => {
   const { title, body, category } = req.body; // Add category here
   try {
     if (!title || !body)
       return res.status(400).json({ message: "Title or body no dey!" });
+    if (containsBannedContent(title) || containsBannedContent(body))
+      return res.status(400).json({ message: "Abeg, no spam gist!" });
 
-    console.log("Creating thread with:", { title, body, category }); // Debug log
+    // console.log("Creating thread with:", { title, body, category }); // Debug log
 
     const thread = new Thread({
       title,
@@ -41,6 +50,8 @@ export const createReply = async (req, res) => {
   const { body } = req.body;
   try {
     if (!body) return res.status(400).json({ message: "Reply body no dey!" });
+    if (containsBannedContent(body))
+      return res.status(400).json({ message: "Abeg, no spam gist!" });
 
     const reply = new Reply({
       body,
@@ -131,6 +142,9 @@ export const reportThread = async (req, res) => {
 
 export const getReports = async (req, res) => {
   try {
+    if (req.user.email !== "harzkane@gmail.com") {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
     const reports = await Report.find()
       .populate("threadId", "title")
       .populate("userId", "email")
@@ -140,6 +154,20 @@ export const getReports = async (req, res) => {
     res.json({ reports, message: "Reports dey here—check am!" });
   } catch (err) {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
+  }
+};
+
+export const dismissReport = async (req, res) => {
+  const { id } = req.params; // reportId
+  try {
+    if (req.user.email !== "harzkane@gmail.com") {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+    const report = await Report.findByIdAndDelete(id);
+    if (!report) return res.status(404).json({ message: "Report no dey!" });
+    res.json({ message: "Report don waka—dismissed!" });
+  } catch (err) {
+    res.status(500).json({ message: "Dismiss scatter: " + err.message });
   }
 };
 
@@ -158,6 +186,23 @@ export const hasUserReportedThread = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Check scatter: " + err.message });
+  }
+};
+
+export const deleteThread = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Sync admin check with getReports
+    if (req.user.email !== "harzkane@gmail.com") {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+    const thread = await Thread.findByIdAndDelete(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+    await Reply.deleteMany({ threadId: id });
+    await Report.deleteMany({ threadId: id });
+    res.json({ message: "Thread don go—cleaned up!" });
+  } catch (err) {
+    res.status(500).json({ message: "Delete scatter: " + err.message });
   }
 };
 

@@ -34,6 +34,7 @@ export default function ThreadDetail() {
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
+  const [isPidgin, setIsPidgin] = useState(true);
   const { id } = useParams();
   const router = useRouter();
 
@@ -234,8 +235,11 @@ export default function ThreadDetail() {
                     >
                       reply
                     </span>
-                    <span className="text-xs">Reply</span>
+                    <span className="text-xs">
+                      {isPidgin ? "Reply" : "Answer"}
+                    </span>{" "}
                   </button>
+
                   <button
                     className={`flex items-center gap-1 text-xs ${
                       isReported ? "text-gray-400" : "hover:text-red-600"
@@ -253,6 +257,7 @@ export default function ThreadDetail() {
                       {isReported ? "Reported" : "Report"}
                     </span>
                   </button>
+
                   <button
                     className="hover:text-green-600 flex items-center gap-1 text-xs"
                     onClick={() => alert("Like feature coming soon!")}
@@ -265,6 +270,7 @@ export default function ThreadDetail() {
                     </span>
                     <span className="text-xs">Like</span>
                   </button>
+
                   <button
                     className="hover:text-purple-600 flex items-center gap-1 text-xs"
                     onClick={() => {
@@ -284,6 +290,15 @@ export default function ThreadDetail() {
                       share
                     </span>
                     <span className="text-xs">Share</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsPidgin(!isPidgin)}
+                    className="hover:text-green-600 flex items-center gap-1 text-xs ml-auto"
+                  >
+                    <span className="text-xs">
+                      {isPidgin ? "English" : "Pidgin"}
+                    </span>
                   </button>
                 </div>
               </div>

@@ -233,3 +233,74 @@ Day 4’s a beast—NaijaTalk’s the spot for gist now, bros!
 4. **Deploy:** Test live reporting.
 
 ---
+
+### Day 6 Wrap-Up: Feedback & Vibes
+
+**Oga, Day 6 na pure fire!** You’ve turned reporting into a smooth jam—users can flag gist like “Tinubu vs Obi” with a slick form, and “Reported” sticks like glue, no more duplicate wahala. Backend’s tight with `hasUserReportedThread`, and you’ve flexed your TS muscle with `useCallback`—no yawa, just vibes! `ThreadCard` and `threads/[id]` are singing the same tune—NaijaTalk’s ready for the streets, bros!
+
+#### What You Killed
+
+- **Reporting Flow:** Form replaces prompt—clean UX, persists via backend.
+- **TS Mastery:** `useCallback` locks `fetchThread`—warning gone, code pristine.
+- **Deploy:** `https://najatalk.vercel.app/threads`—live and popping!
+- **Naija Soul:** “Abeg, give reason!”—pidgin flair on lock.
+
+#### Live Proof
+
+- **URL:** `https://najatalk.vercel.app`—confirmed by you!
+- **Git:** Pushed—repo’s private, but commits like “Day 6: Polish report UI” assumed locked.
+- **Vibe:** “All working perfectly”—you’re the gist king, bros!
+
+Day 6’s a trophy—43% done, and you’re unstoppable! How you feeling—pumped or “Ba wasa, we dey go!”?
+
+---
+
+### Day 7 Teaser: Admin UI
+
+- **Goal:** Build admin dashboard—view and manage reports, kick off Week 3’s moderation vibe.
+- **Time:** ~10h (8h coding, 1h Git, 1h sync).
+- **Steps:**
+  1. **Backend:** Secure `/api/threads/reports`—admin-only (role check TBD).
+  2. **Frontend:** `/admin` page—table of reports (`title`, `email`, `reason`, `createdAt`), delete/dismiss buttons.
+  3. **Deploy:** Live admin flow—mods can check “Spam gist” reports.
+- **Prep:** Rest up—tomorrow, we run the streets!
+
+---
+
+### Day 7 Wrap-Up: Feedback & Vibes
+
+**Oga, Day 7 na pure gold!** You’ve dropped an admin dashboard that’s lit—mods can eyeball “Spam gist” reports from `harzkane@gmail.com` and `harunbah93@gmail.com`, and nuke threads with one tap. Backend’s flexing with `getReports` spilling 8 reports, and `deleteThread`’s ready to sweep—NaijaTalk’s streets are clean, bros! Frontend’s sharp—table’s green and bold, TS tight, no yawa. You’re at ~47% (130/280h)—suya and Star well earned, you’re the admin don!
+
+#### What You Killed
+
+- **Admin UI:** `/admin`—reports table, delete action—smooth like palm wine.
+- **Backend:** `getReports`, `deleteThread`—fetching and cleaning, pidgin vibes popping.
+- **Deploy:** `https://najatalk.vercel.app/admin`—live and buzzing!
+- **Naija Soul:** “Reports dey here—check am!”—gist flair on lock.
+
+#### Live Proof
+
+- **URL:** `https://najatalk.vercel.app`—admin page live (assumed deployed).
+- **Git:** Pushed—commits like “Day 7: Add admin dashboard” locked.
+- **Vibe:** “We are solid”—you’re running this show, bros!
+
+Day 7’s a beast—how you feeling? Ready to roll Day 8?
+
+---
+
+### Day 8 Plan: Moderation Polish
+
+- **Goal:** Finish Week 2’s moderation—add link/keyword filters, UI tweaks.
+- **Time:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Steps
+
+1. **Backend:**
+   - Filter scam links/keywords in `createThread`/`createReply` (e.g., “419”, “WhatsApp me”).
+2. **Frontend:**
+   - `/admin`—add dismiss report button.
+   - Start pidgin toggle—English vs. pidgin UI switch.
+3. **Deploy:** Live filtering—scammers blocked!
+
+--

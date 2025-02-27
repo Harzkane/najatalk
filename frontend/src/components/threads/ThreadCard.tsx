@@ -46,6 +46,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
+  const [isPidgin, setIsPidgin] = useState(true);
+
   const router = useRouter();
 
   // Type guard to check if thread is a Thread (not a Reply)
@@ -228,8 +230,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               reply
             </span>
-            <span className="text-xs">Reply</span>
+            <span className="text-xs">{isPidgin ? "Reply" : "Answer"}</span>
           </button>
+
           <button
             // onClick={() => alert("Report feature coming soon!")}
             onClick={handleReport}
@@ -248,6 +251,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               {isReported ? "Reported" : "Report"}
             </span>
           </button>
+
           <button
             className="hover:text-green-600 flex items-center gap-1 text-xs"
             onClick={() => alert("Like feature coming soon!")}
@@ -260,6 +264,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
             </span>
             <span className="text-xs">Like</span>
           </button>
+
           <button
             className="hover:text-purple-600 flex items-center gap-1 text-xs"
             onClick={handleShare}
@@ -271,6 +276,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
               share
             </span>
             <span className="text-xs">Share</span>
+          </button>
+
+          <button
+            onClick={() => setIsPidgin(!isPidgin)}
+            className="hover:text-green-600 flex items-center gap-1 text-xs ml-auto"
+          >
+            <span className="text-xs">{isPidgin ? "English" : "Pidgin"}</span>
           </button>
         </div>
 

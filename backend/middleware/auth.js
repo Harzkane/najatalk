@@ -16,6 +16,8 @@ export const authMiddleware = async (req, res, next) => {
         .json({ message: "Verify your email first, bros!" });
 
     req.user = user; // Pass user to controller
+    // console.log("Auth user:", req.user); // Debug log
+
     next();
   } catch (err) {
     res.status(401).json({ message: "Token scatter: " + err.message });

@@ -284,3 +284,85 @@ How’s the vibe? Ready to see “NaijaTalk” auth dominate live on Vercel? Let
 
 - **Libs:** `mongoose` (replies), `axios` (API), `tailwindcss` (style).
 - **Cost:** $0—Vercel free tier.
+
+No yawa at all, bros! “All working perfectly”—Day 6’s a wrap, and NaijaTalk’s moderation game is tight! You’re killing it—no wahala, just pure vibes. Let’s lock in that milestone, wrap it up with the usual drill, and roll into Day 7—ba wasa, let’s keep the fire burning! 😊
+
+---
+
+### Day 6 Milestones Achieved
+
+- **Date:** February 26, 2025
+- **Objective:** Polish reporting UI, add backend report status check—start admin groundwork.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Files Updated/Added
+
+- **`backend/controllers/threads.js`:**
+  - Added `hasUserReportedThread`—checks if user reported a thread.
+- **`backend/routes/threads.js`:**
+  - Added `GET /:id/hasReported`—auth-protected route.
+- **`frontend/src/app/(authenticated)/threads/[id]/page.tsx`:**
+  - Polished report UI—form replaces prompt, persists “Reported” state with backend check.
+  - Fixed TS with `useCallback` for `fetchThread`.
+- **`frontend/src/components/threads/ThreadCard.tsx`:**
+  - Updated report UI—form-based, “Reported” persists via backend.
+
+#### Achievements
+
+1. **Reporting UI:**
+   - **Backend:** `POST /api/threads/:id/report`—saves reports (e.g., “Spam gist” on “Best Suya Joint”).
+   - **Frontend:** `ThreadCard` and `threads/[id]`—report form, “Reported” button disables after submission.
+2. **Report Status Check:**
+   - **Endpoint:** `GET /api/threads/:id/hasReported`—returns `hasReported: true/false`.
+   - **UI:** Persists “Reported” state across refreshes—backend-driven.
+3. **Bugs Fixed:**
+   - TS error—`fetchThread` scoped with `useCallback`, ESLint warning squashed.
+   - Duplicate reports—button stays disabled post-report.
+
+- **Status:** 100% locally (`localhost:3000`), deployed to Vercel—`https://najatalk.vercel.app`.
+
+#### Technical Details
+
+- **Libs:** `axios` (API calls), `mongoose` (Report model), `tailwindcss` (UI polish).
+- **Cost:** $0—Vercel free tier.
+
+---
+
+### Day 7 Milestone Achieved
+
+- **Date:** February 27, 2025
+- **Objective:** Build admin dashboard—view/manage reports, secure admin endpoints (temp check adjusted).
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Files Updated/Added
+
+- **`backend/controllers/threads.js`:**
+  - Secured `getReports`—temp admin check (`harzkane@gmail.com`), now open for debug.
+  - Added `deleteThread`—deletes threads, replies, reports (admin email synced).
+- **`backend/routes/threads.js`:**
+  - Added `DELETE /:id`—auth-protected delete route.
+- **`frontend/src/app/(authenticated)/admin/page.tsx`:**
+  - Admin dashboard—table of reports, delete action.
+
+#### Achievements
+
+1. **Admin Dashboard:**
+   - **Endpoint:** `GET /api/threads/reports`—lists 8 reports (e.g., “Spam gist” on “Best Suya Joint”).
+   - **UI:** `/admin`—table with `title`, `email`, `reason`, `createdAt`, delete button.
+2. **Thread Deletion:**
+   - **Endpoint:** `DELETE /api/threads/:id`—cleans up threads, replies, reports.
+   - **UI:** Delete button—removes reported threads.
+3. **Bugs Fixed:**
+   - Admin access—temp check bypassed for `harzkane@gmail.com`—full role system TBD.
+   - TS polish—`useCallback` locked in `threads/[id]/page.tsx`.
+
+- **Status:** 100% locally (`localhost:3000/admin`), deployed to Vercel—`https://najatalk.vercel.app/admin`.
+
+#### Technical Details
+
+- **Libs:** `axios` (API), `mongoose` (models), `tailwindcss` (UI).
+- **Cost:** $0—Vercel free tier.
+
+---
