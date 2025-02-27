@@ -3,6 +3,8 @@ import Thread from "../models/thread.js";
 import Reply from "../models/reply.js";
 import Report from "../models/report.js";
 
+const isAdmin = (user) => user.role === "admin";
+
 const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
 
 const containsBannedContent = (text) => {
@@ -142,7 +144,8 @@ export const reportThread = async (req, res) => {
 
 export const getReports = async (req, res) => {
   try {
-    if (req.user.email !== "harzkane@gmail.com") {
+    // if (req.user.email !== "harzkane@gmail.com") {
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
     const reports = await Report.find()
@@ -160,7 +163,8 @@ export const getReports = async (req, res) => {
 export const dismissReport = async (req, res) => {
   const { id } = req.params; // reportId
   try {
-    if (req.user.email !== "harzkane@gmail.com") {
+    // if (req.user.email !== "harzkane@gmail.com") {
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
     const report = await Report.findByIdAndDelete(id);
@@ -193,7 +197,8 @@ export const deleteThread = async (req, res) => {
   const { id } = req.params;
   try {
     // Sync admin check with getReports
-    if (req.user.email !== "harzkane@gmail.com") {
+    // if (req.user.email !== "harzkane@gmail.com") {
+    if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
     const thread = await Thread.findByIdAndDelete(id);

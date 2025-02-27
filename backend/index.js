@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import threadRoutes from "./routes/threads.js";
+import adsRoutes from "./routes/ads.js";
 import dbRoutes from "./routes/db.js";
 import cors from "cors";
 
@@ -25,6 +26,7 @@ app.use(express.json());
 connectDB(process.env.MONGO_URI);
 app.use("/api/auth", authRoutes);
 app.use("/api/threads", threadRoutes);
+app.use("/api/ads", adsRoutes);
 app.use("/api/", dbRoutes); // Welcome route
 
 app.listen(PORT, () => {

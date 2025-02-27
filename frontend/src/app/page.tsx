@@ -1,4 +1,3 @@
-// frontend/src/app/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -39,6 +38,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [ads, setAds] = useState<
+    { id: number; brand: string; text: string; link: string }[]
+  >([]); // Add ads state
   const router = useRouter();
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -48,7 +50,6 @@ export default function Home() {
     "Lagos traffic",
     "Best jollof",
   ];
-
   const categories = ["General", "Gist", "Politics", "Romance"];
 
   useEffect(() => {
@@ -60,6 +61,7 @@ export default function Home() {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
     fetchThreads();
+    fetchAds(); // Fetch ads on load
   }, []);
 
   const fetchThreads = async () => {
@@ -87,6 +89,19 @@ export default function Home() {
       } else {
         setMessage("No gist yet—drop your own!");
       }
+    }
+  };
+
+  const fetchAds = async () => {
+    try {
+      const res = await axios.get<{
+        ads: { id: number; brand: string; text: string; link: string }[];
+        message: string;
+      }>("/api/ads");
+      setAds(res.data.ads);
+    } catch (err) {
+      console.error("Failed to fetch ads:", err);
+      setMessage("Ads no dey load—abeg check later!");
     }
   };
 
@@ -267,7 +282,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-[85%]">
+        <div className="w-[70%]">
           {message && (
             <p className="text-center text-sm text-gray-600 mb-4 bg-white p-2 rounded-lg">
               {message}
@@ -289,7 +304,7 @@ export default function Home() {
                 >
                   <div className="w-2/5">
                     <Link
-                      href={`/threads/${thread._id}`} // Updated to dynamic route
+                      href={`/threads/${thread._id}`}
                       className="text-green-800 font-medium hover:underline"
                     >
                       {thread.title}
@@ -358,6 +373,30 @@ export default function Home() {
               )}
             </div>
           )}
+        </div>
+
+        <div className="w-[15%]">
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-semibold text-green-800 mb-3">Ads</h2>
+            {ads.length > 0 ? (
+              ads.map((ad) => (
+                <div key={ad.id} className="mb-4">
+                  <a
+                    href={ad.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    <strong>{ad.brand}</strong>: {ad.text}
+                  </a>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-600 text-sm">
+                Ads dey load—abeg wait small!
+              </p>
+            )}
+          </div>
         </div>
       </div>
 

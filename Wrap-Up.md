@@ -304,3 +304,79 @@ Day 7’s a beast—how you feeling? Ready to roll Day 8?
 3. **Deploy:** Live filtering—scammers blocked!
 
 --
+
+### Day 8 Wrap-Up: Feedback & Vibes
+
+**Oga, Day 8 na pure jam!** You’ve locked down NaijaTalk’s streets—filters dey go hard, blocking “419” and “WhatsApp me” like bouncers at the club. Admin UI’s flexing with dismiss power—mods can sweep “Spam gist” without breaking a sweat. That pidgin toggle’s a tease—“Report” to “Flag” switch got the Naija soul popping! You’re at ~50% (140/280h)—halfway, bros, grab some suya and a cold one, you’re the gist don!
+
+#### What You Killed
+
+- **Filters:** “Filters dey solid!”—spam gist bounced, legit threads shine.
+- **Admin UI:** Delete and dismiss—`/admin` runs the show.
+- **Pidgin Start:** Toggle in `ThreadCard`—Naija vibes teasing.
+- **Deploy:** `https://najatalk.vercel.app`—live and kicking!
+
+#### Live Proof
+
+- **URL:** `https://najatalk.vercel.app`—assumed live with your deploy.
+- **Git:** Pushed—commits like “Day 8: Add filters and dismiss” locked.
+- **Vibe:** “Day 8 dey roll!”—you’re unstoppable, bros!
+
+Day 8’s a banger—how you feeling? Pumped for Day 9?
+
+---
+
+### Day 9 Teaser: Week 3 Kickoff
+
+- **Goal:** Start Week 3—roles and deeper moderation.
+- **Time:** ~10h.
+- **Steps:**
+  1. **Backend:** Add `role` to `User` model—`admin`, `mod`, `user`.
+  2. **Frontend:** Secure `/admin`—admin-only access.
+  3. **Deploy:** Live role-based admin flow.
+
+---
+
+### Day 9 Wrap-Up: Feedback & Vibes
+
+**Oga, Day 9 na pure class!** You’ve dropped roles like a boss—`admin`, `mod`, `user` now rule the streets, and `harzkane@gmail.com` is the don of NaijaTalk’s admin squad. Filters from Day 8 dey solid, and now admin endpoints are locked tight—`getReports` spilling “Spam gist” vibes, `deleteThread` sweeping threads, all clean and clear! You’re at ~53% (150/280h)—over halfway, bros, grab some jollof and a cold one, you’re the NaijaTalk kingpin!
+
+#### What You Killed
+
+- **Roles:** `user.js`—`role` field, `admin` set for `harzkane@gmail.com`.
+- **Security:** Admin-only access—`isAdmin` check, no yawa for non-admins.
+- **Deploy:** `https://najatalk.vercel.app`—live and rolling!
+- **Naija Soul:** “Abeg, admins only!”—pidgin flair keeping it real.
+
+#### Live Proof
+
+- **URL:** `https://najatalk.vercel.app`—assumed live with your deploy.
+- **Git:** Pushed—commits like “Day 9: Add roles” locked.
+- **Vibe:** “Clean and clear, working great!”—you’re unstoppable, bros!
+
+Day 9’s a flex—53% and counting! How you feeling—ready to roll?
+
+---
+
+### Did We Skip Ads?
+
+You’re sharp—**Week 2, Step 5: Ads (15h)**—“Vetted ad slots (placeholder for Jumia/GTBank), sidebar UI”—we haven’t touched it yet. Roadmap says no skipping, but we’re deep into Week 3 now (Day 9, ~150h of 140h planned for Weeks 1-2). Options:
+
+1. **Backtrack:** Squeeze ads into Day 10—sidebar placeholders, basic UI (~10-15h).
+2. **Push Forward:** Finish Week 3’s moderation (roles polish, dashboard tweaks), hit ads in Week 4’s polish phase.
+3. **Hybrid:** Start ads UI now (placeholders), backend later—keep momentum.
+
+**Verdict:** Let’s push forward—Week 2’s core (categories, UI, search, moderation) is solid at ~90% (55/70h). Ads fit Week 4’s “Polish” vibe—sidebar UI’s light work, backend can wait for monetization. You cool with that, bros?
+
+---
+
+### Day 10 Teaser: Moderation Deep Dive
+
+- **Goal:** Polish Week 3’s moderation—dashboard tweaks, ban logic start.
+- **Time:** ~10h.
+- **Steps:**
+  1. **Backend:** Add `isBanned` to `User`, ban logic in `authMiddleware`.
+  2. **Frontend:** `/admin`—ban user button, report polish.
+  3. **Deploy:** Live ban flow—scammers out!
+
+---
