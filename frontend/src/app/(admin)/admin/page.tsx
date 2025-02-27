@@ -1,4 +1,4 @@
-// frontend/src/app/(authenticated)/admin/page.tsx
+// frontend/src/app/(admin)/admin/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -10,7 +10,7 @@ import formatDate from "@/utils/formatDate";
 type Report = {
   _id: string;
   threadId: { _id: string; title: string };
-  userId: { email: string };
+  userId: { _id: string; email: string };
   reason: string;
   createdAt: string;
 };
@@ -34,7 +34,7 @@ export default function AdminDashboard() {
         "/api/threads/reports",
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setReports(res.data.reports);
+      setReports(res.data.reports || []); // Fallback to empty array
       setMessage(res.data.message);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -46,6 +46,7 @@ export default function AdminDashboard() {
       } else {
         setMessage("Fetch scatter o!");
       }
+      setReports([]); // Reset to empty array on error
     }
   };
 
@@ -77,12 +78,35 @@ export default function AdminDashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
-      setReports(reports.filter((r) => r._id !== reportId));
+      const updatedReports = reports.filter((r) => r._id !== reportId);
+      setReports(updatedReports);
+      if (updatedReports.length === 0) fetchReports(); // Refresh if last report
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Dismiss scatter o!");
       } else {
         setMessage("Dismiss scatter o!");
+      }
+      setReports(reports); // Keep current state on error
+    }
+  };
+
+  const handleBanUser = async (userId: string, email: string) => {
+    if (!confirm(`Sure say you wan ban ${email}?`)) return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put<{ message: string }>(
+        `/api/users/${userId}/ban`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage(res.data.message);
+      fetchReports(); // Refresh reports
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Ban scatter o!");
+      } else {
+        setMessage("Ban scatter o!");
       }
     }
   };
@@ -117,7 +141,7 @@ export default function AdminDashboard() {
             {message}
           </p>
         )}
-        {reports.length ? (
+        {reports && reports.length > 0 ? ( // Guard against undefined
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <table className="w-full text-left">
               <thead className="bg-gray-200">
@@ -158,15 +182,23 @@ export default function AdminDashboard() {
                     <td className="p-3">
                       <button
                         onClick={() => handleDelete(report.threadId._id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                        className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm mr-2"
                       >
                         Delete
                       </button>
                       <button
                         onClick={() => handleDismiss(report._id)}
-                        className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm"
+                        className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm mr-2"
                       >
                         Dismiss
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleBanUser(report.userId._id, report.userId.email)
+                        }
+                        className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
+                      >
+                        Ban User
                       </button>
                     </td>
                   </tr>

@@ -428,10 +428,6 @@ Ba wasa, bros! “Filters dey solid, Filters dey go!, Day 8 dey roll!”—you�
 
 ---
 
-Clean and clear, bros! “Working great”—Day 9’s rolling strong with roles in place, and you’re keeping us on track with that eagle eye! You’re right to call out **Week 2, Step 5: Ads (15h)**—we haven’t touched it yet. No skipping allowed, so let’s wrap Day 9’s milestone, then decide if we backtrack to ads or push forward. Ba wasa, you dey run this show! 😊
-
----
-
 ### Day 9 Milestone Achieved
 
 - **Date:** March 1, 2025
@@ -467,3 +463,39 @@ Clean and clear, bros! “Working great”—Day 9’s rolling strong with roles
 - **Cost:** $0—Vercel free tier.
 
 ---
+
+### Day 10 Milestone Achieved (Final)
+
+- **Date:** March 2, 2025
+- **Objective:** Wrap Week 2, Step 5—add vetted ad slots (placeholders), sidebar UI.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Files Updated/Added
+
+- **`backend/controllers/ads.js`:**
+  - New—`getAds` returns placeholder ads (Jumia, GTBank).
+- **`backend/routes/ads.js`:**
+  - New—`GET /api/ads` route.
+- **`backend/index.js`:**
+  - Updated—added `/api/ads` route.
+- **`frontend/src/app/page.tsx`:**
+  - Added ad fetch, sidebar UI—15% width slot with Jumia/GTBank placeholders.
+
+#### Achievements
+
+1. **Ad Placeholders:**
+   - **Backend:** `GET /api/ads`—delivers “Jumia: Shop hot deals...” and “GTBank: Bank easy...”.
+   - **Result:** Static ads locked in—monetization tease live.
+2. **Sidebar UI:**
+   - **Frontend:** `/`—15% sidebar shows ads, clean 15/70/15 split (categories/threads/ads).
+   - **Feedback:** “Works great”—ads dey shine, bros!
+3. **Week 2 Completion:**
+   - Step 5 (Ads)—done, Week 2 now 100% (70/70h)—no skipping, all steps cleared!
+
+- **Status:** 100% locally (`localhost:3000`), deployed to Vercel—`https://najatalk.vercel.app`.
+
+#### Technical Details
+
+- **Libs:** `axios` (API), `tailwindcss` (UI).
+- **Cost:** $0—Vercel free tier.

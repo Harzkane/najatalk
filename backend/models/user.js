@@ -25,6 +25,10 @@ const userSchema = new mongoose.Schema({
     enum: ["user", "mod", "admin"],
     default: "user",
   },
+  isBanned: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 userSchema.pre("save", async function (next) {

@@ -1,8 +1,8 @@
 // backend/controllers/auth.js
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import User from "../models/user.js";
+import { sendVerificationEmail } from "../utils/email.js";
 
 export const signup = async (req, res) => {
   const { email, password } = req.body;
@@ -10,61 +10,22 @@ export const signup = async (req, res) => {
     if (!email || !password)
       return res.status(400).json({ message: "Email or password no dey!" });
 
-    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      throw new Error("Email creds no dey—check .env!");
-    }
-
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 465,
-      secure: true, // SSL
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      logger: true,
-      debug: true,
-      timeout: 10000,
-    });
-
-    // Verify inside signup, before sending
-    await new Promise((resolve, reject) => {
-      transporter.verify((error, success) => {
-        if (error) {
-          console.error("Nodemailer setup error:", error);
-          reject(error);
-        } else {
-          console.log("Nodemailer ready—email dey go!");
-          resolve(success);
-        }
-      });
-    });
-
     const existingUser = await User.findOne({ email });
     if (existingUser)
       return res.status(400).json({ message: "Email dey already in use!" });
 
-    const hashedPassword = await bcrypt.hash(password, 10);
     const verificationToken = jwt.sign({ email }, process.env.JWT_SECRET, {
       expiresIn: "1d",
     });
 
     const user = new User({
       email,
-      password: hashedPassword,
+      password, // Raw password—hook will hash
       verificationToken,
     });
     await user.save();
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "Verify Your NaijaTalk Account",
-      text: `Oga, click dis link to verify: ${process.env.FRONTEND_URL}/verify/${verificationToken}`, // Updated to /verify/
-    };
-    console.log("Sending email to:", email);
-    const emailResult = await transporter.sendMail(mailOptions);
-    console.log("Email sent successfully:", emailResult);
+    await sendVerificationEmail(email, verificationToken);
 
     res
       .status(201)
@@ -78,8 +39,18 @@ export const signup = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
+    if (!email || !password)
+      return res.status(400).json({ message: "Email or password no dey!" });
+
     const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: "User no dey!" });
+    if (!user)
+      return res.status(404).json({ message: "User no dey—abeg signup!" });
+
+    if (user.isBanned)
+      return res
+        .status(403)
+        .json({ message: "You don dey banned—abeg comot!" });
+
     if (!user.isVerified)
       return res
         .status(403)
@@ -87,14 +58,14 @@ export const login = async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch)
-      return res.status(400).json({ message: "Password no correct!" });
+      return res.status(400).json({ message: "Password no match—try again!" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
-    res.json({ token, message: "Login sweet—welcome back!" });
+    res.status(200).json({ token, message: "Login sweet—welcome back!" });
   } catch (err) {
-    res.status(500).json({ message: "Login wahala: " + err.message });
+    res.status(500).json({ message: "Login scatter: " + err.message });
   }
 };
 
@@ -102,9 +73,7 @@ export const verifyEmail = async (req, res) => {
   const { token } = req.params;
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findOne({
-      email: decoded.email,
-    });
+    const user = await User.findOne({ email: decoded.email });
 
     if (!user) return res.status(400).json({ message: "User no dey!" });
     if (user.isVerified)

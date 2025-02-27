@@ -151,3 +151,41 @@
   3. **Sync (~1h):** Review plan wit NaijaShadow.
 
 ---
+
+### Day 10 Milestone Achieved (Draft)
+
+- **Date:** March 2, 2025
+- **Objective:** Wrap Week 2, Step 5—add vetted ad slots (placeholders), sidebar UI.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Files Updated/Added
+
+- **`backend/controllers/ads.js`:**
+  - New—`getAds` returns placeholder ads (Jumia, GTBank).
+- **`backend/routes/ads.js`:**
+  - New—`GET /api/ads` route.
+- **`backend/index.js`:**
+  - Updated—added `/api/ads` route.
+- **`frontend/src/app/page.tsx`:**
+  - Added ad fetch, sidebar UI—15% width slot.
+
+#### Achievements
+
+1. **Ad Placeholders:**
+   - **Backend:** `GET /api/ads`—delivers Jumia/GTBank placeholders.
+   - **Result:** Static ads ready—monetization tease locked in.
+2. **Sidebar UI:**
+   - **Frontend:** `/`—15% sidebar shows “Jumia: Shop hot deals...” and “GTBank: Bank easy...”.
+   - **Layout:** Clean 15/70/15 split—categories, threads, ads vibes.
+3. **Week 2 Wrap:**
+   - Step 5 (Ads)—done, Week 2 now ~100% (70/70h).
+
+- **Status:** 100% locally (`localhost:3000`), deployed to Vercel—`https://najatalk.vercel.app`.
+
+#### Technical Details
+
+- **Libs:** `axios` (API), `tailwindcss` (UI).
+- **Cost:** $0—Vercel free tier.
+
+---

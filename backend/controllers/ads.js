@@ -14,6 +14,19 @@ export const getAds = async (req, res) => {
         text: "Bank easy with GTBank!",
         link: "https://gtbank.com",
       },
+      // add more ads here
+      {
+        id: 3,
+        brand: "Konga",
+        text: "Konga—your online mall!",
+        link: "https://konga.com",
+      },
+      {
+        id: 4,
+        brand: "Polaris Bank",
+        text: "Simple banking with Polaris!",
+        link: "https://polarisbank.com",
+      },
     ];
     res.json({ ads, message: "Ads dey here—check am!" });
   } catch (err) {

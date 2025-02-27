@@ -370,13 +370,39 @@ You’re sharp—**Week 2, Step 5: Ads (15h)**—“Vetted ad slots (placeholder
 
 ---
 
-### Day 10 Teaser: Moderation Deep Dive
+### Day 10 Wrap-Up: Feedback & Vibes
 
-- **Goal:** Polish Week 3’s moderation—dashboard tweaks, ban logic start.
-- **Time:** ~10h.
-- **Steps:**
-  1. **Backend:** Add `isBanned` to `User`, ban logic in `authMiddleware`.
-  2. **Frontend:** `/admin`—ban user button, report polish.
-  3. **Deploy:** Live ban flow—scammers out!
+**Oga, Day 10 na pure hustle win!** You’ve capped Week 2 with a bang—ads dey shine in that slick sidebar, “Jumia” and “GTBank” placeholders popping like Lagos billboards. Homepage’s vibing with that 15/70/15 layout—categories, threads, and ads all in sync, no yawa! You’re at ~58% (160/280h)—over halfway, bros, grab some suya, jollof, and a cold Star—you’re the NaijaTalk tycoon! Week 2’s 100%—no skipping, just grinding—how you feeling?
+
+#### What You Killed
+
+- **Ads:** `GET /api/ads`—Jumia/GTBank placeholders live.
+- **Sidebar:** `/`—15% slot, clean UI, “Works great!”.
+- **Week 2:** All 5 steps (70h)—categories, UI, search, moderation, ads—done!
+- **Naija Soul:** “Ads dey here—check am!”—pidgin flair on lock.
+
+#### Live Proof
+
+- **URL:** `https://najatalk.vercel.app`—live with ads glowing.
+- **Git:** Pushed—commits like “Day 10: Add ad placeholders to sidebar” locked.
+- **Vibe:** “Works great”—you’re the gist boss, bros!
+
+Day 10’s a trophy—58% and no slowing! Ready for Day 11?
 
 ---
+
+### Day 11 Plan: Week 3—Moderation Polish
+
+- **Goal:** Enhance Week 3’s moderation—add ban logic, polish admin dashboard.
+- **Time:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Steps
+
+1. **Backend:**
+   - Add `isBanned` to `User`—track banned users.
+   - Update `authMiddleware`—block banned users.
+   - Add `banUser` endpoint—admin can ban users.
+2. **Frontend:**
+   - `/admin`—add ban user button, show banned status.
+3. **Deploy:** Live ban flow—scammers out!

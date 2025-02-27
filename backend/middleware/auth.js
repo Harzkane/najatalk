@@ -9,16 +9,20 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select(
-      "_id email role isVerified"
+      "_id email role isVerified isBanned"
     );
     if (!user) return res.status(404).json({ message: "User no dey!" });
     if (!user.isVerified)
       return res
         .status(403)
         .json({ message: "Verify your email first, bros!" });
+    if (user.isBanned)
+      return res
+        .status(403)
+        .json({ message: "You don dey banned—abeg comot!" });
 
-    req.user = user; // Now includes role
-    console.log("Auth user:", req.user); // Debug log
+    req.user = user;
+    console.log("Auth user:", req.user);
     next();
   } catch (err) {
     res.status(401).json({ message: "Token scatter: " + err.message });
