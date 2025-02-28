@@ -29,6 +29,15 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  appealReason: {
+    type: String,
+    default: null,
+  },
+  appealStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected", null],
+    default: null,
+  },
 });
 
 userSchema.pre("save", async function (next) {

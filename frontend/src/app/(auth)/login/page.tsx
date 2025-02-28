@@ -3,16 +3,18 @@
 
 import { useState, FormEvent } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation"; // Add this for redirect
+import { useRouter } from "next/navigation";
 
 export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const router = useRouter(); // Add this
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add submitting state
+  const router = useRouter();
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const res = await axios.post<{ token: string; message: string }>(
         "/api/auth/login",
@@ -20,18 +22,22 @@ export default function Login() {
       );
       setMessage(res.data.message);
       localStorage.setItem("token", res.data.token);
-      console.log("JWT Token:", res.data.token); // Log to check
-      // Clear fields
+      console.log("JWT Token:", res.data.token);
       setEmail("");
       setPassword("");
-      // Optional: Redirect after 1 sec
-      setTimeout(() => router.push("/"), 1000); // Back to home
+      setTimeout(() => router.push("/"), 1000); // Redirect to home
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setMessage(err.response?.data?.message || "Login wahala o!");
+        const errorMsg = err.response?.data?.message || "Login wahala o!";
+        setMessage(errorMsg);
+        if (err.response?.status === 403 && errorMsg.includes("banned")) {
+          setTimeout(() => router.push("/appeal"), 1000); // Redirect to appeal
+        }
       } else {
         setMessage("Login wahala o!");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -49,6 +55,7 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              required
             />
           </div>
           <div className="mb-6">
@@ -58,13 +65,15 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
+            disabled={isSubmitting}
+            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
           >
-            Login
+            {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
         {message && (

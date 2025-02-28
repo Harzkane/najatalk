@@ -1,3 +1,4 @@
+// frontend/src/app/page.tsx
 "use client";
 
 import { useState, useEffect, useRef } from "react";
@@ -40,7 +41,7 @@ export default function Home() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [ads, setAds] = useState<
     { id: number; brand: string; text: string; link: string }[]
-  >([]); // Add ads state
+  >([]);
   const router = useRouter();
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -59,10 +60,35 @@ export default function Home() {
     }
 
     const token = localStorage.getItem("token");
-    setIsLoggedIn(!!token);
+    if (token) {
+      checkUserStatus(token); // Check ban status on load
+    } else {
+      setIsLoggedIn(false);
+    }
     fetchThreads();
-    fetchAds(); // Fetch ads on load
+    fetchAds();
   }, []);
+
+  const checkUserStatus = async (token: string) => {
+    try {
+      await axios.get("/api/threads", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setIsLoggedIn(true);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.status === 403) {
+        if (err.response.data.message.includes("banned")) {
+          setMessage("You don dey banned—appeal now!");
+          setTimeout(() => router.push("/appeal"), 1000);
+          return;
+        }
+      }
+      localStorage.removeItem("token");
+      setIsLoggedIn(false);
+      setMessage("Token scatter—abeg login again!");
+      setTimeout(() => router.push("/login"), 1000);
+    }
+  };
 
   const fetchThreads = async () => {
     try {
@@ -173,6 +199,12 @@ export default function Home() {
           setMessage("Token don expire—abeg login again!");
           localStorage.removeItem("token");
           setTimeout(() => router.push("/login"), 1000);
+        } else if (
+          err.response?.status === 403 &&
+          err.response.data.message.includes("banned")
+        ) {
+          setMessage("You don dey banned—appeal now!");
+          setTimeout(() => router.push("/appeal"), 1000);
         }
       } else {
         setMessage("Thread scatter o!");

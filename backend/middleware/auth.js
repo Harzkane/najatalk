@@ -9,14 +9,14 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select(
-      "_id email role isVerified isBanned"
+      "_id email role isVerified isBanned appealStatus"
     );
     if (!user) return res.status(404).json({ message: "User no dey!" });
     if (!user.isVerified)
       return res
         .status(403)
         .json({ message: "Verify your email first, bros!" });
-    if (user.isBanned)
+    if (user.isBanned && user.appealStatus !== "approved")
       return res
         .status(403)
         .json({ message: "You don dey banned—abeg comot!" });

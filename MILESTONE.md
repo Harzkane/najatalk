@@ -499,3 +499,39 @@ Ba wasa, bros! “Filters dey solid, Filters dey go!, Day 8 dey roll!”—you�
 
 - **Libs:** `axios` (API), `tailwindcss` (UI).
 - **Cost:** $0—Vercel free tier.
+
+### Day 11 Milestone Achieved (Final Recap)
+
+- **Date:** March 3, 2025
+- **Objective:** Enhance Week 3’s moderation—add ban logic, polish admin dashboard with banned users.
+- **Time Spent:** ~10h (8h coding, 1h Git, 1h sync).
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Achievements Recap
+
+1. **Ban Logic:** `isBanned` blocks logins—`harunbah93@gmail.com` out clean.
+2. **Admin UI:** Reports + banned users sections—`harunbah93@gmail.com` listed, dismiss fixed.
+3. **Login:** Verification first—`harzjunior1993@gmail.com` works post-verify.
+
+- **Status:** “All solid and working”—100% live!
+
+---
+
+### Day 12 Plan: Appeals System
+
+- **Goal:** Add user appeal system—banned users can request unban, polish Week 3 moderation.
+- **Time:** ~10h (8h coding, 1h Git, 1h sync)—appeals ~5h, polish ~5h.
+- **Live URL:** `https://najatalk.vercel.app`
+
+#### Steps
+
+1. **Backend:**
+   - Add `appealReason` and `appealStatus` to `User`—track appeal requests.
+   - Add `POST /api/users/appeal`—submit appeal.
+   - Add `PUT /api/users/:userId/unban`—admin approves appeal.
+2. **Frontend:**
+   - `/appeal`—form for banned users to submit appeal reason.
+   - `/admin`—show appeals, approve/reject button.
+3. **Deploy:** Live appeal flow—`harunbah93@gmail.com` can plead!
+
+---

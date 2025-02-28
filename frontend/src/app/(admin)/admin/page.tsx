@@ -15,8 +15,16 @@ type Report = {
   createdAt: string;
 };
 
+type BannedUser = {
+  _id: string;
+  email: string;
+  appealReason?: string;
+  appealStatus?: string;
+};
+
 export default function AdminDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
@@ -24,7 +32,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
-    if (token) fetchReports();
+    if (token) {
+      fetchReports();
+      fetchBannedUsers();
+    }
   }, []);
 
   const fetchReports = async () => {
@@ -34,7 +45,7 @@ export default function AdminDashboard() {
         "/api/threads/reports",
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      setReports(res.data.reports || []); // Fallback to empty array
+      setReports(res.data.reports || []);
       setMessage(res.data.message);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
@@ -46,7 +57,29 @@ export default function AdminDashboard() {
       } else {
         setMessage("Fetch scatter o!");
       }
-      setReports([]); // Reset to empty array on error
+      setReports([]);
+    }
+  };
+
+  const fetchBannedUsers = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<{
+        bannedUsers: BannedUser[];
+        message: string;
+      }>("/api/users/banned", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setBannedUsers(res.data.bannedUsers || []);
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(
+          err.response?.data?.message || "Fetch banned users scatter o!"
+        );
+      } else {
+        setMessage("Fetch banned users scatter o!");
+      }
+      setBannedUsers([]);
     }
   };
 
@@ -80,14 +113,14 @@ export default function AdminDashboard() {
       setMessage(res.data.message);
       const updatedReports = reports.filter((r) => r._id !== reportId);
       setReports(updatedReports);
-      if (updatedReports.length === 0) fetchReports(); // Refresh if last report
+      if (updatedReports.length === 0) fetchReports();
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Dismiss scatter o!");
       } else {
         setMessage("Dismiss scatter o!");
       }
-      setReports(reports); // Keep current state on error
+      setReports(reports);
     }
   };
 
@@ -101,12 +134,40 @@ export default function AdminDashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
-      fetchReports(); // Refresh reports
+      fetchReports();
+      fetchBannedUsers();
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Ban scatter o!");
       } else {
         setMessage("Ban scatter o!");
+      }
+    }
+  };
+
+  const handleUnbanUser = async (userId: string, approve: boolean) => {
+    if (
+      !confirm(
+        approve
+          ? "Sure say you wan unban this user?"
+          : "Sure say you wan reject this appeal?"
+      )
+    )
+      return;
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put<{ message: string }>(
+        `/api/users/${userId}/unban`,
+        { approve },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage(res.data.message);
+      fetchBannedUsers();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Unban scatter o!");
+      } else {
+        setMessage("Unban scatter o!");
       }
     }
   };
@@ -141,76 +202,152 @@ export default function AdminDashboard() {
             {message}
           </p>
         )}
-        {reports && reports.length > 0 ? ( // Guard against undefined
-          <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-200">
-                <tr>
-                  <th className="p-3 text-sm font-semibold text-gray-700">
-                    Thread
-                  </th>
-                  <th className="p-3 text-sm font-semibold text-gray-700">
-                    Reported By
-                  </th>
-                  <th className="p-3 text-sm font-semibold text-gray-700">
-                    Reason
-                  </th>
-                  <th className="p-3 text-sm font-semibold text-gray-700">
-                    Date
-                  </th>
-                  <th className="p-3 text-sm font-semibold text-gray-700">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {reports.map((report) => (
-                  <tr key={report._id} className="border-t border-gray-100">
-                    <td className="p-3">
-                      <Link
-                        href={`/threads/${report.threadId._id}`}
-                        className="text-green-800 hover:underline"
-                      >
-                        {report.threadId.title}
-                      </Link>
-                    </td>
-                    <td className="p-3 text-gray-700">{report.userId.email}</td>
-                    <td className="p-3 text-gray-700">{report.reason}</td>
-                    <td className="p-3 text-gray-600">
-                      {formatDate(report.createdAt)}
-                    </td>
-                    <td className="p-3">
-                      <button
-                        onClick={() => handleDelete(report.threadId._id)}
-                        className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm mr-2"
-                      >
-                        Delete
-                      </button>
-                      <button
-                        onClick={() => handleDismiss(report._id)}
-                        className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm mr-2"
-                      >
-                        Dismiss
-                      </button>
-                      <button
-                        onClick={() =>
-                          handleBanUser(report.userId._id, report.userId.email)
-                        }
-                        className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
-                      >
-                        Ban User
-                      </button>
-                    </td>
+
+        {/* Reports Section */}
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-green-800 mb-3">
+            Reports
+          </h2>
+          {reports && reports.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Thread
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Reported By
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Reason
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Date
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Actions
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-            No reports yet—clean slate!
-          </p>
-        )}
+                </thead>
+                <tbody>
+                  {reports.map((report) => (
+                    <tr key={report._id} className="border-t border-gray-100">
+                      <td className="p-3">
+                        <Link
+                          href={`/threads/${report.threadId._id}`}
+                          className="text-green-800 hover:underline"
+                        >
+                          {report.threadId.title}
+                        </Link>
+                      </td>
+                      <td className="p-3 text-gray-700">
+                        {report.userId.email}
+                      </td>
+                      <td className="p-3 text-gray-700">{report.reason}</td>
+                      <td className="p-3 text-gray-600">
+                        {formatDate(report.createdAt)}
+                      </td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => handleDelete(report.threadId._id)}
+                          className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm mr-2"
+                        >
+                          Delete
+                        </button>
+                        <button
+                          onClick={() => handleDismiss(report._id)}
+                          className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm mr-2"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={() =>
+                            handleBanUser(
+                              report.userId._id,
+                              report.userId.email
+                            )
+                          }
+                          className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
+                        >
+                          Ban User
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+              No reports yet—clean slate!
+            </p>
+          )}
+        </div>
+
+        {/* Banned Users Section */}
+        <div>
+          <h2 className="text-2xl font-semibold text-green-800 mb-3">
+            Banned Users
+          </h2>
+          {bannedUsers && bannedUsers.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Email
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Appeal Reason
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Status
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {bannedUsers.map((user) => (
+                    <tr key={user.email} className="border-t border-gray-100">
+                      <td className="p-3 text-gray-700">{user.email}</td>
+                      <td className="p-3 text-gray-700">
+                        {user.appealReason || "No appeal yet"}
+                      </td>
+                      <td className="p-3 text-gray-700">
+                        {user.appealStatus || "N/A"}
+                      </td>
+                      <td className="p-3">
+                        {user.appealStatus === "pending" && (
+                          <>
+                            <button
+                              onClick={() => handleUnbanUser(user._id, true)}
+                              className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleUnbanUser(user._id, false)}
+                              className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+              No banned users yet—everybody dey behave!
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );
