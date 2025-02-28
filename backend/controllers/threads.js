@@ -131,7 +131,8 @@ export const reportThread = async (req, res) => {
 
     const report = new Report({
       threadId: id,
-      userId: req.user._id,
+      userId: req.user._id, // Reporter
+      reportedUserId: thread.userId, // Thread poster
       reason,
     });
     await report.save();
@@ -150,7 +151,8 @@ export const getReports = async (req, res) => {
     }
     const reports = await Report.find()
       .populate("threadId", "title")
-      .populate("userId", "email")
+      .populate("userId", "email") // Reporter
+      .populate("reportedUserId", "email") // Reported user
       .sort({ createdAt: -1 });
     if (!reports.length)
       return res.json({ message: "No reports yet—clean slate!" });

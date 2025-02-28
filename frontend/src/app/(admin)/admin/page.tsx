@@ -11,6 +11,7 @@ type Report = {
   _id: string;
   threadId: { _id: string; title: string };
   userId: { _id: string; email: string };
+  reportedUserId: { _id: string; email: string };
   reason: string;
   createdAt: string;
 };
@@ -264,8 +265,8 @@ export default function AdminDashboard() {
                         <button
                           onClick={() =>
                             handleBanUser(
-                              report.userId._id,
-                              report.userId.email
+                              report.reportedUserId._id,
+                              report.reportedUserId.email
                             )
                           }
                           className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"

@@ -11,6 +11,11 @@ const reportSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
+  reportedUserId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User", // Who’s being reported
+    required: true,
+  },
   reason: {
     type: String,
     required: true,

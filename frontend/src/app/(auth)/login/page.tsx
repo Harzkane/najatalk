@@ -9,7 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const [isSubmitting, setIsSubmitting] = useState(false); // Add submitting state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
   const handleLogin = async (e: FormEvent) => {
@@ -25,13 +25,14 @@ export default function Login() {
       console.log("JWT Token:", res.data.token);
       setEmail("");
       setPassword("");
-      setTimeout(() => router.push("/"), 1000); // Redirect to home
+      setTimeout(() => router.push("/"), 1000);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMsg = err.response?.data?.message || "Login wahala o!";
         setMessage(errorMsg);
         if (err.response?.status === 403 && errorMsg.includes("banned")) {
-          setTimeout(() => router.push("/appeal"), 1000); // Redirect to appeal
+          // Pass ban signal via query param
+          setTimeout(() => router.push("/appeal?fromBan=true"), 1000);
         }
       } else {
         setMessage("Login wahala o!");
@@ -47,6 +48,9 @@ export default function Login() {
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Login to NaijaTalk
         </h1>
+        {message && (
+          <p className="mt-4 text-center text-sm text-gray-600">{message}</p>
+        )}
         <form onSubmit={handleLogin}>
           <div className="mb-4">
             <input
@@ -76,9 +80,6 @@ export default function Login() {
             {isSubmitting ? "Logging in..." : "Login"}
           </button>
         </form>
-        {message && (
-          <p className="mt-4 text-center text-sm text-gray-600">{message}</p>
-        )}
       </div>
     </div>
   );

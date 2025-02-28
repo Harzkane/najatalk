@@ -1,9 +1,9 @@
-// frontend/src/app/appeal/page.tsx
+// frontend/src/app/(banned)/appeal/page.tsx
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 export default function AppealPage() {
@@ -12,10 +12,53 @@ export default function AppealPage() {
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [appealStatus, setAppealStatus] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const fromBan = searchParams.get("fromBan");
+    if (!fromBan) {
+      setMessage("Abeg, login first to appeal!");
+      setTimeout(() => router.push("/login"), 1000);
+      return;
+    }
+
+    const checkAppealStatus = async () => {
+      if (email && password) {
+        try {
+          const res = await axios.post<{ message: string }>(
+            "/api/users/appeal",
+            { email, password, reason: "" }
+          );
+          setMessage(res.data.message);
+          if (res.data.message.includes("pending")) {
+            setAppealStatus("pending");
+          } else if (res.data.message.includes("approved")) {
+            setAppealStatus("approved");
+            setTimeout(() => router.push("/login"), 2000); // Redirect if approved
+          } else if (res.data.message.includes("rejected")) {
+            setAppealStatus("rejected");
+          }
+        } catch (err: unknown) {
+          if (axios.isAxiosError(err)) {
+            setMessage(
+              err.response?.data?.message || "Appeal check scatter o!"
+            );
+            if (err.response?.data?.message.includes("approved")) {
+              setAppealStatus("approved");
+              setTimeout(() => router.push("/login"), 2000);
+            }
+          }
+        }
+      }
+    };
+    checkAppealStatus();
+  }, [email, password, router, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (appealStatus === "pending") return;
     setIsSubmitting(true);
     try {
       const res = await axios.post<{ message: string }>("/api/users/appeal", {
@@ -25,11 +68,25 @@ export default function AppealPage() {
       });
       setMessage(res.data.message);
       if (res.data.message.includes("sent")) {
-        setTimeout(() => router.push("/login"), 2000); // Redirect after success
+        setAppealStatus("pending");
+        setTimeout(() => router.push("/login"), 2000); // Redirect after submit
+      } else if (res.data.message.includes("approved")) {
+        setAppealStatus("approved");
+        setEmail(""); // Clear form
+        setPassword("");
+        setReason("");
+        setTimeout(() => router.push("/login"), 2000); // Redirect if already approved
       }
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Appeal scatter o!");
+        if (err.response?.data?.message.includes("approved")) {
+          setAppealStatus("approved");
+          setEmail(""); // Clear form
+          setPassword("");
+          setReason("");
+          setTimeout(() => router.push("/login"), 2000);
+        }
       } else {
         setMessage("Appeal scatter o!");
       }
@@ -82,11 +139,12 @@ export default function AppealPage() {
               className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 h-24"
               placeholder="Why should we unban you?"
               required
+              disabled={appealStatus === "pending"}
             />
           </div>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || appealStatus === "pending"}
             className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 disabled:bg-green-400"
           >
             {isSubmitting ? "Sending..." : "Submit Appeal"}

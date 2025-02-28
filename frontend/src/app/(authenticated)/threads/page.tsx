@@ -1,3 +1,4 @@
+// frontend/src/app/(authenticated)/threads/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
