@@ -39,6 +39,8 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
+
   const [ads, setAds] = useState<
     { id: number; brand: string; text: string; link: string }[]
   >([]);
@@ -52,6 +54,25 @@ export default function Home() {
     "Best jollof",
   ];
   const categories = ["General", "Gist", "Politics", "Romance"];
+
+  useEffect(() => {
+    const checkPremium = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) {
+          const res = await axios.get("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setIsPremium(res.data.isPremium);
+        }
+      } catch (err) {
+        console.error("Check Premium Error:", err);
+      }
+    };
+    checkPremium();
+    fetchThreads();
+    fetchAds();
+  }, []);
 
   useEffect(() => {
     const savedSearches = localStorage.getItem("recentSearches");
@@ -92,15 +113,15 @@ export default function Home() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get<Thread[]>("/api/threads");
+      const res = await axios.get("/api/threads");
+      console.log("Threads Response:", res.data); // Log response
+      const threads = res.data.threads || []; // Extract threads safely
       const threadsWithReplies = await Promise.all(
-        res.data.map(async (thread) => {
+        threads.map(async (thread: Thread) => {
           try {
-            const replyRes = await axios.get<Thread>(
-              `/api/threads/${thread._id}`
-            );
+            const replyRes = await axios.get(`/api/threads/${thread._id}`);
             return replyRes.data;
-          } catch (err: unknown) {
+          } catch (err) {
             console.error(`Failed to fetch thread ${thread._id}:`, err);
             return { ...thread, replies: [] };
           }
@@ -108,8 +129,8 @@ export default function Home() {
       );
       setAllThreads(threadsWithReplies);
       setThreads(threadsWithReplies);
-      setMessage("");
-    } catch (err: unknown) {
+      setMessage(res.data.message || ""); // Use message if present
+    } catch (err) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
       } else {
@@ -410,23 +431,33 @@ export default function Home() {
         <div className="w-[15%]">
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-semibold text-green-800 mb-3">Ads</h2>
-            {ads.length > 0 ? (
-              ads.map((ad) => (
-                <div key={ad.id} className="mb-4">
-                  <a
-                    href={ad.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
-                  >
-                    <strong>{ad.brand}</strong>: {ad.text}
-                  </a>
+            {/* ads section */}
+            {!isPremium && (
+              <div className="w-[15%]">
+                <div className="bg-white rounded-lg shadow-md p-4">
+                  <h2 className="text-lg font-semibold text-green-800 mb-3">
+                    Ads
+                  </h2>
+                  {ads.length > 0 ? (
+                    ads.map((ad) => (
+                      <div key={ad.id} className="mb-4">
+                        <a
+                          href={ad.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:underline"
+                        >
+                          <strong>{ad.brand}</strong>: {ad.text}
+                        </a>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-gray-600 text-sm">
+                      Ads dey load—abeg wait small!
+                    </p>
+                  )}
                 </div>
-              ))
-            ) : (
-              <p className="text-gray-600 text-sm">
-                Ads dey load—abeg wait small!
-              </p>
+              </div>
             )}
           </div>
         </div>

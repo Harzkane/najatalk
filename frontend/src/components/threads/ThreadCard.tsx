@@ -1,13 +1,13 @@
 // frontend/src/components/threads/ThreadCard.tsx
-import Link from "next/link";
 import { FC, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import axios from "axios";
 
 type Reply = {
   _id: string;
   body: string;
-  userId: { email: string } | null;
+  userId: { _id: string; email: string } | null;
   createdAt: string;
 };
 
@@ -15,14 +15,14 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { email: string } | null;
+  userId: { _id: string; email: string } | null;
   category: string;
   createdAt: string;
   replies?: Reply[];
 };
 
 interface ThreadCardProps {
-  thread: Thread | Reply; // Union type to accept either
+  thread: Thread | Reply;
   formatDate: (dateString: string) => string;
   isReply?: boolean;
   originalTitle?: string;
@@ -42,22 +42,23 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
-  const [showRepliesExpanded, setShowRepliesExpanded] = useState(true); // false collapse all replies in thread page
+  const [showRepliesExpanded, setShowRepliesExpanded] = useState(true);
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
   const [isPidgin, setIsPidgin] = useState(true);
+  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [isTipping, setIsTipping] = useState(false);
 
   const router = useRouter();
 
-  // Type guard to check if thread is a Thread (not a Reply)
   const isThread = (t: Thread | Reply): t is Thread => !isReply && "title" in t;
 
   const displayTitle = isReply
     ? `Re: ${originalTitle}`
     : isThread(thread)
     ? thread.title
-    : "Reply"; // Fallback, though not used due to originalTitle
+    : "Reply";
   const hasReplies =
     isThread(thread) && thread.replies && thread.replies.length > 0;
 
@@ -67,7 +68,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
       router.push("/login");
       return;
     }
-
     if (isReply) {
       router.push(`/threads/${thread._id}`);
     } else {
@@ -88,7 +88,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
       setReplyError("Reply cannot be empty");
       return;
     }
-
     setIsSubmitting(true);
     setReplyError("");
 
@@ -98,19 +97,14 @@ const ThreadCard: FC<ThreadCardProps> = ({
         router.push("/login");
         return;
       }
-
       await axios.post(
         `/api/threads/${thread._id}/replies`,
         { body: replyText },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       setReplyText("");
       setShowReplyDialog(false);
-
-      if (onReplyAdded) {
-        await onReplyAdded();
-      }
+      if (onReplyAdded) await onReplyAdded();
     } catch (error) {
       console.error("Failed to submit reply:", error);
       setReplyError(
@@ -144,7 +138,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       router.push("/login");
       return;
     }
-    setIsReporting(true); // Show form
+    setIsReporting(true);
   };
 
   const submitReport = async () => {
@@ -152,7 +146,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
       setReplyError("Abeg, give reason!");
       return;
     }
-
     setIsSubmitting(true);
     setReplyError("");
 
@@ -165,8 +158,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
       );
       setReportReason("");
       setIsReporting(false);
-      setIsReported(true); // Mark as reported
-    } catch (err: unknown) {
+      setIsReported(true);
+    } catch (err) {
       console.error("Report failed:", err);
       setReplyError("Report scatter o!");
     } finally {
@@ -174,9 +167,30 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
   };
 
+  const handleTip = async (amount: number) => {
+    setIsTipping(true);
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+      const res = await axios.post(
+        "/api/premium/tip",
+        { recipientId: thread.userId?._id, amount },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Tip Response:", res.data);
+      window.location.href = res.data.paymentLink;
+    } catch (err) {
+      console.error("Tip Error:", err);
+      setReplyError("Tip scatter o!");
+      setIsTipping(false);
+    }
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-2">
-      {/* Thread Header */}
       <div className="p-3 bg-gray-200 pb-2">
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
           <Link
@@ -215,7 +229,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
         </div>
       </div>
 
-      {/* Thread Content */}
       <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
         <p>{thread.body}</p>
 
@@ -234,7 +247,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           <button
-            // onClick={() => alert("Report feature coming soon!")}
             onClick={handleReport}
             className={`flex items-center gap-1 text-xs ${
               isReported ? "text-gray-400" : "hover:text-red-600"
@@ -264,6 +276,34 @@ const ThreadCard: FC<ThreadCardProps> = ({
             </span>
             <span className="text-xs">Like</span>
           </button>
+
+          {/* Tipping Button - Use div instead of button to avoid nesting */}
+          <div
+            className="hover:text-yellow-600 flex items-center gap-1 text-xs relative cursor-pointer"
+            onClick={() => setShowTipDialog(!showTipDialog)}
+          >
+            <span
+              className="material-icons-outlined"
+              style={{ fontSize: "12px" }}
+            >
+              monetization_on
+            </span>
+            <span className="text-xs">{isPidgin ? "Tip" : "Dash"}</span>
+            {showTipDialog && (
+              <div className="absolute top-6 left-0 bg-white border border-gray-200 rounded shadow-md p-2 z-10">
+                {[50, 100, 200].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => handleTip(amt)}
+                    disabled={isTipping}
+                    className="block w-full text-left px-2 py-1 text-sm text-gray-700 hover:bg-green-100 disabled:text-gray-400"
+                  >
+                    ₦{amt}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             className="hover:text-purple-600 flex items-center gap-1 text-xs"
@@ -329,7 +369,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               rows={3}
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
-            ></textarea>
+            />
             {replyError && (
               <p className="text-red-500 text-xs mt-1">{replyError}</p>
             )}
@@ -363,7 +403,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
         )}
       </div>
 
-      {/* Replies Section */}
       {!isReply && showRepliesExpanded && hasReplies && (
         <div className="mx-3 mt-2 space-y-2 border-t border-gray-100 py-3">
           {isThread(thread) &&
@@ -381,7 +420,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
         </div>
       )}
 
-      {/* Reply Count (if not expanded) */}
       {!isReply && showReplies && hasReplies && !showRepliesExpanded && (
         <div className="flex justify-end px-3 py-2 text-xs border-t border-gray-100">
           <Link

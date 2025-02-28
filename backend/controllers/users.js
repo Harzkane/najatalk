@@ -98,3 +98,13 @@ export const unbanUser = async (req, res) => {
     res.status(500).json({ message: "Unban scatter: " + err.message });
   }
 };
+
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email isPremium");
+    if (!user) return res.status(404).json({ message: "User no dey!" });
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: "Fetch scatter: " + err.message });
+  }
+};

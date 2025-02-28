@@ -1,12 +1,25 @@
 // frontend/src/app/(banned)/appeal/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-export default function AppealPage() {
+// Loading component that will be shown while the main content is loading
+function AppealLoading() {
+  return (
+    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+        <h1 className="text-3xl font-bold text-green-800 mb-4">Appeal Ban</h1>
+        <p className="text-center text-sm text-gray-600 mb-4">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main content component that uses search params
+function AppealContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [reason, setReason] = useState("");
@@ -158,5 +171,14 @@ export default function AppealPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// Main component that provides the suspense boundary
+export default function AppealPage() {
+  return (
+    <Suspense fallback={<AppealLoading />}>
+      <AppealContent />
+    </Suspense>
   );
 }

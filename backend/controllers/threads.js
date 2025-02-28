@@ -38,11 +38,20 @@ export const createThread = async (req, res) => {
 
 export const getThreads = async (req, res) => {
   try {
-    const threads = await Thread.find().populate("userId", "email"); // Show user email
-    if (!threads.length)
-      return res.json({ message: "No gist yet—drop your own!" });
-    res.json(threads);
+    const threads = await Thread.find().populate("userId", "email");
+    console.log("Threads fetched:", threads); // Log threads
+    if (!threads.length) {
+      return res.json({ threads: [], message: "No gist yet—drop your own!" });
+    }
+    const isPremium = req.user && req.user.isPremium;
+    res.json({
+      threads,
+      message: isPremium
+        ? "Premium threads—no ads!"
+        : "Threads dey here—check am!",
+    });
   } catch (err) {
+    console.error("Get Threads Error:", err.message);
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }
 };

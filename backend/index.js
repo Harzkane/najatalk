@@ -7,6 +7,8 @@ import threadRoutes from "./routes/threads.js";
 import adsRoutes from "./routes/ads.js";
 import dbRoutes from "./routes/db.js";
 import usersRoutes from "./routes/users.js";
+import premiumRoutes from "./routes/premium.js";
+
 import cors from "cors";
 
 dotenv.config();
@@ -29,6 +31,8 @@ app.use("/api/auth", authRoutes);
 app.use("/api/threads", threadRoutes);
 app.use("/api/ads", adsRoutes);
 app.use("/api/users", usersRoutes);
+app.use("/api/premium", premiumRoutes);
+
 app.use("/api/", dbRoutes); // Welcome route
 
 app.listen(PORT, () => {

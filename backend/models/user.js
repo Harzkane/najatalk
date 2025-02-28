@@ -1,5 +1,4 @@
 // backend/models/user.js
-// backend/models/user.js
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 
@@ -37,6 +36,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["pending", "approved", "rejected", null],
     default: null,
+  },
+  isPremium: {
+    type: Boolean,
+    default: false,
   },
 });
 
