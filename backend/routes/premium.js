@@ -6,6 +6,8 @@ import {
   completePremium,
   tipUser,
   verifyTip,
+  getWallet,
+  getTipHistory,
 } from "../controllers/premium.js";
 import { authMiddleware } from "../middleware/auth.js";
 import User from "../models/user.js";
@@ -19,6 +21,8 @@ router.get("/verify", authMiddleware, verifyPremium); // Add GET for Paystack ca
 router.post("/complete", authMiddleware, completePremium);
 router.post("/tip", authMiddleware, tipUser);
 router.get("/tip-verify", authMiddleware, verifyTip); // For tip callback
+router.get("/wallet", authMiddleware, getWallet);
+router.get("/tip-history", authMiddleware, getTipHistory);
 
 // Paystack Webhook (optional, simplified)
 router.post("/webhook", async (req, res) => {

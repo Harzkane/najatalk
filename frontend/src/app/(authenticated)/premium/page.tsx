@@ -5,7 +5,6 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 
-// Loading component
 function PremiumLoading() {
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
@@ -19,34 +18,52 @@ function PremiumLoading() {
   );
 }
 
-// Main content component that uses useSearchParams
 function PremiumPageContent() {
   const [isPremium, setIsPremium] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(0);
+  interface Tip {
+    amount: number;
+    date: string;
+  }
+
+  const [tipHistory, setTipHistory] = useState<{
+    sent: Tip[];
+    received: Tip[];
+  }>({ sent: [], received: [] });
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const checkPremium = async () => {
+    const checkPremiumAndWallet = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token—abeg login!");
-        const res = await axios.get("/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsPremium(res.data.isPremium);
-        // Handle Paystack callback
+        const [userRes, walletRes, tipHistoryRes] = await Promise.all([
+          axios.get("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("/api/premium/wallet", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+          axios.get("/api/premium/tip-history", {
+            headers: { Authorization: `Bearer ${token}` },
+          }),
+        ]);
+        setIsPremium(userRes.data.isPremium);
+        setWalletBalance(walletRes.data.balance);
+        setTipHistory(tipHistoryRes.data);
         const reference = searchParams.get("reference");
-        if (reference && !res.data.isPremium) {
+        if (reference && !userRes.data.isPremium) {
           await verifyPayment(reference);
         }
       } catch (err) {
-        console.error("Check Premium Error:", err);
+        console.error("Check Error:", err);
         router.push("/login");
       }
     };
-    checkPremium();
+    checkPremiumAndWallet();
   }, [router, searchParams]);
 
   const handleSubscribe = async () => {
@@ -111,6 +128,32 @@ function PremiumPageContent() {
             <span className="inline-block bg-yellow-500 text-white px-2 py-1 rounded text-sm">
               Oga at the Top
             </span>
+            <div className="mt-4">
+              <p className="text-sm text-gray-600">
+                Wallet Balance: ₦{walletBalance}
+              </p>
+              <p className="text-xs text-gray-500 mt-2">Tip History:</p>
+              {tipHistory.sent.length > 0 || tipHistory.received.length > 0 ? (
+                <ul className="text-xs text-gray-600 text-left mt-1">
+                  {tipHistory.sent.map((tip, idx) => (
+                    <li key={idx}>
+                      Sent ₦{tip.amount} on{" "}
+                      {new Date(tip.date).toLocaleString()}
+                    </li>
+                  ))}
+                  {tipHistory.received.map((tip, idx) => (
+                    <li key={idx}>
+                      Received ₦{tip.amount} on{" "}
+                      {new Date(tip.date).toLocaleString()}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-xs text-gray-500">
+                  No tips yet—start tipping!
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="text-center">
@@ -136,7 +179,6 @@ function PremiumPageContent() {
   );
 }
 
-// Main component that provides the suspense boundary
 export default function PremiumPage() {
   return (
     <Suspense fallback={<PremiumLoading />}>

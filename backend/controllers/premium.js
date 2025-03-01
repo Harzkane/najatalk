@@ -199,3 +199,42 @@ export const completePremium = async (req, res) => {
     });
   }
 };
+
+export const getWallet = async (req, res) => {
+  try {
+    console.log("Fetching wallet for:", req.user.email);
+    const wallet = await Wallet.findOne({ userId: req.user._id });
+    if (!wallet) {
+      return res.json({ balance: 0, message: "No wallet yet—start tipping!" });
+    }
+    res.json({ balance: wallet.balance / 100, message: "Wallet dey here!" }); // Convert kobo to ₦
+  } catch (err) {
+    console.error("Wallet Error:", err.response?.data || err.message);
+    res.status(500).json({
+      message: "Wallet fetch scatter: " + (err.message || err),
+    });
+  }
+};
+
+export const getTipHistory = async (req, res) => {
+  try {
+    const tipsSent = await Wallet.find({ userId: req.user._id }).lean();
+    const tipsReceived = await Wallet.find({
+      recipientId: req.user._id,
+    }).lean();
+    res.json({
+      sent: tipsSent.map((t) => ({
+        amount: t.balance / 100,
+        date: t.updatedAt,
+      })),
+      received: tipsReceived.map((t) => ({
+        amount: t.balance / 100,
+        date: t.updatedAt,
+      })),
+      message: "Tip history dey here!",
+    });
+  } catch (err) {
+    console.error("Tip History Error:", err.message);
+    res.status(500).json({ message: "Fetch scatter: " + err.message });
+  }
+};
