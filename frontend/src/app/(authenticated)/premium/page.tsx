@@ -4,6 +4,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
+import Link from "next/link";
 
 function PremiumLoading() {
   return (
@@ -113,9 +114,17 @@ function PremiumPageContent() {
   return (
     <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
       <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
-        <h1 className="text-3xl font-bold text-green-800 mb-4">
-          NaijaTalk Premium
-        </h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-3xl font-bold text-green-800">
+            NaijaTalk Premium
+          </h1>
+          <Link
+            href="/threads"
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Back to Threads
+          </Link>
+        </div>
         {message && (
           <p className="text-center text-sm text-gray-600 mb-4">{message}</p>
         )}
@@ -125,16 +134,16 @@ function PremiumPageContent() {
             <p className="text-sm text-gray-600 mb-4">
               Enjoy ad-free vibes and VIP gist lounge!
             </p>
-            <span className="inline-block bg-yellow-500 text-white px-2 py-1 rounded text-sm">
+            <span className="inline-block bg-yellow-500 text-white px-2 py-1 rounded text-sm mb-4">
               Oga at the Top
             </span>
             <div className="mt-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm font-semibold text-gray-700">
                 Wallet Balance: ₦{walletBalance}
               </p>
               <p className="text-xs text-gray-500 mt-2">Tip History:</p>
               {tipHistory.sent.length > 0 || tipHistory.received.length > 0 ? (
-                <ul className="text-xs text-gray-600 text-left mt-1">
+                <ul className="text-xs text-gray-600 text-left mt-1 max-h-40 overflow-y-auto">
                   {tipHistory.sent.map((tip, idx) => (
                     <li key={idx}>
                       Sent ₦{tip.amount} on{" "}

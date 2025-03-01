@@ -283,6 +283,12 @@ export default function Home() {
               >
                 Home
               </Link>
+              <Link
+                href="/premium"
+                className="text-green-100 hover:text-white text-sm font-medium"
+              >
+                Wallet
+              </Link>
               <button
                 onClick={handleLogout}
                 className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
