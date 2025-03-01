@@ -102,7 +102,7 @@
 - **Steps:**
   1. **Roles (20h):** Admin/mod/user tiers, ban logic, public ban log in UI.
   2. **Moderation (15h):** Mod dashboard (view/delete posts), auto-filter keywords.
-  3. **Premium (15h):** ₦500/month tier via Flutterwave, ad-free UI, “Oga at the Top” flair, “VIP Gist Lounge” forum, 5% to Trust Team.
+  3. **Premium (15h):** ₦500/month tier via Paystack, ad-free UI, “Oga at the Top” flair, “VIP Gist Lounge” forum, 5% to Trust Team.
   4. **Tipping (20h):** Wallet system, ₦50-200 tips via Paystack, 10% cut, UI button (“Bros, this gist too sweet!”).
 
 ### Week 4: Scale + Launch (70h)

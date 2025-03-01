@@ -1,11 +1,25 @@
-// frontend/src/app/(auth)/verify/[token]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import axios, { AxiosError } from "axios";
 
-export default function Verify() {
+// Loading component
+function VerifyLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+        <h1 className="text-3xl font-bold text-green-800 mb-6">
+          Verify Your Email
+        </h1>
+        <p className="text-center text-gray-600">Loading verification...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main content component that uses useParams
+function VerifyContent() {
   const router = useRouter();
   const { token } = useParams<{ token: string }>();
   const [message, setMessage] = useState<string>("Verifying your email...");
@@ -38,5 +52,14 @@ export default function Verify() {
         )}
       </div>
     </div>
+  );
+}
+
+// Main component that provides the suspense boundary
+export default function Verify() {
+  return (
+    <Suspense fallback={<VerifyLoading />}>
+      <VerifyContent />
+    </Suspense>
   );
 }

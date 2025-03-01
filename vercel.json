@@ -12,35 +12,24 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/backend/index.js"
+    },
+    {
       "src": "/verify/([^/]+)",
       "dest": "/frontend/verify/[token]"
+    },
+    {
+      "src": "/threads/tip-success",
+      "dest": "/frontend/threads/tip-success"
     },
     {
       "src": "/threads/([^/]+)",
       "dest": "/frontend/threads/[id]"
     },
     {
-      "src": "/api/tip-verify",
-      "dest": "/backend/index.js"
-    },
-    {
-      "src": "/api/(.*)",
-      "dest": "/backend/index.js"
-    },
-    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "script-src 'self' https://checkout.paystack.com 'unsafe-inline';"
-        }
-      ]
     }
   ]
 }
