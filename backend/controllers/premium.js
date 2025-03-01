@@ -1,10 +1,11 @@
 // backend/controllers/premium.js
 import User from "../models/user.js";
 import Wallet from "../models/wallet.js";
+import Transaction from "../models/transaction.js";
 import axios from "axios";
 
 export const tipUser = async (req, res) => {
-  const { recipientId, amount } = req.body; // Amount in ₦ (e.g., 50, 100, 200)
+  const { recipientId, amount } = req.body;
   const senderId = req.user._id;
 
   try {
@@ -18,15 +19,34 @@ export const tipUser = async (req, res) => {
     if (!recipient)
       return res.status(404).json({ message: "Recipient no dey!" });
 
+    const senderWallet = await Wallet.findOne({ userId: senderId });
+    const senderBalance = senderWallet ? senderWallet.balance / 100 : 0;
+    if (senderBalance < amount) {
+      return res
+        .status(400)
+        .json({ message: "Oga, your wallet no reach—fund am!" });
+    }
+
+    const reference = `naijatalk_tip_${Date.now()}`;
+    const platformCut = amount * 0.1;
+    const transaction = new Transaction({
+      senderId,
+      recipientId,
+      amount: amount * 100, // In kobo
+      platformCut: platformCut * 100,
+      reference,
+      status: "pending",
+    });
+    await transaction.save();
+
     console.log(
       `Initiating tip from ${req.user.email} to ${recipient.email} for ₦${amount}`
     );
-    const reference = `naijatalk_tip_${Date.now()}`;
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
         email: req.user.email,
-        amount: amount * 100, // Convert to kobo
+        amount: amount * 100,
         reference,
         callback_url: `${process.env.FRONTEND_URL}/threads/tip-success?reference=${reference}&recipientId=${recipientId}`,
       },
@@ -55,11 +75,15 @@ export const tipUser = async (req, res) => {
 };
 
 export const verifyTip = async (req, res) => {
-  const { reference, recipientId } = req.query; // From callback URL
+  const { reference, recipientId } = req.query;
   const senderId = req.user._id;
 
   try {
     console.log("Verifying tip reference:", reference);
+    const transaction = await Transaction.findOne({ reference });
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction no dey!" });
+
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
@@ -69,28 +93,31 @@ export const verifyTip = async (req, res) => {
     console.log("Paystack Verify Tip Response:", response.data);
 
     if (response.data.status && response.data.data.status === "success") {
-      const amount = response.data.data.amount / 100; // Convert kobo to ₦
-      const platformCut = amount * 0.1; // 10% cut
+      transaction.status = "completed";
+      await transaction.save();
+
+      const amount = response.data.data.amount / 100;
+      const platformCut = amount * 0.1;
       const recipientAmount = amount - platformCut;
 
-      // Update sender wallet (deduct)—create if not exists
       let senderWallet = await Wallet.findOne({ userId: senderId });
       if (!senderWallet) {
         senderWallet = new Wallet({ userId: senderId });
       }
-      senderWallet.balance -= amount * 100; // Store in kobo
+      senderWallet.balance -= amount * 100;
       await senderWallet.save();
 
-      // Update recipient wallet (credit)—create if not exists
       let recipientWallet = await Wallet.findOne({ userId: recipientId });
       if (!recipientWallet) {
         recipientWallet = new Wallet({ userId: recipientId });
       }
-      recipientWallet.balance += recipientAmount * 100; // Store in kobo
+      recipientWallet.balance += recipientAmount * 100;
       await recipientWallet.save();
 
       res.json({ message: `Tip of ₦${recipientAmount} sent—enjoy the vibes!` });
     } else {
+      transaction.status = "failed";
+      await transaction.save();
       res.status(400).json({ message: "Tip no work—try again!" });
     }
   } catch (err) {
@@ -218,19 +245,32 @@ export const getWallet = async (req, res) => {
 
 export const getTipHistory = async (req, res) => {
   try {
-    const tipsSent = await Wallet.find({ userId: req.user._id }).lean();
-    const tipsReceived = await Wallet.find({
-      recipientId: req.user._id,
+    console.log("Fetching tip history for:", req.user.email);
+    const tipsSent = await Transaction.find({
+      senderId: req.user._id,
+      status: "completed",
     }).lean();
+    const tipsReceived = await Transaction.find({
+      recipientId: req.user._id,
+      status: "completed",
+    }).lean();
+    const sentPromises = tipsSent.map(async (t) => ({
+      amount: t.amount / 100,
+      date: t.updatedAt,
+      to: (await User.findById(t.recipientId))?.email || "Unknown",
+    }));
+    const receivedPromises = tipsReceived.map(async (t) => ({
+      amount: (t.amount - t.platformCut) / 100,
+      date: t.updatedAt,
+      from: (await User.findById(t.senderId))?.email || "Unknown",
+    }));
+
+    const sent = await Promise.all(sentPromises);
+    const received = await Promise.all(receivedPromises);
+
     res.json({
-      sent: tipsSent.map((t) => ({
-        amount: t.balance / 100,
-        date: t.updatedAt,
-      })),
-      received: tipsReceived.map((t) => ({
-        amount: t.balance / 100,
-        date: t.updatedAt,
-      })),
+      sent,
+      received,
       message: "Tip history dey here!",
     });
   } catch (err) {

@@ -61,7 +61,7 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Password no match—try again!" });
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+      expiresIn: "12h",
     });
     res.status(200).json({ token, message: "Login sweet—welcome back!" });
   } catch (err) {
