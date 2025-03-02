@@ -15,7 +15,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string } | null; // Sync with ThreadCard
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   category: string;
   createdAt: string;
   replies?: Reply[];
@@ -24,7 +24,7 @@ type Thread = {
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string } | null; // Sync with ThreadCard
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   createdAt: string;
 };
 
@@ -33,7 +33,6 @@ type SearchResponse = {
   message: string;
 };
 
-// Create a client component that uses the search params
 function ThreadsContent() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
@@ -65,12 +64,16 @@ function ThreadsContent() {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
 
+    const tipStatus = searchParams.get("tip");
+    if (tipStatus === "success") setMessage("Tip sent—gist too sweet!");
+    if (tipStatus === "failed") setMessage("Tip scatter o—try again!");
+
     if (threadId) {
       fetchSingleThread(threadId);
     } else {
       fetchThreads();
     }
-  }, [threadId]);
+  }, [threadId, searchParams]);
 
   const fetchSingleThread = async (id: string) => {
     try {
@@ -124,7 +127,7 @@ function ThreadsContent() {
       const res = await axios.get<{ threads: Thread[]; message: string }>(
         "/api/threads"
       );
-      console.log("Threads Response:", res.data); // Log response
+      console.log("Threads Response:", res.data);
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
@@ -210,7 +213,6 @@ function ThreadsContent() {
       );
       setMessage(res.data.message || "Reply posted—gist dey grow!");
       setReplyBody("");
-
       setSelectedThread((prev) =>
         prev
           ? {
@@ -250,7 +252,6 @@ function ThreadsContent() {
         />
       </Head>
       <div className="min-h-screen bg-gray-100 p-6 pb-20">
-        {/* Header */}
         <div className="max-w-5xl mx-auto mb-3">
           <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
             <div className="flex justify-between items-center">
@@ -283,7 +284,6 @@ function ThreadsContent() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="max-w-5xl mx-auto">
           {!selectedThread && (
             <div className="bg-white p-4 rounded-lg shadow-md mb-3">
@@ -315,6 +315,17 @@ function ThreadsContent() {
                       <span className="font-medium">
                         {selectedThread.userId?.email || "Unknown Oga"}
                       </span>
+                      {selectedThread.userId?.flair && (
+                        <span
+                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                            selectedThread.userId.flair === "Oga at the Top"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                          }`}
+                        >
+                          {selectedThread.userId.flair}
+                        </span>
+                      )}
                       : {formatDate(selectedThread.createdAt)} •{" "}
                       {selectedThread.category}
                     </span>
@@ -323,11 +334,17 @@ function ThreadsContent() {
                 <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
                   <p>{selectedThread.body}</p>
                   <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
+                    {/* Hover Tooltip: /threads—hover on “Reply” button dey show “Reply to [flair]”—small Naija vibe tweak! Not working yet */}
                     <button
                       onClick={() =>
                         document.getElementById("replyForm")?.focus()
                       }
                       className="hover:text-blue-600 flex items-center gap-1 text-xs"
+                      title={
+                        selectedThread?.userId?.flair
+                          ? `Reply to ${selectedThread.userId.flair}`
+                          : "Reply"
+                      }
                     >
                       <span
                         className="material-icons-outlined"
@@ -418,10 +435,21 @@ function ThreadsContent() {
                               Re: {selectedThread.title}
                             </span>
                             <span className="text-xs text-gray-600">
-                              by
+                              by{" "}
                               <span className="font-medium">
                                 {reply.userId?.email || "Unknown Oga"}
                               </span>
+                              {reply.userId?.flair && (
+                                <span
+                                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                                    reply.userId.flair === "Oga at the Top"
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                  }`}
+                                >
+                                  {reply.userId.flair}
+                                </span>
+                              )}
                               : {formatDate(reply.createdAt)}
                             </span>
                           </div>
@@ -554,12 +582,10 @@ function ThreadsContent() {
   );
 }
 
-// Create a loading fallback component
 function ThreadsLoading() {
   return <div className="text-center p-10">Loading gist...</div>;
 }
 
-// Export the main component that uses suspense
 export default function Threads() {
   return (
     <Suspense fallback={<ThreadsLoading />}>

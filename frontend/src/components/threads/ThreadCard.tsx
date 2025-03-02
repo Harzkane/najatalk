@@ -1,4 +1,6 @@
 // frontend/src/components/threads/ThreadCard.tsx
+"use client";
+
 import { FC, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +9,7 @@ import axios from "axios";
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string } | null;
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   createdAt: string;
 };
 
@@ -15,7 +17,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string } | null;
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   category: string;
   createdAt: string;
   replies?: Reply[];
@@ -207,6 +209,17 @@ const ThreadCard: FC<ThreadCardProps> = ({
               <span className="font-medium">
                 {thread.userId?.email || "Unknown Oga"}
               </span>
+              {thread.userId?.flair && (
+                <span
+                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                    thread.userId.flair === "Oga at the Top"
+                      ? "bg-yellow-500"
+                      : "bg-green-500"
+                  }`}
+                >
+                  {thread.userId.flair}
+                </span>
+              )}
               : {formatDate(thread.createdAt)}{" "}
               {!isReply && isThread(thread) && `• ${thread.category}`}
             </span>
@@ -277,7 +290,6 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <span className="text-xs">Like</span>
           </button>
 
-          {/* Tipping Button - Use div instead of button to avoid nesting */}
           <div
             className="hover:text-yellow-600 flex items-center gap-1 text-xs relative cursor-pointer"
             onClick={() => setShowTipDialog(!showTipDialog)}

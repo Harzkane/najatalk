@@ -108,3 +108,24 @@ export const getUserProfile = async (req, res) => {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }
 };
+
+export const setFlair = async (req, res) => {
+  const { flair } = req.body;
+  try {
+    if (!req.user.isPremium) {
+      return res.status(403).json({ message: "Abeg, premium only!" });
+    }
+    if (!["Verified G", "Oga at the Top"].includes(flair)) {
+      return res.status(400).json({ message: "Flair no valid!" });
+    }
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { flair },
+      { new: true }
+    );
+    if (!user) return res.status(404).json({ message: "User no dey!" });
+    res.json({ message: "Flair set—shine on, bros!", user });
+  } catch (err) {
+    res.status(500).json({ message: "Flair scatter: " + err.message });
+  }
+};

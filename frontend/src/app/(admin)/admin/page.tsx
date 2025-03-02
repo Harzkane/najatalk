@@ -10,8 +10,8 @@ import formatDate from "@/utils/formatDate";
 type Report = {
   _id: string;
   threadId: { _id: string; title: string };
-  userId: { _id: string; email: string };
-  reportedUserId: { _id: string; email: string };
+  userId: { _id: string; email: string; flair?: string }; // Add flair
+  reportedUserId: { _id: string; email: string; flair?: string }; // Add flair
   reason: string;
   createdAt: string;
 };
@@ -19,6 +19,7 @@ type Report = {
 type BannedUser = {
   _id: string;
   email: string;
+  flair?: string; // Add flair
   appealReason?: string;
   appealStatus?: string;
 };
@@ -244,6 +245,17 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-3 text-gray-700">
                         {report.userId.email}
+                        {report.userId.flair && (
+                          <span
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                              report.userId.flair === "Oga at the Top"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                          >
+                            {report.userId.flair}
+                          </span>
+                        )}
                       </td>
                       <td className="p-3 text-gray-700">{report.reason}</td>
                       <td className="p-3 text-gray-600">
@@ -271,7 +283,18 @@ export default function AdminDashboard() {
                           }
                           className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
                         >
-                          Ban User
+                          Ban{" "}
+                          {report.reportedUserId.flair && (
+                            <span
+                              className={`inline-block text-white px-1 rounded text-xs ${
+                                report.reportedUserId.flair === "Oga at the Top"
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                              }`}
+                            >
+                              {report.reportedUserId.flair}
+                            </span>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -313,7 +336,20 @@ export default function AdminDashboard() {
                 <tbody>
                   {bannedUsers.map((user) => (
                     <tr key={user.email} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">{user.email}</td>
+                      <td className="p-3 text-gray-700">
+                        {user.email}
+                        {user.flair && (
+                          <span
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                              user.flair === "Oga at the Top"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                          >
+                            {user.flair}
+                          </span>
+                        )}
+                      </td>
                       <td className="p-3 text-gray-700">
                         {user.appealReason || "No appeal yet"}
                       </td>

@@ -38,7 +38,7 @@ export const createThread = async (req, res) => {
 
 export const getThreads = async (req, res) => {
   try {
-    const threads = await Thread.find().populate("userId", "email");
+    const threads = await Thread.find().populate("userId", "email flair");
     console.log("Threads fetched:", threads); // Log threads
     if (!threads.length) {
       return res.json({ threads: [], message: "No gist yet—drop your own!" });
@@ -80,11 +80,13 @@ export const createReply = async (req, res) => {
 export const getThreadById = async (req, res) => {
   const { id } = req.params;
   try {
-    const thread = await Thread.findById(id).populate("userId", "email").lean();
+    const thread = await Thread.findById(id)
+      .populate("userId", "email flair")
+      .lean();
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
 
     const replies = await Reply.find({ threadId: id })
-      .populate("userId", "email")
+      .populate("userId", "email flair")
       .sort({ createdAt: -1 });
     res.json({ ...thread, replies });
   } catch (err) {
@@ -103,7 +105,7 @@ export const searchThreads = async (req, res) => {
       { $text: { $search: q } },
       { score: { $meta: "textScore" } }
     )
-      .populate("userId", "email")
+      .populate("userId", "email flair")
       .sort({ score: { $meta: "textScore" } })
       .limit(10);
 
@@ -111,10 +113,10 @@ export const searchThreads = async (req, res) => {
     const threadsWithReplies = await Promise.all(
       threads.map(async (thread) => {
         const fullThread = await Thread.findById(thread._id)
-          .populate("userId", "email")
+          .populate("userId", "email flair")
           .lean();
         const replies = await Reply.find({ threadId: thread._id })
-          .populate("userId", "email")
+          .populate("userId", "email flair")
           .sort({ createdAt: -1 });
         return { ...fullThread, replies };
       })
@@ -160,8 +162,8 @@ export const getReports = async (req, res) => {
     }
     const reports = await Report.find()
       .populate("threadId", "title")
-      .populate("userId", "email") // Reporter
-      .populate("reportedUserId", "email") // Reported user
+      .populate("userId", "email flair") // Reporter
+      .populate("reportedUserId", "email flair") // Reported user
       .sort({ createdAt: -1 });
     if (!reports.length)
       return res.json({ message: "No reports yet—clean slate!" });

@@ -1,3 +1,4 @@
+// frontend/src/app/(authenticated)/threads/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
@@ -11,7 +12,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string } | null;
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   category: string;
   createdAt: string;
   replies: Reply[];
@@ -20,7 +21,7 @@ type Thread = {
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string } | null;
+  userId: { _id: string; email: string; flair?: string } | null; // Add flair
   createdAt: string;
 };
 

@@ -41,6 +41,11 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  flair: {
+    type: String,
+    enum: ["Verified G", "Oga at the Top", null],
+    default: null,
+  },
 });
 
 userSchema.pre("save", async function (next) {

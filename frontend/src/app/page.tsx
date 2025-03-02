@@ -12,7 +12,7 @@ import formatDate from "@/utils/formatDate";
 type Reply = {
   _id: string;
   body: string;
-  userId: { email: string } | null;
+  userId: { email: string; flair?: string } | null;
   createdAt: string;
 };
 
@@ -20,7 +20,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { email: string } | null;
+  userId: { email: string; flair?: string } | null;
   category: string;
   createdAt: string;
   replies?: Reply[];
@@ -82,7 +82,7 @@ export default function Home() {
 
     const token = localStorage.getItem("token");
     if (token) {
-      checkUserStatus(token); // Check ban status on load
+      checkUserStatus(token);
     } else {
       setIsLoggedIn(false);
     }
@@ -114,8 +114,8 @@ export default function Home() {
   const fetchThreads = async () => {
     try {
       const res = await axios.get("/api/threads");
-      console.log("Threads Response:", res.data); // Log response
-      const threads = res.data.threads || []; // Extract threads safely
+      console.log("Threads Response:", res.data);
+      const threads = res.data.threads || [];
       const threadsWithReplies = await Promise.all(
         threads.map(async (thread: Thread) => {
           try {
@@ -129,7 +129,7 @@ export default function Home() {
       );
       setAllThreads(threadsWithReplies);
       setThreads(threadsWithReplies);
-      setMessage(res.data.message || ""); // Use message if present
+      setMessage(res.data.message || "");
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
@@ -373,6 +373,17 @@ export default function Home() {
                       <span className="font-medium">
                         {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
                       </span>
+                      {thread.userId?.flair && (
+                        <span
+                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                            thread.userId.flair === "Oga at the Top"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                          }`}
+                        >
+                          {thread.userId.flair}
+                        </span>
+                      )}
                     </p>
                   </div>
                   <div className="w-1/5 text-center">
@@ -388,6 +399,22 @@ export default function Home() {
                         {thread.replies[
                           thread.replies.length - 1
                         ].userId?.email?.split("@")[0] || "Unknown"}
+                        {thread.replies[thread.replies.length - 1].userId
+                          ?.flair && (
+                          <span
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                              thread.replies[thread.replies.length - 1].userId
+                                ?.flair === "Oga at the Top"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
+                          >
+                            {
+                              thread.replies[thread.replies.length - 1].userId
+                                ?.flair
+                            }
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
@@ -437,32 +464,26 @@ export default function Home() {
         <div className="w-[15%]">
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-semibold text-green-800 mb-3">Ads</h2>
-            {/* ads section */}
             {!isPremium && (
-              <div className="w-[15%]">
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <h2 className="text-lg font-semibold text-green-800 mb-3">
-                    Ads
-                  </h2>
-                  {ads.length > 0 ? (
-                    ads.map((ad) => (
-                      <div key={ad.id} className="mb-4">
-                        <a
-                          href={ad.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          <strong>{ad.brand}</strong>: {ad.text}
-                        </a>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-gray-600 text-sm">
-                      Ads dey load—abeg wait small!
-                    </p>
-                  )}
-                </div>
+              <div>
+                {ads.length > 0 ? (
+                  ads.map((ad) => (
+                    <div key={ad.id} className="mb-4">
+                      <a
+                        href={ad.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline"
+                      >
+                        <strong>{ad.brand}</strong>: {ad.text}
+                      </a>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-gray-600 text-sm">
+                    Ads dey load—abeg wait small!
+                  </p>
+                )}
               </div>
             )}
           </div>
