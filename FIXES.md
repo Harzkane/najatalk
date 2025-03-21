@@ -168,3 +168,185 @@ Alternatively, if this becomes cumbersome, you could restructure your app (e.g.,
 - Your folder structure (`(authenticated)/threads`) is fine; the issue was purely routing precedence, not directory layout.
 
 You’ve got a robust fix now, and adding `/verify/([^/]+)` should be seamless. Let me know how the tests go, and we’ll polish off any edges! Great teamwork—this was a tricky one!
+
+Boss, big ups—your Postman tests are spot on! The marketplace routes are firing clean, and NaijaTalk’s backend is holding it down. Let’s break down what you’ve tested, confirm it’s all good, and figure out the next move. I see you’re running on `http://localhost:8000` (not 3000—nice catch), and the timestamps are in UTC (`2025-03-21T16:20:28.000Z`) instead of WAT string format—small tweak we’ll fix.
+
+---
+
+### Test Recap
+
+Here’s what you ran and what it tells us:
+
+#### 1. POST `/api/marketplace/listings`
+
+- **Request:**
+  - URL: `http://localhost:8000/api/marketplace/listings`
+  - Body: `{"title": "Jollof Pot", "description": "Barely used, still dey shine!", "price": 5000, "category": "Home"}`
+- **Response:**
+  - Status: 201
+  - Body: Listing created with `_id: "67dd91cce11ac2fc57c2399b"`, `price: 500000` (kobo), `category: "Home"`.
+- **Verdict:** Create works—converts ₦ to kobo, saves userId, sets `status: "active"`.
+
+#### 2. GET `/api/marketplace/listings`
+
+- **Request:** `http://localhost:8000/api/marketplace/listings`
+- **Response:**
+  - Status: 200
+  - Body: Lists “Jollof Pot” with `userId` populated (`email: "harzkane@gmail.com"`, `flair: null`).
+- **Verdict:** Fetch all active listings works—populates user data cleanly.
+
+#### 3. GET `/api/marketplace/listings/67dd91cce11ac2fc57c2399b`
+
+- **Request:** `http://localhost:8000/api/marketplace/listings/67dd91cce11ac2fc57c2399b`
+- **Response:**
+  - Status: 200
+  - Body: Returns single listing with all fields, including populated `userId`.
+- **Verdict:** Fetch by ID works—consistent data.
+
+#### 4. PUT `/api/marketplace/listings/67dd91cce11ac2fc57c2399b`
+
+- **Request:**
+  - URL: `http://localhost:8000/api/marketplace/listings/67dd91cce11ac2fc57c2399b`
+  - Body: `{"title": "Jollof Pot Pro", "price": 6000, "category": "Food"}`
+- **Response:**
+  - Status: 200
+  - Body: Updated listing—`title: "Jollof Pot Pro"`, `price: 600000`, `category: "Food"`, `updatedAt` bumped.
+- **Verdict:** Update works—partial updates keep old fields (e.g., `description`), new values applied.
+
+#### 5. GET `/api/marketplace/listings` (Again)
+
+- **Request:** `http://localhost:8000/api/marketplace/listings`
+- **Response:**
+  - Status: 200
+  - Body: Lists two items—“Jollof Pot Pro” (updated) and “Jollof Pot 2” (new, `price: 5400000`—₦54,000!).
+- **Verdict:** Still fetching active listings—new post and update reflected.
+
+#### 6. DELETE `/api/marketplace/listings/67dd92c5e11ac2fc57c239a5`
+
+- **Request:** `http://localhost:8000/api/marketplace/listings/67dd92c5e11ac2fc57c239a5`
+- **Response:**
+  - Status: 200
+  - Body: `{"message": "Item don waka—deleted!"}`
+- **Verdict:** Soft delete works—item’s `status` set to `"deleted"`, won’t show in GET `/listings`.
+
+---
+
+### Observations
+
+1. **Port:** You’re on `:8000`, not `:3000`—update `.env` (`PORT=8000`) or check your `index.js`:
+
+   ```javascript
+   const PORT = process.env.PORT || 8000; // Was 3000
+   ```
+
+2. **Timestamps:** `createdAt`/`updatedAt` are UTC (`2025-03-21T16:20:28.000Z`) instead of WAT string (`"3/21/2025, 10:20:28 AM"`). Our `listing.js` uses `toLocaleString`, but MongoDB’s overriding it. Fix below.
+
+3. **Auth:** You didn’t show headers, but POST/PUT/DELETE worked—assuming you’re sending `Authorization: Bearer <token>` correctly.
+
+4. **Data:** All fields (title, price, category) sync perfectly between frontend intent and backend storage.
+
+---
+
+### Fix Timestamp Format
+
+To match `thread.js`, `wallet.js` (WAT string format), tweak `listing.js`:
+
+#### `backend/models/listing.js`
+
+```javascript
+import mongoose from "mongoose";
+
+const listingSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    required: [true, "Abeg, give your item a title!"],
+    trim: true,
+    maxlength: [100, "Title too long—keep am short, bros!"],
+  },
+  description: {
+    type: String,
+    required: [true, "No description? Tell us wetin you dey sell na!"],
+    trim: true,
+  },
+  price: {
+    type: Number,
+    required: [true, "Price must dey—how we go buy am?"],
+    min: [100, "Price too small—minimum na ₦1 (100 kobo)!"],
+  },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: [true, "Seller must dey—who dey sell this thing?"],
+  },
+  status: {
+    type: String,
+    enum: ["active", "sold", "deleted"],
+    default: "active",
+  },
+  category: {
+    type: String,
+    enum: ["Electronics", "Fashion", "Home", "Food", "Services", "Others"],
+    default: "Others",
+  },
+  createdAt: {
+    type: String, // Change to String
+    default: () =>
+      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+  },
+  updatedAt: {
+    type: String, // Change to String
+    default: () =>
+      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+  },
+});
+
+listingSchema.pre("save", function (next) {
+  this.updatedAt = new Date().toLocaleString("en-US", {
+    timeZone: "Africa/Lagos",
+  });
+  next();
+});
+
+export default mongoose.model("Listing", listingSchema);
+```
+
+- **Change:** `type: Date` → `type: String` for `createdAt`/`updatedAt`.
+- **Test Again:** POST a new listing—should show `"3/21/2025, 5:20:28 PM"` (WAT, assuming 16:20 UTC + 1h).
+
+---
+
+### Test `/categories` (Missing from Your Log)
+
+- **Request:** GET `http://localhost:8000/api/marketplace/categories`
+- **Expected:**
+  ```json
+  {
+    "categories": [
+      "Electronics",
+      "Fashion",
+      "Home",
+      "Food",
+      "Services",
+      "Others"
+    ],
+    "message": "Categories dey here—pick one!"
+  }
+  ```
+- **Why:** Frontend needs this—run it to confirm.
+
+---
+
+### Full Flow Check
+
+- POST → GET all → GET one → PUT → DELETE → GET all (empty or reduced).
+- **Result:** Your tests nail it—CRUD’s solid, `category` flows through.
+
+---
+
+### Your Call
+
+- **Timestamp Fix:** Apply the `listing.js` tweak—re-test POST to see WAT format?
+- **Categories:** Run GET `/categories`—good?
+- **Next:** Sync frontend with these results or jump to Day 20 (escrow)?
+
+Holla me, Boss—marketplace dey tight! What’s the vibe?
