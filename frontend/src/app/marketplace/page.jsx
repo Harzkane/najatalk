@@ -1,4 +1,5 @@
 // frontend/src/app/marketplace/page.jsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -457,8 +458,28 @@ export default function Marketplace() {
                   <p className="text-gray-800 font-semibold">
                     ₦{listing.price / 100}
                   </p>
-                  <p className="text-xs text-gray-600">
+                  {/* <p className="text-xs text-gray-600">
                     Seller: {listing.userId.email}{" "}
+                    {listing.userId.flair && (
+                      <span
+                        className={`inline-block text-white px-1 rounded text-xs ${
+                          listing.userId.flair === "Oga at the Top"
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                        }`}
+                      >
+                        {listing.userId.flair}
+                      </span>
+                    )}
+                  </p> */}
+                  <p className="text-xs text-gray-600">
+                    Seller:{" "}
+                    <Link
+                      href={`/users/${listing.userId._id}`}
+                      className="text-green-600 hover:underline"
+                    >
+                      {listing.userId.email}
+                    </Link>{" "}
                     {listing.userId.flair && (
                       <span
                         className={`inline-block text-white px-1 rounded text-xs ${

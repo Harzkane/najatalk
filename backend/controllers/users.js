@@ -1,6 +1,9 @@
 // backend/controllers/users.js
+
+import mongoose from "mongoose";
 import User from "../models/user.js";
 import bcrypt from "bcryptjs"; // Add this import
+import Listing from "../models/listing.js";
 
 export const banUser = async (req, res) => {
   const { userId } = req.params;
@@ -139,5 +142,31 @@ export const setFlair = async (req, res) => {
     res.json({ message: "Flair set—shine on, bros!", user });
   } catch (err) {
     res.status(500).json({ message: "Flair scatter: " + err.message });
+  }
+};
+
+export const getUserProfilePublic = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid user ID—check am well!" });
+    }
+
+    const user = await User.findById(userId).select("email flair");
+    if (!user) return res.status(404).json({ message: "User no dey!" });
+
+    const listings = await Listing.find({ userId }).select(
+      "title description price category status createdAt updatedAt"
+    );
+
+    res.json({
+      user: { email: user.email, flair: user.flair },
+      listings,
+      message: "User profile dey here—check am!",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Profile fetch scatter: " + err.message });
   }
 };
