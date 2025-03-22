@@ -1,3 +1,4 @@
+// frontend/src/app/marketplace/page.jsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,26 +8,85 @@ import Link from "next/link";
 
 export default function Marketplace() {
   const [listings, setListings] = useState([]);
+  const [filteredListings, setFilteredListings] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedStatus, setSelectedStatus] = useState("All");
+  const [selectedFlair, setSelectedFlair] = useState("All");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [category, setCategory] = useState("Others");
   const [message, setMessage] = useState("");
   const [editId, setEditId] = useState(null);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    setIsLoggedIn(!!token);
+    const userId =
+      typeof window !== "undefined" ? localStorage.getItem("userId") : null;
+    setCurrentUserId(userId);
+
     fetchListings();
     fetchCategories();
-  }, []);
+    if (token && !userId) fetchCurrentUser();
+  }, [router]);
+
+  useEffect(() => {
+    let filtered = listings;
+    if (selectedCategory !== "All") {
+      filtered = filtered.filter(
+        (listing) => listing.category === selectedCategory
+      );
+    }
+    if (selectedStatus !== "All") {
+      filtered = filtered.filter(
+        (listing) => listing.status === selectedStatus.toLowerCase()
+      );
+    }
+    if (selectedFlair !== "All") {
+      filtered = filtered.filter(
+        (listing) => listing.userId.flair === selectedFlair
+      );
+    }
+    setFilteredListings(filtered);
+    console.log("Filtered Listings:", filtered); // Debug
+  }, [listings, selectedCategory, selectedStatus, selectedFlair]);
+
+  const fetchCurrentUser = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
+    }
+    try {
+      const res = await axios.get("/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentUserId(res.data._id);
+      localStorage.setItem("userId", res.data._id);
+      setIsLoggedIn(true);
+      console.log("Fetched User ID:", res.data._id);
+    } catch (err) {
+      console.error("Fetch User Error:", err.response?.data);
+      setIsLoggedIn(false);
+      localStorage.removeItem("token");
+      localStorage.removeItem("userId");
+    }
+  };
 
   const fetchListings = async () => {
     try {
-      const res = await axios.get("/api/marketplace/listings");
-      // setListings(res.data.listings.filter((l) => l.status === "active"));
+      const res = await axios.get("/api/marketplace/listings", {
+        params: { includeSold: true },
+      });
       setListings(res.data.listings);
       setMessage(res.data.message);
+      console.log("Raw Listings:", res.data.listings); // Debug
     } catch (err) {
       setMessage(err.response?.data?.message || "Market load scatter o!");
     }
@@ -47,6 +107,18 @@ export default function Marketplace() {
         "Others",
       ]);
     }
+  };
+
+  const handleCategoryFilter = (cat) => {
+    setSelectedCategory(cat);
+  };
+
+  const handleStatusFilter = (status) => {
+    setSelectedStatus(status);
+  };
+
+  const handleFlairFilter = (flair) => {
+    setSelectedFlair(flair);
   };
 
   const handleSubmit = async (e) => {
@@ -112,7 +184,9 @@ export default function Marketplace() {
       const res = await axios.post(
         `/api/marketplace/buy/${id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       setMessage(res.data.message);
       fetchListings();
@@ -122,12 +196,38 @@ export default function Marketplace() {
     }
   };
 
+  const handleRelease = async (id) => {
+    console.log("Frontend Release ID:", id);
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Abeg login first!");
+      setTimeout(() => router.push("/login"), 1000);
+      return;
+    }
+    try {
+      const res = await axios.post(
+        `/api/marketplace/release/${id}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      setMessage(res.data.message);
+      fetchListings();
+    } catch (err) {
+      console.error("Release Error:", err.response?.data);
+      setMessage(err.response?.data?.message || "Release scatter o!");
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setIsLoggedIn(false);
+    setCurrentUserId(null);
     router.push("/login");
   };
 
-  // Format date to "7:20pm On Mar 21, 2025"
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const time = date
@@ -159,18 +259,33 @@ export default function Marketplace() {
               >
                 Home
               </Link>
-              <Link
+              {/* <Link
                 href="/premium"
                 className="text-green-100 hover:text-white text-sm font-medium"
               >
                 Wallet
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+              </Link> */}
+              <Link
+                href="/marketplace/wallet"
+                className="text-green-100 hover:text-white text-sm font-medium"
               >
-                Logout
-              </button>
+                Platform Wallet
+              </Link>
+              {isLoggedIn ? (
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  href="/login"
+                  className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm"
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -182,58 +297,141 @@ export default function Marketplace() {
             {message}
           </p>
         )}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold text-green-800 mb-4">
-            {editId ? "Edit Item" : "Sell Something"}
-          </h2>
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              placeholder="Item Title (e.g., Jollof Pot)"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full p-2 mb-2 border rounded-lg text-gray-800"
-              required
-            />
-            <textarea
-              placeholder="Description (e.g., Barely used, still dey shine)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-2 mb-2 border rounded-lg text-gray-800 h-24"
-              required
-            />
-            <input
-              type="number"
-              placeholder="Price (₦)"
-              value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              className="w-full p-2 mb-2 border rounded-lg text-gray-800"
-              min="1"
-              required
-            />
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full p-2 mb-2 border rounded-lg text-gray-800"
-            >
-              {categories.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"
-            >
-              {editId ? "Update Item" : "Post Item"}
-            </button>
-          </form>
+        {isLoggedIn && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h2 className="text-xl font-semibold text-green-800 mb-4">
+              {editId ? "Edit Item" : "Sell Something"}
+            </h2>
+            <form onSubmit={handleSubmit}>
+              <input
+                type="text"
+                placeholder="Item Title (e.g., Jollof Pot)"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full p-2 mb-2 border rounded-lg text-gray-800"
+                required
+              />
+              <textarea
+                placeholder="Description (e.g., Barely used, still dey shine)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full p-2 mb-2 border rounded-lg text-gray-800 h-24"
+                required
+              />
+              <input
+                type="number"
+                placeholder="Price (₦)"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full p-2 mb-2 border rounded-lg text-gray-800"
+                min="1"
+                required
+              />
+              <select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                className="w-full p-2 mb-2 border rounded-lg text-gray-800"
+              >
+                {categories.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700"
+              >
+                {editId ? "Update Item" : "Post Item"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Filter Section */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Category Filters */}
+            <div>
+              <h2 className="text-xl font-semibold text-green-800 mb-4">
+                Filter by Category
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => handleCategoryFilter("All")}
+                  className={`px-3 py-1 rounded-lg text-sm ${
+                    selectedCategory === "All"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                  }`}
+                >
+                  All
+                </button>
+                {categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryFilter(cat)}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      selectedCategory === cat
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Status Filters */}
+            <div>
+              <h2 className="text-xl font-semibold text-green-800 mb-4">
+                Filter by Status
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {["All", "Active", "Pending", "Sold"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => handleStatusFilter(status)}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      selectedStatus === status
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Flair Filters */}
+            <div>
+              <h2 className="text-xl font-semibold text-green-800 mb-4">
+                Filter by Seller Flair
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {["All", "Verified G", "Oga at the Top"].map((flair) => (
+                  <button
+                    key={flair}
+                    onClick={() => handleFlairFilter(flair)}
+                    className={`px-3 py-1 rounded-lg text-sm ${
+                      selectedFlair === flair
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    }`}
+                  >
+                    {flair}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-4">
-          {listings.length > 0 ? (
-            listings.map((listing) => (
+          {filteredListings.length > 0 ? (
+            filteredListings.map((listing) => (
               <div
                 key={listing._id}
                 className="bg-white p-4 rounded-lg shadow flex justify-between"
@@ -269,7 +467,9 @@ export default function Marketplace() {
                       className={`${
                         listing.status === "active"
                           ? "text-green-600"
-                          : "text-yellow-600"
+                          : listing.status === "pending"
+                          ? "text-yellow-600"
+                          : "text-gray-600"
                       } font-semibold`}
                     >
                       {listing.status.charAt(0).toUpperCase() +
@@ -284,7 +484,7 @@ export default function Marketplace() {
                   </p>
                 </div>
                 <div className="flex space-x-2">
-                  {listing.status === "active" && (
+                  {listing.status === "active" && isLoggedIn && (
                     <>
                       <button
                         onClick={() => handleEdit(listing)}
@@ -306,15 +506,28 @@ export default function Marketplace() {
                       </button>
                     </>
                   )}
-                  {listing.status === "pending" && (
-                    <p className="text-xs text-yellow-600">In Escrow</p>
+                  {listing.status === "pending" &&
+                    listing.userId._id === currentUserId && (
+                      <button
+                        onClick={() => handleRelease(listing._id)}
+                        className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700"
+                      >
+                        Confirm Delivery
+                      </button>
+                    )}
+                  {listing.status === "pending" &&
+                    listing.userId._id !== currentUserId && (
+                      <p className="text-xs text-yellow-600">In Escrow</p>
+                    )}
+                  {listing.status === "sold" && (
+                    <p className="text-xs text-gray-600">Sold</p>
                   )}
                 </div>
               </div>
             ))
           ) : (
             <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No items yet—be the first to sell!
+              No items match your filters—try another combo!
             </p>
           )}
         </div>

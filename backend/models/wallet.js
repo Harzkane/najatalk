@@ -13,7 +13,7 @@ const walletSchema = new mongoose.Schema({
     default: 0, // In kobo (₦0.00)
   },
   createdAt: {
-    type: Date,
+    type: String, // Match listing/transaction
     default: () =>
       new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
   },

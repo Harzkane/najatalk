@@ -99,11 +99,23 @@ export const unbanUser = async (req, res) => {
   }
 };
 
+// export const getUserProfile = async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user._id).select("email isPremium");
+//     if (!user) return res.status(404).json({ message: "User no dey!" });
+//     res.json(user);
+//   } catch (err) {
+//     res.status(500).json({ message: "Fetch scatter: " + err.message });
+//   }
+// };
+
 export const getUserProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("email isPremium");
+    const user = await User.findById(req.user._id).select(
+      "_id email flair isPremium role"
+    );
     if (!user) return res.status(404).json({ message: "User no dey!" });
-    res.json(user);
+    res.json({ ...user.toObject(), message: "You dey here—welcome!" }); // Flatten user object
   } catch (err) {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }

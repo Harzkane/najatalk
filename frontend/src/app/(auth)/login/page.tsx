@@ -16,16 +16,19 @@ export default function Login() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await axios.post<{ token: string; message: string }>(
-        "/api/auth/login",
-        { email, password }
-      );
+      const res = await axios.post<{
+        token: string;
+        userId: string;
+        message: string;
+      }>("/api/auth/login", { email, password });
       setMessage(res.data.message);
       localStorage.setItem("token", res.data.token);
-      console.log("JWT Token:", res.data.token);
+      localStorage.setItem("userId", res.data.userId); // Store userId
+      console.log("Logged in User ID:", res.data.userId);
       setEmail("");
       setPassword("");
-      setTimeout(() => router.push("/"), 1000);
+      // setTimeout(() => router.push("/"), 1000);
+      setTimeout(() => router.push("/marketplace"), 1000); // Redirect to marketplace
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMsg = err.response?.data?.message || "Login wahala o!";

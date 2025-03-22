@@ -1,6 +1,9 @@
+// backend/controllers/marketplace.js
 import Listing from "../models/listing.js";
 import Wallet from "../models/wallet.js";
 import Transaction from "../models/transaction.js";
+import PlatformWallet from "../models/platformWallet.js";
+import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
 // Hardcode here for now, could move to a config file later
@@ -35,10 +38,10 @@ export const createListing = async (req, res) => {
 
 export const getListings = async (req, res) => {
   try {
-    // const listings = await Listing.find({ status: "active" }) // Show active
-    const listings = await Listing.find({
-      status: { $in: ["active", "pending"] },
-    }) // Show active and pending
+    const { includeSold } = req.query; // Grab the param from frontend
+    const query =
+      includeSold === "true" ? {} : { status: { $in: ["active", "pending"] } }; // All if true, else active/pending
+    const listings = await Listing.find(query)
       .populate("userId", "email flair")
       .sort({ createdAt: -1 });
     res.json({ listings, message: "Market items dey here—check am!" });
@@ -154,5 +157,102 @@ export const buyListing = async (req, res) => {
   } catch (err) {
     console.error("Buy Error:", err);
     res.status(500).json({ message: "Buy scatter: " + err.message });
+  }
+};
+
+export const releaseEscrow = async (req, res) => {
+  const { id } = req.params;
+  try {
+    console.log("Release Attempt:", { id, user: req.user._id });
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid listing ID—check am well!" });
+    }
+
+    const listing = await Listing.findById(id);
+    if (!listing) {
+      return res
+        .status(404)
+        .json({ message: "Listing no dey—where e waka go?" });
+    }
+    console.log("Listing:", listing);
+
+    if (listing.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Item no dey for escrow—e don waka!" });
+    }
+    if (listing.userId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "No be your item—abeg comot!" });
+    }
+
+    const transaction = await Transaction.findById(listing.transactionId);
+    console.log("Transaction:", transaction);
+    if (!transaction || transaction.status !== "pending") {
+      return res
+        .status(400)
+        .json({ message: "Transaction no dey or e don finish!" });
+    }
+
+    const platformCut = Math.round(listing.price * 0.05);
+    const sellerAmount = listing.price - platformCut;
+    console.log("Funds Split:", { platformCut, sellerAmount });
+
+    const sellerWallet = await Wallet.findOne({ userId: listing.userId });
+    if (!sellerWallet) {
+      return res
+        .status(500)
+        .json({ message: "Seller wallet scatter—admin fix am!" });
+    }
+    sellerWallet.balance += sellerAmount;
+    await sellerWallet.save();
+    console.log("Seller Wallet Updated:", sellerWallet);
+
+    // Update Platform Wallet
+    let platformWallet = await PlatformWallet.findOne();
+    if (!platformWallet) {
+      platformWallet = new PlatformWallet({ balance: 0 });
+    }
+    platformWallet.balance += platformCut;
+    platformWallet.lastUpdated = Date.now();
+    await platformWallet.save();
+    console.log("Platform Wallet Updated:", platformWallet);
+
+    transaction.status = "completed";
+    transaction.platformCut = platformCut;
+    await transaction.save();
+    console.log("Transaction Updated:", transaction);
+
+    listing.status = "sold";
+    await listing.save();
+    console.log("Listing Updated:", listing);
+
+    res.json({ message: "Delivery confirmed—funds don land!", listing });
+  } catch (err) {
+    console.error("Release Error:", err);
+    res.status(500).json({ message: "Release scatter: " + err.message });
+  }
+};
+
+// Add GET endpoint for platform wallet
+export const getPlatformWallet = async (req, res) => {
+  try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+    const platformWallet = await PlatformWallet.findOne();
+    if (!platformWallet) {
+      return res
+        .status(200)
+        .json({ balance: 0, message: "Wallet empty—start dey hustle!" });
+    }
+    res.json({
+      balance: platformWallet.balance,
+      lastUpdated: platformWallet.lastUpdated,
+      message: "Platform wallet dey here—check am!",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };
