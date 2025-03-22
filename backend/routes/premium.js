@@ -4,8 +4,6 @@ import {
   initiatePremium,
   verifyPremium,
   completePremium,
-  tipUser,
-  verifyTip,
   getWallet,
   getTipHistory,
 } from "../controllers/premium.js";
@@ -19,8 +17,6 @@ router.post("/initiate", authMiddleware, initiatePremium);
 router.post("/verify", authMiddleware, verifyPremium);
 router.get("/verify", authMiddleware, verifyPremium); // Add GET for Paystack callback
 router.post("/complete", authMiddleware, completePremium);
-router.post("/tip", authMiddleware, tipUser);
-router.get("/tip-verify", authMiddleware, verifyTip); // For tip callback
 router.get("/wallet", authMiddleware, getWallet);
 router.get("/tip-history", authMiddleware, getTipHistory);
 

@@ -2,10 +2,12 @@
 
 import mongoose from "mongoose";
 import User from "../models/user.js";
-import bcrypt from "bcryptjs"; // Add this import
-import Listing from "../models/listing.js";
 import Wallet from "../models/wallet.js";
 import Transaction from "../models/transaction.js";
+import axios from "axios";
+import bcrypt from "bcryptjs";
+import Listing from "../models/listing.js";
+import Thread from "../models/thread.js";
 
 export const banUser = async (req, res) => {
   const { userId } = req.params;
@@ -104,44 +106,72 @@ export const unbanUser = async (req, res) => {
   }
 };
 
-// export const getUserProfile = async (req, res) => {
-//   try {
-//     const user = await User.findById(req.user._id).select("email isPremium");
-//     if (!user) return res.status(404).json({ message: "User no dey!" });
-//     res.json(user);
-//   } catch (err) {
-//     res.status(500).json({ message: "Fetch scatter: " + err.message });
-//   }
-// };
-
 export const getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id).select(
       "_id email flair isPremium role"
     );
     if (!user) return res.status(404).json({ message: "User no dey!" });
-    res.json({ ...user.toObject(), message: "You dey here—welcome!" }); // Flatten user object
+    const threadCount = await Thread.countDocuments({ userId: req.user._id });
+    res.json({
+      ...user.toObject(),
+      threadCount,
+      message: "You dey here—welcome!",
+    });
   } catch (err) {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }
 };
 
-export const setFlair = async (req, res) => {
+// export const setFlair = async (req, res) => {
+//   const { flair } = req.body;
+//   try {
+//     if (!req.user.isPremium) {
+//       return res.status(403).json({ message: "Abeg, premium only!" });
+//     }
+//     if (!["Verified G", "Oga at the Top"].includes(flair)) {
+//       return res.status(400).json({ message: "Flair no valid!" });
+//     }
+//     const user = await User.findByIdAndUpdate(
+//       req.user._id,
+//       { flair },
+//       { new: true }
+//     );
+//     if (!user) return res.status(404).json({ message: "User no dey!" });
+//     res.json({ message: "Flair set—shine on, bros!", user });
+//   } catch (err) {
+//     res.status(500).json({ message: "Flair scatter: " + err.message });
+//   }
+// };
+
+export const updateUserFlair = async (req, res) => {
   const { flair } = req.body;
   try {
-    if (!req.user.isPremium) {
-      return res.status(403).json({ message: "Abeg, premium only!" });
-    }
-    if (!["Verified G", "Oga at the Top"].includes(flair)) {
-      return res.status(400).json({ message: "Flair no valid!" });
-    }
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { flair },
-      { new: true }
-    );
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "User no dey!" });
-    res.json({ message: "Flair set—shine on, bros!", user });
+
+    const threadCount = await Thread.countDocuments({ userId: req.user._id });
+    const availableFlairs = ["Verified G", "Oga at the Top"];
+
+    // Auto-assign "Verified G" if 10+ threads and no premium
+    if (threadCount >= 10 && !user.isPremium && !user.flair) {
+      user.flair = "Verified G";
+    }
+
+    // Premium users can pick flair
+    if (user.isPremium && flair) {
+      if (!availableFlairs.includes(flair)) {
+        return res
+          .status(400)
+          .json({ message: "Flair no valid—pick correct one!" });
+      }
+      user.flair = flair;
+    } else if (!user.isPremium && flair) {
+      return res.status(403).json({ message: "Premium only—abeg subscribe!" });
+    }
+
+    await user.save();
+    res.json({ message: "Flair updated—shine on!", flair: user.flair });
   } catch (err) {
     res.status(500).json({ message: "Flair scatter: " + err.message });
   }
@@ -203,7 +233,7 @@ export const getSellerWallet = async (req, res) => {
     res.json({
       balance: wallet.balance,
       transactions: transactions.map((t) => ({
-        amount: t.amount - (t.platformCut || 0), // Seller gets amount minus cut
+        amount: t.amount - (t.platformCut || 0),
         listingTitle: t.listingId?.title || "Unknown Listing",
         date: t.createdAt,
       })),
@@ -212,5 +242,129 @@ export const getSellerWallet = async (req, res) => {
   } catch (err) {
     console.error("Seller Wallet Error:", err);
     res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
+  }
+};
+
+export const sendTip = async (req, res) => {
+  const { receiverId, amount } = req.body;
+  const senderId = req.user._id;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID—check am!" });
+    }
+    if (!amount || ![50, 100, 200].includes(amount)) {
+      return res
+        .status(400)
+        .json({ message: "Tip must be ₦50, ₦100, or ₦200—abeg adjust!" });
+    }
+
+    const receiver = await User.findById(receiverId);
+    if (!receiver) return res.status(404).json({ message: "Receiver no dey!" });
+
+    const senderWallet = await Wallet.findOne({ userId: senderId });
+    const senderBalance = senderWallet ? senderWallet.balance / 100 : 0;
+    if (senderBalance < amount) {
+      return res.status(400).json({ message: "Funds no dey—top up!" });
+    }
+
+    const reference = `naijatalk_tip_${Date.now()}`;
+    const platformCut = amount * 0.1;
+    const transaction = new Transaction({
+      senderId,
+      receiverId,
+      amount: amount * 100, // In kobo
+      platformCut: platformCut * 100,
+      reference,
+      type: "tip", // Add type for clarity
+      status: "pending",
+    });
+    await transaction.save();
+
+    const response = await axios.post(
+      "https://api.paystack.co/transaction/initialize",
+      {
+        email: req.user.email,
+        amount: amount * 100,
+        reference,
+        callback_url: `${process.env.FRONTEND_URL}/threads/tip-success?reference=${reference}&receiverId=${receiverId}`,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data.status) {
+      res.json({
+        paymentLink: response.data.data.authorization_url,
+        reference,
+        message: "Tip dey go—abeg complete am!",
+      });
+    } else {
+      throw new Error("Tip init scatter!");
+    }
+  } catch (err) {
+    console.error("Tip Error:", err.response?.data || err.message);
+    res.status(500).json({ message: "Tip scatter: " + (err.message || err) });
+  }
+};
+
+export const verifyTip = async (req, res) => {
+  const { reference, receiverId } = req.query;
+  const senderId = req.user._id;
+
+  try {
+    if (!mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID—check am!" });
+    }
+
+    const transaction = await Transaction.findOne({ reference });
+    if (!transaction)
+      return res.status(404).json({ message: "Transaction no dey!" });
+
+    const response = await axios.get(
+      `https://api.paystack.co/transaction/verify/${reference}`,
+      {
+        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET}` },
+      }
+    );
+
+    if (response.data.status && response.data.data.status === "success") {
+      transaction.status = "completed";
+      await transaction.save();
+
+      const amount = response.data.data.amount / 100;
+      const platformCut = amount * 0.1;
+      const receiverAmount = amount - platformCut;
+
+      let senderWallet = await Wallet.findOne({ userId: senderId });
+      if (!senderWallet) {
+        senderWallet = new Wallet({ userId: senderId });
+      }
+      senderWallet.balance -= amount * 100;
+      await senderWallet.save();
+
+      let receiverWallet = await Wallet.findOne({ userId: receiverId });
+      if (!receiverWallet) {
+        receiverWallet = new Wallet({ userId: receiverId });
+      }
+      receiverWallet.balance += receiverAmount * 100;
+      await receiverWallet.save();
+
+      res.json({ message: `Tip of ₦${receiverAmount} sent—enjoy the vibes!` });
+    } else {
+      transaction.status = "failed";
+      await transaction.save();
+      res.status(400).json({ message: "Tip no work—try again!" });
+    }
+  } catch (err) {
+    console.error("Verify Tip Error:", err.response?.data || err.message);
+    res.status(500).json({
+      message:
+        "Verify scatter: " + (err.response?.data?.message || err.message),
+    });
   }
 };

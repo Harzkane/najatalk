@@ -4,132 +4,6 @@ import Wallet from "../models/wallet.js";
 import Transaction from "../models/transaction.js";
 import axios from "axios";
 
-export const tipUser = async (req, res) => {
-  const { recipientId, amount } = req.body;
-  const senderId = req.user._id;
-
-  try {
-    if (!recipientId || !amount || ![50, 100, 200].includes(amount)) {
-      return res
-        .status(400)
-        .json({ message: "Abeg, send valid amount—₦50, ₦100, or ₦200!" });
-    }
-
-    const recipient = await User.findById(recipientId);
-    if (!recipient)
-      return res.status(404).json({ message: "Recipient no dey!" });
-
-    const senderWallet = await Wallet.findOne({ userId: senderId });
-    const senderBalance = senderWallet ? senderWallet.balance / 100 : 0;
-    if (senderBalance < amount) {
-      return res
-        .status(400)
-        .json({ message: "Oga, your wallet no reach—fund am!" });
-    }
-
-    const reference = `naijatalk_tip_${Date.now()}`;
-    const platformCut = amount * 0.1;
-    const transaction = new Transaction({
-      senderId,
-      recipientId,
-      amount: amount * 100, // In kobo
-      platformCut: platformCut * 100,
-      reference,
-      status: "pending",
-    });
-    await transaction.save();
-
-    console.log(
-      `Initiating tip from ${req.user.email} to ${recipient.email} for ₦${amount}`
-    );
-    const response = await axios.post(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        email: req.user.email,
-        amount: amount * 100,
-        reference,
-        callback_url: `${process.env.FRONTEND_URL}/threads/tip-success?reference=${reference}&recipientId=${recipientId}`,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-    console.log("Paystack tip response:", response.data);
-
-    if (response.data.status) {
-      res.json({
-        paymentLink: response.data.data.authorization_url,
-        reference,
-        message: "Tip dey go—abeg complete am!",
-      });
-    } else {
-      throw new Error("Tip init scatter!");
-    }
-  } catch (err) {
-    console.error("Tip Error:", err.response?.data || err.message);
-    res.status(500).json({ message: "Tip scatter: " + (err.message || err) });
-  }
-};
-
-export const verifyTip = async (req, res) => {
-  const { reference, recipientId } = req.query;
-  const senderId = req.user._id;
-
-  try {
-    console.log("Verifying tip reference:", reference);
-    const transaction = await Transaction.findOne({ reference });
-    if (!transaction)
-      return res.status(404).json({ message: "Transaction no dey!" });
-
-    const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
-      {
-        headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET}` },
-      }
-    );
-    console.log("Paystack Verify Tip Response:", response.data);
-
-    if (response.data.status && response.data.data.status === "success") {
-      transaction.status = "completed";
-      await transaction.save();
-
-      const amount = response.data.data.amount / 100;
-      const platformCut = amount * 0.1;
-      const recipientAmount = amount - platformCut;
-
-      let senderWallet = await Wallet.findOne({ userId: senderId });
-      if (!senderWallet) {
-        senderWallet = new Wallet({ userId: senderId });
-      }
-      senderWallet.balance -= amount * 100;
-      await senderWallet.save();
-
-      let recipientWallet = await Wallet.findOne({ userId: recipientId });
-      if (!recipientWallet) {
-        recipientWallet = new Wallet({ userId: recipientId });
-      }
-      recipientWallet.balance += recipientAmount * 100;
-      await recipientWallet.save();
-
-      res.json({ message: `Tip of ₦${recipientAmount} sent—enjoy the vibes!` });
-    } else {
-      transaction.status = "failed";
-      await transaction.save();
-      res.status(400).json({ message: "Tip no work—try again!" });
-    }
-  } catch (err) {
-    console.error("Verify Tip Error:", err.response?.data || err.message);
-    res.status(500).json({
-      message:
-        "Verify scatter: " + (err.response?.data?.message || err.message),
-      errorDetails: err.response?.data,
-    });
-  }
-};
-
 export const initiatePremium = async (req, res) => {
   const { email } = req.user;
   const reference = `naijatalk_premium_${Date.now()}`;
@@ -169,7 +43,7 @@ export const initiatePremium = async (req, res) => {
 };
 
 export const verifyPremium = async (req, res) => {
-  const { reference } = req.body || req.query; // Handle POST or GET (callback)
+  const { reference } = req.body || req.query;
   try {
     console.log("Verifying Paystack reference:", reference);
     const response = await axios.get(
@@ -213,10 +87,9 @@ export const completePremium = async (req, res) => {
         message: "Premium manually activated successfully!",
       });
     } else {
-      res.status(400).json({
-        success: false,
-        message: "Failed to update premium status",
-      });
+      res
+        .status(400)
+        .json({ success: false, message: "Failed to update premium status" });
     }
   } catch (err) {
     console.error("Manual premium activation error:", err);
@@ -234,7 +107,7 @@ export const getWallet = async (req, res) => {
     if (!wallet) {
       return res.json({ balance: 0, message: "No wallet yet—start tipping!" });
     }
-    res.json({ balance: wallet.balance / 100, message: "Wallet dey here!" }); // Convert kobo to ₦
+    res.json({ balance: wallet.balance / 100, message: "Wallet dey here!" });
   } catch (err) {
     console.error("Wallet Error:", err.response?.data || err.message);
     res.status(500).json({
@@ -249,15 +122,17 @@ export const getTipHistory = async (req, res) => {
     const tipsSent = await Transaction.find({
       senderId: req.user._id,
       status: "completed",
+      type: "tip", // Filter by tip type
     }).lean();
     const tipsReceived = await Transaction.find({
-      recipientId: req.user._id,
+      receiverId: req.user._id,
       status: "completed",
+      type: "tip",
     }).lean();
     const sentPromises = tipsSent.map(async (t) => ({
       amount: t.amount / 100,
       date: t.updatedAt,
-      to: (await User.findById(t.recipientId))?.email || "Unknown",
+      to: (await User.findById(t.receiverId))?.email || "Unknown",
     }));
     const receivedPromises = tipsReceived.map(async (t) => ({
       amount: (t.amount - t.platformCut) / 100,
@@ -268,11 +143,7 @@ export const getTipHistory = async (req, res) => {
     const sent = await Promise.all(sentPromises);
     const received = await Promise.all(receivedPromises);
 
-    res.json({
-      sent,
-      received,
-      message: "Tip history dey here!",
-    });
+    res.json({ sent, received, message: "Tip history dey here!" });
   } catch (err) {
     console.error("Tip History Error:", err.message);
     res.status(500).json({ message: "Fetch scatter: " + err.message });

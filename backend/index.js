@@ -1,5 +1,6 @@
 // backend/index.js
 import express from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
@@ -9,8 +10,7 @@ import dbRoutes from "./routes/db.js";
 import usersRoutes from "./routes/users.js";
 import premiumRoutes from "./routes/premium.js";
 import marketplaceRoutes from "./routes/marketplace.js";
-
-import cors from "cors";
+import contestsRoutes from "./routes/contests.js";
 
 dotenv.config();
 const app = express();
@@ -34,6 +34,7 @@ app.use("/api/ads", adsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/premium", premiumRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
+app.use("/api/contests", contestsRoutes);
 
 app.use("/api/", dbRoutes); // Welcome route
 

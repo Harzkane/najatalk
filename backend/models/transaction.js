@@ -19,7 +19,7 @@ const transactionSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ["escrow", "payout", "refund"],
+    enum: ["escrow", "payout", "refund", "tip"],
     required: [true, "Type must dey—wetin we dey do?"],
   },
   status: {

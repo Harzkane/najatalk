@@ -9,7 +9,7 @@ import axios from "axios";
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null; // Add flair
+  userId: { _id: string; email: string; flair?: string } | null;
   createdAt: string;
 };
 
@@ -17,7 +17,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null; // Add flair
+  userId: { _id: string; email: string; flair?: string } | null;
   category: string;
   createdAt: string;
   replies?: Reply[];
@@ -178,8 +178,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
         return;
       }
       const res = await axios.post(
-        "/api/premium/tip",
-        { recipientId: thread.userId?._id, amount },
+        "/api/users/tip",
+        { receiverId: thread.userId?._id, amount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       console.log("Tip Response:", res.data);
