@@ -23,7 +23,7 @@ export default function Marketplace() {
   const [editId, setEditId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false); // Add this
+  const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -36,9 +36,7 @@ export default function Marketplace() {
 
     fetchListings();
     fetchCategories();
-    if (token) {
-      fetchCurrentUser(token); // Pass token here
-    }
+    if (token) fetchCurrentUser(token);
   }, [router]);
 
   useEffect(() => {
@@ -79,7 +77,7 @@ export default function Marketplace() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(res.data._id);
-      setIsAdmin(res.data.role === "admin"); // Set admin status
+      setIsAdmin(res.data.role === "admin");
       localStorage.setItem("userId", res.data._id);
       setIsLoggedIn(true);
       console.log("Fetched User:", res.data);
@@ -260,7 +258,15 @@ export default function Marketplace() {
               >
                 Home
               </Link>
-              {isAdmin && ( // Only show if admin
+              {isLoggedIn && (
+                <Link
+                  href={`/users/${currentUserId}/wallet`}
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  My Wallet
+                </Link>
+              )}
+              {isAdmin && (
                 <Link
                   href="/marketplace/wallet"
                   className="text-green-100 hover:text-white text-sm font-medium"
