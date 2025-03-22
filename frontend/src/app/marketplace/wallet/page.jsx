@@ -9,6 +9,7 @@ import Link from "next/link";
 export default function PlatformWallet() {
   const [balance, setBalance] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [transactions, setTransactions] = useState([]);
   const [message, setMessage] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
@@ -31,8 +32,9 @@ export default function PlatformWallet() {
       });
       setBalance(res.data.balance / 100);
       setLastUpdated(res.data.lastUpdated);
+      setTransactions(res.data.transactions || []);
       setMessage(res.data.message);
-      console.log("Wallet Response:", res.data); // Debug
+      console.log("Wallet Response:", res.data);
     } catch (err) {
       setMessage(err.response?.data?.message || "Wallet load scatter o!");
       console.error("Wallet Error:", err.response?.data);
@@ -53,6 +55,11 @@ export default function PlatformWallet() {
     }
   };
 
+  const handleWithdraw = () => {
+    setMessage("Withdrawal coming soon—abeg hold on!");
+    // Stub for future payment API
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("userId");
@@ -60,6 +67,7 @@ export default function PlatformWallet() {
   };
 
   const formatDate = (dateString) => {
+    if (!dateString) return "Never";
     const date = new Date(dateString);
     const time = date
       .toLocaleTimeString("en-US", {
@@ -121,16 +129,47 @@ export default function PlatformWallet() {
             {message}
           </p>
         )}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold text-green-800 mb-4">
             Platform Earnings
           </h2>
           <div className="text-gray-800">
             <p className="text-2xl font-bold">₦{balance.toLocaleString()}</p>
-            <p className="text-sm">
-              Last Updated: {lastUpdated ? formatDate(lastUpdated) : "Never"}
-            </p>
+            <p className="text-sm">Last Updated: {formatDate(lastUpdated)}</p>
           </div>
+          <button
+            onClick={handleWithdraw}
+            className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
+          >
+            Withdraw Funds
+          </button>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-green-800 mb-4">
+            Transaction History
+          </h2>
+          {transactions.length > 0 ? (
+            <div className="space-y-4">
+              {transactions.map((tx, index) => (
+                <div key={index} className="bg-gray-50 p-4 rounded-lg shadow">
+                  <p className="text-gray-800 font-semibold">
+                    +₦{tx.amount / 100}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    From: {tx.listingTitle}
+                  </p>
+                  <p className="text-xs text-gray-600">
+                    Date: {formatDate(tx.date)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-600">
+              No transactions yet—abeg keep selling!
+            </p>
+          )}
         </div>
       </div>
     </div>

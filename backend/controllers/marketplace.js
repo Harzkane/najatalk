@@ -1,4 +1,3 @@
-// backend/controllers/marketplace.js
 import Listing from "../models/listing.js";
 import Wallet from "../models/wallet.js";
 import Transaction from "../models/transaction.js";
@@ -6,7 +5,6 @@ import PlatformWallet from "../models/platformWallet.js";
 import mongoose from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 
-// Hardcode here for now, could move to a config file later
 const categories = [
   "Electronics",
   "Fashion",
@@ -25,7 +23,7 @@ export const createListing = async (req, res) => {
     const listing = new Listing({
       title,
       description,
-      price: price * 100, // ₦ to kobo
+      price: price * 100,
       userId: req.user._id,
       category: category || "Others",
     });
@@ -38,9 +36,9 @@ export const createListing = async (req, res) => {
 
 export const getListings = async (req, res) => {
   try {
-    const { includeSold } = req.query; // Grab the param from frontend
+    const { includeSold } = req.query;
     const query =
-      includeSold === "true" ? {} : { status: { $in: ["active", "pending"] } }; // All if true, else active/pending
+      includeSold === "true" ? {} : { status: { $in: ["active", "pending"] } };
     const listings = await Listing.find(query)
       .populate("userId", "email flair")
       .sort({ createdAt: -1 });
@@ -142,7 +140,8 @@ export const buyListing = async (req, res) => {
       amount: listing.price,
       type: "escrow",
       status: "pending",
-      reference: uuidv4(), // Unique per transaction
+      reference: uuidv4(),
+      listingId: listing._id, // Add listingId here
     });
     await transaction.save();
     console.log("Transaction:", transaction);
@@ -209,7 +208,6 @@ export const releaseEscrow = async (req, res) => {
     await sellerWallet.save();
     console.log("Seller Wallet Updated:", sellerWallet);
 
-    // Update Platform Wallet
     let platformWallet = await PlatformWallet.findOne();
     if (!platformWallet) {
       platformWallet = new PlatformWallet({ balance: 0 });
@@ -221,6 +219,7 @@ export const releaseEscrow = async (req, res) => {
 
     transaction.status = "completed";
     transaction.platformCut = platformCut;
+    transaction.listingId = listing._id; // Ensure listingId is set
     await transaction.save();
     console.log("Transaction Updated:", transaction);
 
@@ -235,7 +234,6 @@ export const releaseEscrow = async (req, res) => {
   }
 };
 
-// Add GET endpoint for platform wallet
 export const getPlatformWallet = async (req, res) => {
   try {
     if (req.user.role !== "admin") {
@@ -247,12 +245,26 @@ export const getPlatformWallet = async (req, res) => {
         .status(200)
         .json({ balance: 0, message: "Wallet empty—start dey hustle!" });
     }
+
+    const transactions = await Transaction.find({
+      status: "completed",
+      platformCut: { $gt: 0 },
+    })
+      .populate("listingId", "title")
+      .select("platformCut createdAt listingId");
+
     res.json({
       balance: platformWallet.balance,
       lastUpdated: platformWallet.lastUpdated,
+      transactions: transactions.map((t) => ({
+        amount: t.platformCut,
+        listingTitle: t.listingId?.title || "Unknown Listing",
+        date: t.createdAt,
+      })),
       message: "Platform wallet dey here—check am!",
     });
   } catch (err) {
+    console.error("Wallet Error:", err);
     res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };
