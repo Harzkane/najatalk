@@ -20,6 +20,10 @@
       "dest": "/frontend/verify/[token]"
     },
     {
+      "src": "/users/([^/]+)/wallet",
+      "dest": "/frontend/users/[id]/wallet"
+    },
+    {
       "src": "/users/([^/]+)",
       "dest": "/frontend/users/[id]"
     },
