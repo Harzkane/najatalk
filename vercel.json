@@ -20,6 +20,10 @@
       "dest": "/frontend/verify/[token]"
     },
     {
+      "src": "/users/([^/]+)",
+      "dest": "/frontend/users/[id]"
+    },
+    {
       "src": "/threads/tip-success",
       "dest": "/frontend/threads/tip-success"
     },

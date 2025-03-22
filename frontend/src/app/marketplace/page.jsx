@@ -14,7 +14,7 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedFlair, setSelectedFlair] = useState("All");
-  const [searchTerm, setSearchTerm] = useState(""); // New search state
+  const [searchTerm, setSearchTerm] = useState("");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -23,6 +23,7 @@ export default function Marketplace() {
   const [editId, setEditId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false); // Add this
   const router = useRouter();
 
   useEffect(() => {
@@ -35,7 +36,9 @@ export default function Marketplace() {
 
     fetchListings();
     fetchCategories();
-    if (token && !userId) fetchCurrentUser();
+    if (token) {
+      fetchCurrentUser(token); // Pass token here
+    }
   }, [router]);
 
   useEffect(() => {
@@ -63,11 +66,10 @@ export default function Marketplace() {
       );
     }
     setFilteredListings(filtered);
-    console.log("Filtered Listings:", filtered); // Debug
+    console.log("Filtered Listings:", filtered);
   }, [listings, selectedCategory, selectedStatus, selectedFlair, searchTerm]);
 
-  const fetchCurrentUser = async () => {
-    const token = localStorage.getItem("token");
+  const fetchCurrentUser = async (token) => {
     if (!token) {
       setIsLoggedIn(false);
       return;
@@ -77,12 +79,14 @@ export default function Marketplace() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(res.data._id);
+      setIsAdmin(res.data.role === "admin"); // Set admin status
       localStorage.setItem("userId", res.data._id);
       setIsLoggedIn(true);
-      console.log("Fetched User ID:", res.data._id);
+      console.log("Fetched User:", res.data);
     } catch (err) {
       console.error("Fetch User Error:", err.response?.data);
       setIsLoggedIn(false);
+      setIsAdmin(false);
       localStorage.removeItem("token");
       localStorage.removeItem("userId");
     }
@@ -95,7 +99,7 @@ export default function Marketplace() {
       });
       setListings(res.data.listings);
       setMessage(res.data.message);
-      console.log("Raw Listings:", res.data.listings); // Debug
+      console.log("Raw Listings:", res.data.listings);
     } catch (err) {
       setMessage(err.response?.data?.message || "Market load scatter o!");
     }
@@ -118,17 +122,9 @@ export default function Marketplace() {
     }
   };
 
-  const handleCategoryFilter = (cat) => {
-    setSelectedCategory(cat);
-  };
-
-  const handleStatusFilter = (status) => {
-    setSelectedStatus(status);
-  };
-
-  const handleFlairFilter = (flair) => {
-    setSelectedFlair(flair);
-  };
+  const handleCategoryFilter = (cat) => setSelectedCategory(cat);
+  const handleStatusFilter = (status) => setSelectedStatus(status);
+  const handleFlairFilter = (flair) => setSelectedFlair(flair);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -193,9 +189,7 @@ export default function Marketplace() {
       const res = await axios.post(
         `/api/marketplace/buy/${id}`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       fetchListings();
@@ -206,7 +200,6 @@ export default function Marketplace() {
   };
 
   const handleRelease = async (id) => {
-    console.log("Frontend Release ID:", id);
     const token = localStorage.getItem("token");
     if (!token) {
       setMessage("Abeg login first!");
@@ -217,9 +210,7 @@ export default function Marketplace() {
       const res = await axios.post(
         `/api/marketplace/release/${id}`,
         {},
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       fetchListings();
@@ -234,6 +225,7 @@ export default function Marketplace() {
     localStorage.removeItem("userId");
     setIsLoggedIn(false);
     setCurrentUserId(null);
+    setIsAdmin(false);
     router.push("/login");
   };
 
@@ -268,12 +260,14 @@ export default function Marketplace() {
               >
                 Home
               </Link>
-              <Link
-                href="/marketplace/wallet"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Platform Wallet
-              </Link>
+              {isAdmin && ( // Only show if admin
+                <Link
+                  href="/marketplace/wallet"
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  Platform Wallet
+                </Link>
+              )}
               {isLoggedIn ? (
                 <button
                   onClick={handleLogout}
@@ -351,7 +345,6 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Search Bar */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <input
             type="text"
@@ -362,10 +355,8 @@ export default function Marketplace() {
           />
         </div>
 
-        {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Category Filters */}
             <div>
               <h2 className="text-xl font-semibold text-green-800 mb-4">
                 Filter by Category
@@ -396,8 +387,6 @@ export default function Marketplace() {
                 ))}
               </div>
             </div>
-
-            {/* Status Filters */}
             <div>
               <h2 className="text-xl font-semibold text-green-800 mb-4">
                 Filter by Status
@@ -418,8 +407,6 @@ export default function Marketplace() {
                 ))}
               </div>
             </div>
-
-            {/* Flair Filters */}
             <div>
               <h2 className="text-xl font-semibold text-green-800 mb-4">
                 Filter by Seller Flair
@@ -458,20 +445,6 @@ export default function Marketplace() {
                   <p className="text-gray-800 font-semibold">
                     ₦{listing.price / 100}
                   </p>
-                  {/* <p className="text-xs text-gray-600">
-                    Seller: {listing.userId.email}{" "}
-                    {listing.userId.flair && (
-                      <span
-                        className={`inline-block text-white px-1 rounded text-xs ${
-                          listing.userId.flair === "Oga at the Top"
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
-                        }`}
-                      >
-                        {listing.userId.flair}
-                      </span>
-                    )}
-                  </p> */}
                   <p className="text-xs text-gray-600">
                     Seller:{" "}
                     <Link

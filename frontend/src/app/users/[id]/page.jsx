@@ -72,6 +72,15 @@ export default function UserProfile() {
               >
                 Marketplace
               </Link>
+              {typeof window !== "undefined" &&
+                localStorage.getItem("userId") === id && (
+                  <Link
+                    href={`/users/${id}/wallet`}
+                    className="text-green-100 hover:text-white text-sm font-medium"
+                  >
+                    My Wallet
+                  </Link>
+                )}
             </div>
           </div>
         </div>

@@ -4,6 +4,8 @@ import mongoose from "mongoose";
 import User from "../models/user.js";
 import bcrypt from "bcryptjs"; // Add this import
 import Listing from "../models/listing.js";
+import Wallet from "../models/wallet.js";
+import Transaction from "../models/transaction.js";
 
 export const banUser = async (req, res) => {
   const { userId } = req.params;
@@ -168,5 +170,47 @@ export const getUserProfilePublic = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Profile fetch scatter: " + err.message });
+  }
+};
+
+export const getSellerWallet = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res
+        .status(400)
+        .json({ message: "Invalid user ID—check am well!" });
+    }
+    if (req.user._id.toString() !== userId && req.user.role !== "admin") {
+      return res.status(403).json({ message: "No be your wallet—abeg comot!" });
+    }
+
+    const wallet = await Wallet.findOne({ userId });
+    if (!wallet) {
+      return res
+        .status(200)
+        .json({ balance: 0, message: "Wallet empty—start dey sell!" });
+    }
+
+    const transactions = await Transaction.find({
+      receiverId: userId,
+      status: "completed",
+      type: "escrow",
+    })
+      .populate("listingId", "title")
+      .select("amount createdAt listingId");
+
+    res.json({
+      balance: wallet.balance,
+      transactions: transactions.map((t) => ({
+        amount: t.amount - (t.platformCut || 0), // Seller gets amount minus cut
+        listingTitle: t.listingId?.title || "Unknown Listing",
+        date: t.createdAt,
+      })),
+      message: "Seller wallet dey here—check am!",
+    });
+  } catch (err) {
+    console.error("Seller Wallet Error:", err);
+    res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };
