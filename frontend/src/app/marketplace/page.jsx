@@ -13,6 +13,7 @@ export default function Marketplace() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [selectedFlair, setSelectedFlair] = useState("All");
+  const [searchTerm, setSearchTerm] = useState(""); // New search state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -53,9 +54,16 @@ export default function Marketplace() {
         (listing) => listing.userId.flair === selectedFlair
       );
     }
+    if (searchTerm) {
+      filtered = filtered.filter(
+        (listing) =>
+          listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          listing.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
     setFilteredListings(filtered);
     console.log("Filtered Listings:", filtered); // Debug
-  }, [listings, selectedCategory, selectedStatus, selectedFlair]);
+  }, [listings, selectedCategory, selectedStatus, selectedFlair, searchTerm]);
 
   const fetchCurrentUser = async () => {
     const token = localStorage.getItem("token");
@@ -259,12 +267,6 @@ export default function Marketplace() {
               >
                 Home
               </Link>
-              {/* <Link
-                href="/premium"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Wallet
-              </Link> */}
               <Link
                 href="/marketplace/wallet"
                 className="text-green-100 hover:text-white text-sm font-medium"
@@ -347,6 +349,17 @@ export default function Marketplace() {
             </form>
           </div>
         )}
+
+        {/* Search Bar */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+          <input
+            type="text"
+            placeholder="Search items (e.g., Jollof Pot)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2 border rounded-lg text-gray-800"
+          />
+        </div>
 
         {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-md p-4 mb-6">
