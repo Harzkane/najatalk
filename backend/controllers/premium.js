@@ -102,17 +102,20 @@ export const completePremium = async (req, res) => {
 
 export const getWallet = async (req, res) => {
   try {
-    console.log("Fetching wallet for:", req.user.email);
     const wallet = await Wallet.findOne({ userId: req.user._id });
-    if (!wallet) {
-      return res.json({ balance: 0, message: "No wallet yet—start tipping!" });
+    console.log(
+      "Fetching wallet for:",
+      req.user.email,
+      "Balance:",
+      wallet?.balance
+    );
+    if (!wallet || typeof wallet.balance !== "number") {
+      return res.json({ balance: 0, message: "No wallet yet—start funding!" });
     }
-    res.json({ balance: wallet.balance / 100, message: "Wallet dey here!" });
+    res.json({ balance: wallet.balance, message: "Wallet dey here!" }); // Return kobo
   } catch (err) {
-    console.error("Wallet Error:", err.response?.data || err.message);
-    res.status(500).json({
-      message: "Wallet fetch scatter: " + (err.message || err),
-    });
+    console.error("Wallet Error:", err.message);
+    res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };
 

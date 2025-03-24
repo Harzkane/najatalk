@@ -22,7 +22,7 @@ export const authMiddleware = async (req, res, next) => {
         .json({ message: "You don dey banned—abeg comot!" });
 
     req.user = user;
-    console.log("Auth user:", req.user); // Log user
+    // console.log("Auth user:", req.user); // Log user
     next();
   } catch (err) {
     console.error("Auth Error:", err.message); // Log error

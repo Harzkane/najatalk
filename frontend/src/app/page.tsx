@@ -7,6 +7,7 @@ import axios from "axios";
 import Link from "next/link";
 import SearchBar from "@/components/threads/SearchBar";
 import NewThreadButton from "@/components/threads/NewThreadButton";
+import Header from "@/components/Header"; // New import
 import formatDate from "@/utils/formatDate";
 
 type Reply = {
@@ -31,19 +32,29 @@ type SearchResponse = {
   message: string;
 };
 
+type Ad = {
+  _id: string;
+  brand: string;
+  text: string;
+  link: string;
+  type: "sidebar" | "banner" | "popup";
+  budget: number; // Added
+  cpc: number; // Added
+  status?: "pending" | "active" | "expired"; // Optional, added for consistency
+};
+
 export default function Home() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [allThreads, setAllThreads] = useState<Thread[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [bannerAd, setBannerAd] = useState<Ad | null>(null);
   const [message, setMessage] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [ads, setAds] = useState<Ad[]>([]);
 
-  const [ads, setAds] = useState<
-    { id: number; brand: string; text: string; link: string }[]
-  >([]);
   const router = useRouter();
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -55,24 +66,61 @@ export default function Home() {
   ];
   const categories = ["General", "Gist", "Politics", "Romance"];
 
+  // Update useEffect to call fetchBannerAd on every mount
   useEffect(() => {
-    const checkPremium = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (token) {
-          const res = await axios.get("/api/users/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setIsPremium(res.data.isPremium);
-        }
-      } catch (err) {
-        console.error("Check Premium Error:", err);
+    const checkPremiumAndAds = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const res = await axios.get("/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsPremium(res.data.isPremium);
+        if (!res.data.isPremium) await fetchBannerAd(); // Fetch fresh each time
+      } else {
+        await fetchBannerAd(); // Non-logged-in users see ads too
       }
+      fetchThreads();
+      fetchAds();
     };
-    checkPremium();
-    fetchThreads();
-    fetchAds();
-  }, []);
+    checkPremiumAndAds();
+  }, []); // Still runs once, but fetchBannerAd randomizes
+
+  const fetchBannerAd = async () => {
+    try {
+      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+        params: { status: "active", type: "banner" },
+      });
+      console.log("Banner Ads Fetched:", res.data.ads);
+      const activeBanners = res.data.ads.filter(
+        (ad) => ad.type === "banner" && ad.budget >= ad.cpc
+      );
+      if (activeBanners.length > 0) {
+        // Randomize: Pick one from active banners
+        const randomIndex = Math.floor(Math.random() * activeBanners.length);
+        const selectedBanner = activeBanners[randomIndex];
+        setBannerAd(selectedBanner);
+        console.log("Selected Banner:", selectedBanner);
+        console.log("Tracking Banner Impression:", selectedBanner._id);
+        await axios.get(`/api/ads/impression/${selectedBanner._id}`);
+      } else {
+        console.log("No valid banner ads found.");
+        setBannerAd(null);
+      }
+    } catch (err) {
+      console.error("Banner fetch error:", err);
+      setBannerAd(null);
+    }
+  };
+
+  const trackBannerClick = async (adId: string) => {
+    try {
+      console.log("Tracking Banner Click:", adId);
+      await axios.post(`/api/ads/click/${adId}`);
+      console.log("Banner click tracked successfully.");
+    } catch (err) {
+      console.error("Banner click error:", err);
+    }
+  };
 
   useEffect(() => {
     const savedSearches = localStorage.getItem("recentSearches");
@@ -114,7 +162,6 @@ export default function Home() {
   const fetchThreads = async () => {
     try {
       const res = await axios.get("/api/threads");
-      console.log("Threads Response:", res.data);
       const threads = res.data.threads || [];
       const threadsWithReplies = await Promise.all(
         threads.map(async (thread: Thread) => {
@@ -141,14 +188,23 @@ export default function Home() {
 
   const fetchAds = async () => {
     try {
-      const res = await axios.get<{
-        ads: { id: number; brand: string; text: string; link: string }[];
-        message: string;
-      }>("/api/ads");
-      setAds(res.data.ads);
+      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+        params: { status: "active", type: "sidebar" }, // Filter server-side
+      });
+      console.log("Sidebar Ads Fetched:", res.data.ads);
+      setAds(res.data.ads); // No client-side filter needed
     } catch (err) {
       console.error("Failed to fetch ads:", err);
       setMessage("Ads no dey load—abeg check later!");
+      setAds([]);
+    }
+  };
+
+  const trackImpression = async (adId: string) => {
+    try {
+      await axios.get(`/api/ads/impression/${adId}`);
+    } catch (err) {
+      console.error("Impression track failed:", err);
     }
   };
 
@@ -271,34 +327,11 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-200 p-6 pb-20">
       <div className="max-w-5xl mx-auto mb-3">
-        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">
-              NaijaTalk Forum—Wetin Dey Happen?
-            </h1>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="/premium"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Wallet
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-
+        <Header
+          title="NaijaTalk Forum—Wetin Dey Happen?"
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+        />
         <div className="bg-white p-4 rounded-b-lg shadow-md">
           <SearchBar
             onSearch={handleSearch}
@@ -314,7 +347,7 @@ export default function Home() {
             <h2 className="text-lg font-semibold text-green-800 mb-3">
               Categories
             </h2>
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
@@ -342,8 +375,22 @@ export default function Home() {
         </div>
 
         <div className="w-[70%]">
+          {!isPremium && bannerAd && (
+            <div className="bg-yellow-100 p-4 mb-1 rounded-lg shadow text-center">
+              <a
+                href={bannerAd.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackBannerClick(bannerAd._id)}
+                className="text-blue-600 font-bold hover:underline"
+              >
+                {bannerAd.brand}: {bannerAd.text}
+              </a>
+            </div>
+          )}
+
           {message && (
-            <p className="text-center text-sm text-gray-600 mb-4 bg-white p-2 rounded-lg">
+            <p className="text-center text-sm text-gray-600 mb-1 bg-white p-2 rounded-xs">
               {message}
               {searchQuery ? `: "${searchQuery}"` : ""}
             </p>
@@ -468,12 +515,36 @@ export default function Home() {
               <div>
                 {ads.length > 0 ? (
                   ads.map((ad) => (
-                    <div key={ad.id} className="mb-4">
+                    <div
+                      key={ad._id}
+                      className="mb-4"
+                      ref={(el) => {
+                        if (el) {
+                          const observer = new IntersectionObserver(
+                            ([entry]) => {
+                              if (entry.isIntersecting) {
+                                trackImpression(ad._id);
+                                observer.disconnect(); // Track once per load
+                              }
+                            },
+                            { threshold: 0.5 } // 50% visible
+                          );
+                          observer.observe(el);
+                        }
+                      }}
+                    >
                       <a
                         href={ad.link}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline"
+                        onClick={async () => {
+                          try {
+                            await axios.post(`/api/ads/click/${ad._id}`);
+                          } catch (err) {
+                            console.error("Click track failed:", err);
+                          }
+                        }}
                       >
                         <strong>{ad.brand}</strong>: {ad.text}
                       </a>

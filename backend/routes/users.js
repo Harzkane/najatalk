@@ -25,6 +25,6 @@ router.put("/:userId/ban", authMiddleware, banUser);
 router.put("/:userId/unban", authMiddleware, unbanUser);
 router.get("/:userId/wallet", authMiddleware, getSellerWallet);
 router.post("/tip", authMiddleware, sendTip);
-router.get("/tip-verify", authMiddleware, verifyTip);
+router.post("/verifyTip", authMiddleware, verifyTip);
 
 export default router;

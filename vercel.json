@@ -28,10 +28,6 @@
       "dest": "/frontend/users/[id]"
     },
     {
-      "src": "/threads/tip-success",
-      "dest": "/frontend/threads/tip-success"
-    },
-    {
       "src": "/threads/([^/]+)",
       "dest": "/frontend/threads/[id]"
     },

@@ -15,7 +15,7 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null; // Add flair
+  userId: { _id: string; email: string; flair?: string } | null;
   category: string;
   createdAt: string;
   replies?: Reply[];
@@ -24,7 +24,7 @@ type Thread = {
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null; // Add flair
+  userId: { _id: string; email: string; flair?: string } | null;
   createdAt: string;
 };
 
@@ -33,15 +33,29 @@ type SearchResponse = {
   message: string;
 };
 
+type Ad = {
+  _id: string;
+  brand: string;
+  text: string;
+  link: string;
+  type: "sidebar" | "banner" | "popup";
+  budget: number;
+  cpc: number;
+  status: "pending" | "active" | "expired";
+};
+
 function ThreadsContent() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
+  const [bannerAd, setBannerAd] = useState<Ad | null>(null); // New state
+  const [isPremium, setIsPremium] = useState(false); // New state
   const [replyBody, setReplyBody] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerifyingTip, setIsVerifyingTip] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
@@ -55,7 +69,62 @@ function ThreadsContent() {
     "Best jollof",
   ];
 
+  // Verify tip after Paystack redirect
+  const verifyTip = useCallback(
+    async (reference: string, receiverId: string) => {
+      console.log("[verifyTip] Entering:", { reference, receiverId });
+      try {
+        setIsVerifyingTip(true);
+        console.log("[verifyTip] Before token check");
+        const token = localStorage.getItem("token");
+        if (!token) {
+          console.log("[verifyTip] No token found");
+          throw new Error("No token—abeg login!");
+        }
+        console.log("[verifyTip] Token:", token.slice(0, 10) + "...");
+
+        console.log("[verifyTip] Before axios");
+        const res = await axios.post(
+          "/api/users/verifyTip", // Correct endpoint
+          { reference, receiverId },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        console.log("[verifyTip] Success:", res.data);
+        setMessage(res.data.message || "Tip don land—gist too sweet!");
+        if (!threadId) await fetchThreads();
+
+        const walletRes = await axios.get("/api/premium/wallet", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("[verifyTip] Wallet after tip:", walletRes.data);
+        router.push("/premium");
+      } catch (err: unknown) {
+        console.error("[verifyTip] Error caught:", err);
+        let errMsg = "Tip scatter o—try again!";
+        if (axios.isAxiosError(err)) {
+          errMsg = err.response?.data?.message || errMsg;
+          console.log("[verifyTip] Axios error:", {
+            status: err.response?.status,
+            data: err.response?.data,
+          });
+        }
+        setMessage(errMsg);
+        const failUrl = new URLSearchParams({
+          tip: "failed",
+          reference,
+          receiverId,
+        }).toString();
+        router.push(`/threads?${failUrl}`);
+      } finally {
+        setIsVerifyingTip(false);
+        console.log("[verifyTip] Exited");
+      }
+    },
+    [router, threadId]
+  );
+
   useEffect(() => {
+    console.log("[useEffect] Starting");
     const savedSearches = localStorage.getItem("recentSearches");
     if (savedSearches) {
       setRecentSearches(JSON.parse(savedSearches));
@@ -63,17 +132,71 @@ function ThreadsContent() {
 
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
+    console.log("[useEffect] Token check:", !!token);
 
+    const reference = searchParams.get("reference");
+    const receiverId = searchParams.get("receiverId");
     const tipStatus = searchParams.get("tip");
-    if (tipStatus === "success") setMessage("Tip sent—gist too sweet!");
-    if (tipStatus === "failed") setMessage("Tip scatter o—try again!");
+    console.log(
+      "[useEffect] Params:",
+      Object.fromEntries(searchParams.entries())
+    );
+
+    if (reference && receiverId && !tipStatus) {
+      console.log("[useEffect] Calling verifyTip:", { reference, receiverId });
+      verifyTip(reference, receiverId);
+    } else if (tipStatus === "success") {
+      setMessage("Tip sent—gist too sweet!");
+      setTimeout(() => router.push("/threads"), 2000);
+    } else if (tipStatus === "failed") {
+      setMessage("Tip scatter o—try again!");
+      console.log("[useEffect] Failed params:", { reference, receiverId });
+    }
 
     if (threadId) {
       fetchSingleThread(threadId);
     } else {
       fetchThreads();
     }
-  }, [threadId, searchParams]);
+
+    const checkPremiumAndAds = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        const userRes = await axios.get("/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setIsPremium(userRes.data.isPremium);
+        if (!userRes.data.isPremium) fetchBannerAd(); // Fetch banner only if not premium
+      }
+    };
+    checkPremiumAndAds();
+    console.log("[useEffect] Done");
+  }, [threadId, searchParams, verifyTip, router]);
+
+  const fetchBannerAd = async () => {
+    try {
+      const res = await axios.get("/api/ads", {
+        params: { status: "active", type: "banner" },
+      });
+      const activeBanners = res.data.ads.filter(
+        (ad: Ad) => ad.budget >= ad.cpc
+      );
+      if (activeBanners.length > 0) {
+        setBannerAd(activeBanners[0]);
+        await axios.get(`/api/ads/impression/${activeBanners[0]._id}`);
+      }
+    } catch (err) {
+      console.error("Banner fetch error:", err);
+    }
+  };
+
+  const trackBannerClick = async (adId: string) => {
+    try {
+      await axios.post(`/api/ads/click/${adId}`);
+    } catch (err) {
+      console.error("Banner click error:", err);
+    }
+  };
 
   const fetchSingleThread = async (id: string) => {
     try {
@@ -285,6 +408,20 @@ function ThreadsContent() {
         </div>
 
         <div className="max-w-5xl mx-auto">
+          {!isPremium && bannerAd && (
+            <div className="bg-yellow-100 p-4 mb-4 rounded-lg shadow text-center">
+              <a
+                href={bannerAd.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => trackBannerClick(bannerAd._id)}
+                className="text-blue-600 font-bold hover:underline"
+              >
+                {bannerAd.brand}: {bannerAd.text}
+              </a>
+            </div>
+          )}
+
           {!selectedThread && (
             <div className="bg-white p-4 rounded-lg shadow-md mb-3">
               <SearchBar
@@ -297,7 +434,7 @@ function ThreadsContent() {
 
           {message && (
             <p className="text-center text-sm text-gray-600 mb-3 bg-white p-2 rounded-lg">
-              {message}
+              {isVerifyingTip ? "Verifying tip—abeg wait small..." : message}
               {searchQuery && !selectedThread ? `: "${searchQuery}"` : ""}
             </p>
           )}
@@ -334,7 +471,6 @@ function ThreadsContent() {
                 <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
                   <p>{selectedThread.body}</p>
                   <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
-                    {/* Hover Tooltip: /threads—hover on “Reply” button dey show “Reply to [flair]”—small Naija vibe tweak! Not working yet */}
                     <button
                       onClick={() =>
                         document.getElementById("replyForm")?.focus()

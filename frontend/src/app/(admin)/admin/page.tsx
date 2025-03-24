@@ -24,9 +24,25 @@ type BannedUser = {
   appealStatus?: string;
 };
 
+type Ad = {
+  _id: string;
+  userId: { _id: string; email: string };
+  brand: string;
+  text: string;
+  link: string;
+  type: string;
+  budget: number;
+  cpc: number;
+  status: string;
+  clicks: number;
+  impressions: number;
+  createdAt: string;
+};
+
 export default function AdminDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
+  const [ads, setAds] = useState<Ad[]>([]);
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const router = useRouter();
@@ -37,8 +53,54 @@ export default function AdminDashboard() {
     if (token) {
       fetchReports();
       fetchBannedUsers();
+      fetchPendingAds();
     }
   }, []);
+
+  const fetchPendingAds = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status: "pending" }, // Ensure this is sent
+      });
+      console.log("Pending Ads Response:", res.data); // Log response
+      setAds(res.data.ads || []);
+    } catch (err) {
+      console.error("Fetch ads error:", err);
+      setMessage("Ads fetch scatter o!");
+    }
+  };
+
+  const approveAd = async (adId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.put<{ message: string }>(
+        `/api/ads/${adId}`,
+        { status: "active", startDate: new Date() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setMessage(res.data.message);
+      setAds(ads.filter((ad) => ad._id !== adId));
+    } catch (err) {
+      console.error("Approve ad error:", err);
+      setMessage("Ad approval scatter o!");
+    }
+  };
+
+  const rejectAd = async (adId: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.delete<{ message: string }>(`/api/ads/${adId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setMessage(res.data.message);
+      setAds(ads.filter((ad) => ad._id !== adId));
+    } catch (err) {
+      console.error("Reject ad error:", err);
+      setMessage("Ad rejection scatter o!");
+    }
+  };
 
   const fetchReports = async () => {
     try {
@@ -382,6 +444,70 @@ export default function AdminDashboard() {
           ) : (
             <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
               No banned users yet—everybody dey behave!
+            </p>
+          )}
+        </div>
+
+        {/* Ads Section */}
+        <div className="mt-6">
+          <h2 className="text-2xl font-semibold text-green-800 mb-3">
+            Pending Ads
+          </h2>
+          {ads.length > 0 ? (
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <table className="w-full text-left">
+                <thead className="bg-gray-200">
+                  <tr>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Brand
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Text
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Type
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Budget
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      CPC
+                    </th>
+                    <th className="p-3 text-sm font-semibold text-gray-700">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ads.map((ad) => (
+                    <tr key={ad._id} className="border-t border-gray-100">
+                      <td className="p-3 text-gray-700">{ad.brand}</td>
+                      <td className="p-3 text-gray-700">{ad.text}</td>
+                      <td className="p-3 text-gray-700">{ad.type}</td>
+                      <td className="p-3 text-gray-700">₦{ad.budget / 100}</td>
+                      <td className="p-3 text-gray-700">₦{ad.cpc / 100}</td>
+                      <td className="p-3">
+                        <button
+                          onClick={() => approveAd(ad._id)}
+                          className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => rejectAd(ad._id)}
+                          className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                        >
+                          Reject
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+              No pending ads yet—advertisers dey sleep!
             </p>
           )}
         </div>

@@ -39,7 +39,7 @@ export const createThread = async (req, res) => {
 export const getThreads = async (req, res) => {
   try {
     const threads = await Thread.find().populate("userId", "email flair");
-    console.log("Threads fetched:", threads); // Log threads
+    // console.log("Threads fetched:", threads); // Log threads
     if (!threads.length) {
       return res.json({ threads: [], message: "No gist yet—drop your own!" });
     }

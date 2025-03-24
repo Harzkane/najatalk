@@ -350,3 +350,47 @@ export default mongoose.model("Listing", listingSchema);
 - **Next:** Sync frontend with these results or jump to Day 20 (escrow)?
 
 Holla me, Boss—marketplace dey tight! What’s the vibe?
+
+{
+"version": 2,
+"builds": [
+{
+"src": "frontend/package.json",
+"use": "@vercel/next"
+},
+{
+"src": "backend/index.js",
+"use": "@vercel/node"
+}
+],
+"routes": [
+{
+"src": "/api/(._)",
+"dest": "/backend/index.js"
+},
+{
+"src": "/verify/([^/]+)",
+"dest": "/frontend/verify/[token]"
+},
+{
+"src": "/users/([^/]+)/wallet",
+"dest": "/frontend/users/[id]/wallet"
+},
+{
+"src": "/users/([^/]+)",
+"dest": "/frontend/users/[id]"
+},
+{
+"src": "/threads/tip-success",
+"dest": "/frontend/threads/tip-success"
+},
+{
+"src": "/threads/([^/]+)",
+"dest": "/frontend/threads/[id]"
+},
+{
+"src": "/(._)",
+"dest": "/frontend/$1"
+}
+]
+}
