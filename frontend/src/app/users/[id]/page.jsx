@@ -55,7 +55,7 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">User Profile</h1>
@@ -86,7 +86,7 @@ export default function UserProfile() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {message && (
           <p className="text-center text-sm text-gray-600 mb-4 bg-white p-2 rounded-lg">
             {message}
@@ -103,11 +103,10 @@ export default function UserProfile() {
             <p className="text-gray-800">
               <strong>Flair:</strong>{" "}
               <span
-                className={`inline-block text-white px-1 rounded text-xs ${
-                  user.flair === "Oga at the Top"
+                className={`inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
                     ? "bg-yellow-500"
                     : "bg-green-500"
-                }`}
+                  }`}
               >
                 {user.flair}
               </span>
@@ -137,13 +136,12 @@ export default function UserProfile() {
                     <p className="text-xs text-gray-600">
                       Status:{" "}
                       <span
-                        className={`${
-                          listing.status === "active"
+                        className={`${listing.status === "active"
                             ? "text-green-600"
                             : listing.status === "pending"
-                            ? "text-yellow-600"
-                            : "text-gray-600"
-                        } font-semibold`}
+                              ? "text-yellow-600"
+                              : "text-gray-600"
+                          } font-semibold`}
                       >
                         {listing.status.charAt(0).toUpperCase() +
                           listing.status.slice(1)}

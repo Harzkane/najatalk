@@ -62,7 +62,7 @@ function ThreadDetailContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
           <div className="flex justify-between items-center">
             <h1 className="text-4xl font-bold text-gray-50 text-center">
@@ -86,7 +86,7 @@ function ThreadDetailContent() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {message && (
           <p className="text-center text-sm text-gray-600 mb-3 bg-white p-2 rounded-lg">
             {message}

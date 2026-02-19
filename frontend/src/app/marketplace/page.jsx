@@ -245,7 +245,7 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-bold">
@@ -294,7 +294,7 @@ export default function Marketplace() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {message && (
           <p className="text-center text-sm text-gray-600 mb-4 bg-white p-2 rounded-lg">
             {message}
@@ -370,11 +370,10 @@ export default function Marketplace() {
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => handleCategoryFilter("All")}
-                  className={`px-3 py-1 rounded-lg text-sm ${
-                    selectedCategory === "All"
+                  className={`px-3 py-1 rounded-lg text-sm ${selectedCategory === "All"
                       ? "bg-green-600 text-white"
                       : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                  }`}
+                    }`}
                 >
                   All
                 </button>
@@ -382,11 +381,10 @@ export default function Marketplace() {
                   <button
                     key={cat}
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      selectedCategory === cat
+                    className={`px-3 py-1 rounded-lg text-sm ${selectedCategory === cat
                         ? "bg-green-600 text-white"
                         : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     {cat}
                   </button>
@@ -402,11 +400,10 @@ export default function Marketplace() {
                   <button
                     key={status}
                     onClick={() => handleStatusFilter(status)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      selectedStatus === status
+                    className={`px-3 py-1 rounded-lg text-sm ${selectedStatus === status
                         ? "bg-green-600 text-white"
                         : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     {status}
                   </button>
@@ -422,11 +419,10 @@ export default function Marketplace() {
                   <button
                     key={flair}
                     onClick={() => handleFlairFilter(flair)}
-                    className={`px-3 py-1 rounded-lg text-sm ${
-                      selectedFlair === flair
+                    className={`px-3 py-1 rounded-lg text-sm ${selectedFlair === flair
                         ? "bg-green-600 text-white"
                         : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     {flair}
                   </button>
@@ -461,11 +457,10 @@ export default function Marketplace() {
                     </Link>{" "}
                     {listing.userId.flair && (
                       <span
-                        className={`inline-block text-white px-1 rounded text-xs ${
-                          listing.userId.flair === "Oga at the Top"
+                        className={`inline-block text-white px-1 rounded text-xs ${listing.userId.flair === "Oga at the Top"
                             ? "bg-yellow-500"
                             : "bg-green-500"
-                        }`}
+                          }`}
                       >
                         {listing.userId.flair}
                       </span>
@@ -477,13 +472,12 @@ export default function Marketplace() {
                   <p className="text-xs text-gray-600">
                     Status:{" "}
                     <span
-                      className={`${
-                        listing.status === "active"
+                      className={`${listing.status === "active"
                           ? "text-green-600"
                           : listing.status === "pending"
-                          ? "text-yellow-600"
-                          : "text-gray-600"
-                      } font-semibold`}
+                            ? "text-yellow-600"
+                            : "text-gray-600"
+                        } font-semibold`}
                     >
                       {listing.status.charAt(0).toUpperCase() +
                         listing.status.slice(1)}

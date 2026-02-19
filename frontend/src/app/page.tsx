@@ -308,9 +308,8 @@ export default function Home() {
       setThreads(filtered);
       setMessage(
         filtered.length
-          ? `${filtered.length} thread${
-              filtered.length > 1 ? "s" : ""
-            } in ${category}`
+          ? `${filtered.length} thread${filtered.length > 1 ? "s" : ""
+          } in ${category}`
           : `No threads in ${category} yet—start one!`
       );
     }
@@ -326,7 +325,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-200 p-6 pb-20">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <Header
           title="NaijaTalk Forum—Wetin Dey Happen?"
           isLoggedIn={isLoggedIn}
@@ -341,7 +340,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto flex gap-1">
+      <div className="max-w-7xl mx-auto flex gap-1">
         <div className="w-[15%]">
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-semibold text-green-800 mb-3">
@@ -351,9 +350,8 @@ export default function Home() {
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-blue-600 hover:underline text-sm ${
-                    !selectedCategory ? "font-bold text-blue-800" : ""
-                  }`}
+                  className={`w-full text-left text-blue-600 hover:underline text-sm ${!selectedCategory ? "font-bold text-blue-800" : ""
+                    }`}
                 >
                   All Categories
                 </button>
@@ -362,9 +360,8 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-blue-600 hover:underline text-sm ${
-                      selectedCategory === cat ? "font-bold text-blue-800" : ""
-                    }`}
+                    className={`w-full text-left text-blue-600 hover:underline text-sm ${selectedCategory === cat ? "font-bold text-blue-800" : ""
+                      }`}
                   >
                     {cat}
                   </button>
@@ -422,11 +419,10 @@ export default function Home() {
                       </span>
                       {thread.userId?.flair && (
                         <span
-                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                            thread.userId.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                          }`}
+                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                            }`}
                         >
                           {thread.userId.flair}
                         </span>
@@ -448,20 +444,19 @@ export default function Home() {
                         ].userId?.email?.split("@")[0] || "Unknown"}
                         {thread.replies[thread.replies.length - 1].userId
                           ?.flair && (
-                          <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              thread.replies[thread.replies.length - 1].userId
+                            <span
+                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
                                 ?.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
-                          >
-                            {
-                              thread.replies[thread.replies.length - 1].userId
-                                ?.flair
-                            }
-                          </span>
-                        )}
+                                }`}
+                            >
+                              {
+                                thread.replies[thread.replies.length - 1].userId
+                                  ?.flair
+                              }
+                            </span>
+                          )}
                       </span>
                     )}
                   </div>

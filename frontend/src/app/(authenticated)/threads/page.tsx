@@ -339,9 +339,9 @@ function ThreadsContent() {
       setSelectedThread((prev) =>
         prev
           ? {
-              ...prev,
-              replies: [res.data.reply, ...(prev.replies || [])],
-            }
+            ...prev,
+            replies: [res.data.reply, ...(prev.replies || [])],
+          }
           : null
       );
     } catch (err: unknown) {
@@ -375,7 +375,7 @@ function ThreadsContent() {
         />
       </Head>
       <div className="min-h-screen bg-gray-100 p-6 pb-20">
-        <div className="max-w-5xl mx-auto mb-3">
+        <div className="max-w-7xl mx-auto mb-3">
           <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
             <div className="flex justify-between items-center">
               <h1 className="text-4xl font-bold text-gray-50 text-center">
@@ -407,7 +407,7 @@ function ThreadsContent() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {!isPremium && bannerAd && (
             <div className="bg-yellow-100 p-4 mb-4 rounded-lg shadow text-center">
               <a
@@ -454,11 +454,10 @@ function ThreadsContent() {
                       </span>
                       {selectedThread.userId?.flair && (
                         <span
-                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                            selectedThread.userId.flair === "Oga at the Top"
+                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${selectedThread.userId.flair === "Oga at the Top"
                               ? "bg-yellow-500"
                               : "bg-green-500"
-                          }`}
+                            }`}
                         >
                           {selectedThread.userId.flair}
                         </span>
@@ -577,11 +576,10 @@ function ThreadsContent() {
                               </span>
                               {reply.userId?.flair && (
                                 <span
-                                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                                    reply.userId.flair === "Oga at the Top"
+                                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${reply.userId.flair === "Oga at the Top"
                                       ? "bg-yellow-500"
                                       : "bg-green-500"
-                                  }`}
+                                    }`}
                                 >
                                   {reply.userId.flair}
                                 </span>

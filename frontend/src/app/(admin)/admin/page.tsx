@@ -246,7 +246,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
           <div className="flex justify-between items-center">
             <h1 className="text-4xl font-bold">Admin Dashboard—NaijaTalk</h1>
@@ -260,7 +260,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {message && (
           <p className="text-center text-sm text-gray-600 mb-3 bg-white p-2 rounded-lg">
             {message}
@@ -309,11 +309,10 @@ export default function AdminDashboard() {
                         {report.userId.email}
                         {report.userId.flair && (
                           <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              report.userId.flair === "Oga at the Top"
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
+                              }`}
                           >
                             {report.userId.flair}
                           </span>
@@ -348,11 +347,10 @@ export default function AdminDashboard() {
                           Ban{" "}
                           {report.reportedUserId.flair && (
                             <span
-                              className={`inline-block text-white px-1 rounded text-xs ${
-                                report.reportedUserId.flair === "Oga at the Top"
+                              className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
                                   ? "bg-yellow-500"
                                   : "bg-green-500"
-                              }`}
+                                }`}
                             >
                               {report.reportedUserId.flair}
                             </span>
@@ -402,11 +400,10 @@ export default function AdminDashboard() {
                         {user.email}
                         {user.flair && (
                           <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              user.flair === "Oga at the Top"
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
+                              }`}
                           >
                             {user.flair}
                           </span>

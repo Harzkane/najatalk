@@ -273,13 +273,13 @@ function PremiumPageContent() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <Header
           title="NaijaTalk Premium"
           isLoggedIn={true}
           onLogout={handleLogout}
         />
-        <div className="bg-white rounded-b-lg shadow-md p-6 max-w-md mx-auto">
+        <div className="bg-white rounded-b-lg shadow-md p-6 mt-6 max-w-md mx-auto">
           {message && (
             <p className="text-center text-sm text-gray-600 mb-4">{message}</p>
           )}
@@ -293,11 +293,10 @@ function PremiumPageContent() {
               </p>
               {flair ? (
                 <span
-                  className={`inline-block text-white px-2 py-1 rounded text-sm mb-4 ${
-                    flair === "Oga at the Top"
-                      ? "bg-yellow-500"
-                      : "bg-green-500"
-                  }`}
+                  className={`inline-block text-white px-2 py-1 rounded text-sm mb-4 ${flair === "Oga at the Top"
+                    ? "bg-yellow-500"
+                    : "bg-green-500"
+                    }`}
                 >
                   {flair}
                 </span>
@@ -352,7 +351,7 @@ function PremiumPageContent() {
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Tip History:</p>
                 {tipHistory.sent.length > 0 ||
-                tipHistory.received.length > 0 ? (
+                  tipHistory.received.length > 0 ? (
                   <ul className="text-xs text-gray-600 text-left mt-1 max-h-40 overflow-y-auto">
                     {tipHistory.sent.map((tip, idx) => (
                       <li key={idx}>
