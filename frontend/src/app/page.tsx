@@ -5,10 +5,10 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
-import SearchBar from "@/components/threads/SearchBar";
-import NewThreadButton from "@/components/threads/NewThreadButton";
-import Header from "@/components/Header";
-import formatDate from "@/utils/formatDate";
+import SearchBar from "../components/threads/SearchBar";
+import NewThreadButton from "../components/threads/NewThreadButton";
+import Header from "../components/Header";
+import formatDate from "../utils/formatDate";
 
 type Reply = {
   _id: string;
