@@ -5,8 +5,8 @@ import { useState, useEffect, useCallback, Suspense } from "react";
 import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import ThreadCard from "@/components/threads/ThreadCard";
-import formatDate from "@/utils/formatDate";
+import ThreadCard from "../../../../components/threads/ThreadCard";
+import formatDate from "../../../../utils/formatDate";
 
 type Thread = {
   _id: string;

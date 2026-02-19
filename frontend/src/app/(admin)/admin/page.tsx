@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import formatDate from "@/utils/formatDate";
+import formatDate from "../../../utils/formatDate";
 
 type Report = {
   _id: string;
@@ -309,11 +309,10 @@ export default function AdminDashboard() {
                         {report.userId.email}
                         {report.userId.flair && (
                           <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              report.userId.flair === "Oga at the Top"
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
+                              }`}
                           >
                             {report.userId.flair}
                           </span>
@@ -348,11 +347,10 @@ export default function AdminDashboard() {
                           Ban{" "}
                           {report.reportedUserId.flair && (
                             <span
-                              className={`inline-block text-white px-1 rounded text-xs ${
-                                report.reportedUserId.flair === "Oga at the Top"
+                              className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
                                   ? "bg-yellow-500"
                                   : "bg-green-500"
-                              }`}
+                                }`}
                             >
                               {report.reportedUserId.flair}
                             </span>
@@ -402,11 +400,10 @@ export default function AdminDashboard() {
                         {user.email}
                         {user.flair && (
                           <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              user.flair === "Oga at the Top"
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
+                              }`}
                           >
                             {user.flair}
                           </span>

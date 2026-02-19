@@ -6,10 +6,10 @@ import axios from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Head from "next/head";
-import ThreadCard from "@/components/threads/ThreadCard";
-import SearchBar from "@/components/threads/SearchBar";
-import NewThreadButton from "@/components/threads/NewThreadButton";
-import formatDate from "@/utils/formatDate";
+import ThreadCard from "../../../components/threads/ThreadCard";
+import SearchBar from "../../../components/threads/SearchBar";
+import NewThreadButton from "../../../components/threads/NewThreadButton";
+import formatDate from "../../../utils/formatDate";
 
 type Thread = {
   _id: string;
@@ -465,11 +465,10 @@ function ThreadsContent() {
                           </span>
                           {selectedThread.userId?.flair && (
                             <span
-                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                                selectedThread.userId.flair === "Oga at the Top"
+                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${selectedThread.userId.flair === "Oga at the Top"
                                   ? "bg-yellow-500"
                                   : "bg-green-500"
-                              }`}
+                                }`}
                             >
                               {selectedThread.userId.flair}
                             </span>
@@ -569,7 +568,7 @@ function ThreadsContent() {
                   )}
 
                   {selectedThread.replies &&
-                  selectedThread.replies.length > 0 ? (
+                    selectedThread.replies.length > 0 ? (
                     <div className="mb-6">
                       <h3 className="text-lg font-semibold text-green-800 mb-2">
                         Replies
@@ -589,11 +588,10 @@ function ThreadsContent() {
                                   </span>
                                   {reply.userId?.flair && (
                                     <span
-                                      className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                                        reply.userId.flair === "Oga at the Top"
+                                      className={`ml-1 inline-block text-white px-1 rounded text-xs ${reply.userId.flair === "Oga at the Top"
                                           ? "bg-yellow-500"
                                           : "bg-green-500"
-                                      }`}
+                                        }`}
                                     >
                                       {reply.userId.flair}
                                     </span>

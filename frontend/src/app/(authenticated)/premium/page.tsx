@@ -5,7 +5,7 @@ import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import axios from "axios";
 import Link from "next/link";
-import Header from "@/components/Header";
+import Header from "../../../components/Header";
 
 // Define response types
 interface UserResponse {
@@ -340,11 +340,10 @@ function PremiumPageContent() {
               </p>
               {flair ? (
                 <span
-                  className={`block text-center text-white px-2 py-1 rounded text-sm mb-4 mx-auto w-fit ${
-                    flair === "Oga at the Top"
+                  className={`block text-center text-white px-2 py-1 rounded text-sm mb-4 mx-auto w-fit ${flair === "Oga at the Top"
                       ? "bg-yellow-500"
                       : "bg-green-500"
-                  }`}
+                    }`}
                 >
                   {flair}
                 </span>
@@ -421,13 +420,12 @@ function PremiumPageContent() {
                             </td>
                             <td className="p-2 text-center">
                               <span
-                                className={`inline-block px-2 py-1 rounded text-xs ${
-                                  ad.status === "active"
+                                className={`inline-block px-2 py-1 rounded text-xs ${ad.status === "active"
                                     ? "bg-green-500 text-white"
                                     : ad.status === "pending"
-                                    ? "bg-yellow-500 text-white"
-                                    : "bg-red-500 text-white"
-                                }`}
+                                      ? "bg-yellow-500 text-white"
+                                      : "bg-red-500 text-white"
+                                  }`}
                               >
                                 {ad.status}
                               </span>
@@ -463,7 +461,7 @@ function PremiumPageContent() {
                   Tip History:
                 </p>
                 {tipHistory.sent.length > 0 ||
-                tipHistory.received.length > 0 ? (
+                  tipHistory.received.length > 0 ? (
                   <ul className="text-xs text-gray-600 text-left mt-1 max-h-40 overflow-y-auto">
                     {tipHistory.sent.map((tip, idx) => (
                       <li key={idx}>
