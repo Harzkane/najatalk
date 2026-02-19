@@ -17,22 +17,6 @@
       "dest": "/backend/index.js"
     },
     {
-      "src": "/verify/([^/]+)",
-      "dest": "/frontend/verify/[token]"
-    },
-    {
-      "src": "/users/([^/]+)/wallet",
-      "dest": "/frontend/users/[id]/wallet"
-    },
-    {
-      "src": "/users/([^/]+)",
-      "dest": "/frontend/users/[id]"
-    },
-    {
-      "src": "/threads/([^/]+)",
-      "dest": "/frontend/threads/[id]"
-    },
-    {
       "src": "/(.*)",
       "dest": "/frontend/$1"
     }
