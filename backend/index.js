@@ -38,6 +38,10 @@ app.use("/api/premium", premiumRoutes);
 app.use("/api/marketplace", marketplaceRoutes);
 app.use("/api/contests", contestsRoutes);
 
+app.get("/", (req, res) => {
+  res.status(200).send("NaijaTalk Backend Live 🚀");
+});
+
 app.use("/api/", dbRoutes); // Welcome route
 
 app.listen(PORT, () => {
