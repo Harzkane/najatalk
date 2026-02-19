@@ -3,7 +3,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -73,7 +74,7 @@ export default function Marketplace() {
       return;
     }
     try {
-      const res = await axios.get("/api/users/me", {
+      const res = await api.get("/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(res.data._id);
@@ -92,7 +93,7 @@ export default function Marketplace() {
 
   const fetchListings = async () => {
     try {
-      const res = await axios.get("/api/marketplace/listings", {
+      const res = await api.get("/marketplace/listings", {
         params: { includeSold: true },
       });
       setListings(res.data.listings);
@@ -105,7 +106,7 @@ export default function Marketplace() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("/api/marketplace/categories");
+      const res = await api.get("/marketplace/categories");
       setCategories(res.data.categories);
     } catch (err) {
       setMessage(err.response?.data?.message || "Categories load scatter o!");
@@ -134,10 +135,10 @@ export default function Marketplace() {
     }
     try {
       const url = editId
-        ? `/api/marketplace/listings/${editId}`
-        : "/api/marketplace/listings";
+        ? `/marketplace/listings/${editId}`
+        : "/marketplace/listings";
       const method = editId ? "put" : "post";
-      const res = await axios({
+      const res = await api({
         method,
         url,
         data: { title, description, price: Number(price), category },
@@ -166,7 +167,7 @@ export default function Marketplace() {
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
     try {
-      const res = await axios.delete(`/api/marketplace/listings/${id}`, {
+      const res = await api.delete(`/marketplace/listings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage(res.data.message);
@@ -184,8 +185,8 @@ export default function Marketplace() {
       return;
     }
     try {
-      const res = await axios.post(
-        `/api/marketplace/buy/${id}`,
+      const res = await api.post(
+        `/marketplace/buy/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -205,8 +206,8 @@ export default function Marketplace() {
       return;
     }
     try {
-      const res = await axios.post(
-        `/api/marketplace/release/${id}`,
+      const res = await api.post(
+        `/marketplace/release/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -371,8 +372,8 @@ export default function Marketplace() {
                 <button
                   onClick={() => handleCategoryFilter("All")}
                   className={`px-3 py-1 rounded-lg text-sm ${selectedCategory === "All"
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                    ? "bg-green-600 text-white"
+                    : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                     }`}
                 >
                   All
@@ -382,8 +383,8 @@ export default function Marketplace() {
                     key={cat}
                     onClick={() => handleCategoryFilter(cat)}
                     className={`px-3 py-1 rounded-lg text-sm ${selectedCategory === cat
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       }`}
                   >
                     {cat}
@@ -401,8 +402,8 @@ export default function Marketplace() {
                     key={status}
                     onClick={() => handleStatusFilter(status)}
                     className={`px-3 py-1 rounded-lg text-sm ${selectedStatus === status
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       }`}
                   >
                     {status}
@@ -420,8 +421,8 @@ export default function Marketplace() {
                     key={flair}
                     onClick={() => handleFlairFilter(flair)}
                     className={`px-3 py-1 rounded-lg text-sm ${selectedFlair === flair
-                        ? "bg-green-600 text-white"
-                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
+                      ? "bg-green-600 text-white"
+                      : "bg-gray-200 text-gray-800 hover:bg-gray-300"
                       }`}
                   >
                     {flair}
@@ -458,8 +459,8 @@ export default function Marketplace() {
                     {listing.userId.flair && (
                       <span
                         className={`inline-block text-white px-1 rounded text-xs ${listing.userId.flair === "Oga at the Top"
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
+                          ? "bg-yellow-500"
+                          : "bg-green-500"
                           }`}
                       >
                         {listing.userId.flair}
@@ -473,10 +474,10 @@ export default function Marketplace() {
                     Status:{" "}
                     <span
                       className={`${listing.status === "active"
-                          ? "text-green-600"
-                          : listing.status === "pending"
-                            ? "text-yellow-600"
-                            : "text-gray-600"
+                        ? "text-green-600"
+                        : listing.status === "pending"
+                          ? "text-yellow-600"
+                          : "text-gray-600"
                         } font-semibold`}
                     >
                       {listing.status.charAt(0).toUpperCase() +

@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import { useRouter } from "next/navigation"; // Add this
 
 export default function Signup() {
@@ -14,7 +15,7 @@ export default function Signup() {
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post<{ message: string }>("/api/auth/signup", {
+      const res = await api.post<{ message: string }>("/auth/signup", {
         email,
         password,
       });

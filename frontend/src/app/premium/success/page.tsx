@@ -4,7 +4,8 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 
 function LoadingComponent() {
   return (
@@ -39,8 +40,8 @@ function PremiumSuccessContent() {
           return;
         }
         console.log("Sending reference to verify:", reference);
-        const res = await axios.post(
-          "/api/premium/verify",
+        const res = await api.post(
+          "/premium/verify",
           { reference }, // Paystack uses "reference"
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -77,8 +78,8 @@ function PremiumSuccessContent() {
         return;
       }
       setIsProcessing(true);
-      const res = await axios.post(
-        "/api/premium/complete",
+      const res = await api.post(
+        "/premium/complete",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

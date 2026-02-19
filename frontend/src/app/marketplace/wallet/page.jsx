@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -27,7 +28,7 @@ export default function PlatformWallet() {
 
   const fetchWallet = async (token) => {
     try {
-      const res = await axios.get("/api/marketplace/wallet", {
+      const res = await api.get("/marketplace/wallet", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBalance(res.data.balance / 100);
@@ -46,7 +47,7 @@ export default function PlatformWallet() {
 
   const checkAdmin = async (token) => {
     try {
-      const res = await axios.get("/api/users/me", {
+      const res = await api.get("/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIsAdmin(res.data.role === "admin");

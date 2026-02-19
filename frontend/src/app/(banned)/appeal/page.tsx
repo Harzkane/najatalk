@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -40,8 +41,8 @@ function AppealContent() {
     const checkAppealStatus = async () => {
       if (email && password) {
         try {
-          const res = await axios.post<{ message: string }>(
-            "/api/users/appeal",
+          const res = await api.post<{ message: string }>(
+            "/users/appeal",
             { email, password, reason: "" }
           );
           setMessage(res.data.message);
@@ -74,7 +75,7 @@ function AppealContent() {
     if (appealStatus === "pending") return;
     setIsSubmitting(true);
     try {
-      const res = await axios.post<{ message: string }>("/api/users/appeal", {
+      const res = await api.post<{ message: string }>("/users/appeal", {
         email,
         password,
         reason,

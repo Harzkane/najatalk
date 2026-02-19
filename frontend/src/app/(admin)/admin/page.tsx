@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import formatDate from "@/utils/formatDate";
@@ -60,7 +61,7 @@ export default function AdminDashboard() {
   const fetchPendingAds = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         headers: { Authorization: `Bearer ${token}` },
         params: { status: "pending" }, // Ensure this is sent
       });
@@ -75,8 +76,8 @@ export default function AdminDashboard() {
   const approveAd = async (adId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/ads/${adId}`,
+      const res = await api.put<{ message: string }>(
+        `/ads/${adId}`,
         { status: "active", startDate: new Date() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -91,7 +92,7 @@ export default function AdminDashboard() {
   const rejectAd = async (adId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(`/api/ads/${adId}`, {
+      const res = await api.delete<{ message: string }>(`/ads/${adId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage(res.data.message);
@@ -105,8 +106,8 @@ export default function AdminDashboard() {
   const fetchReports = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{ reports: Report[]; message: string }>(
-        "/api/threads/reports",
+      const res = await api.get<{ reports: Report[]; message: string }>(
+        "/threads/reports",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setReports(res.data.reports || []);
@@ -128,10 +129,10 @@ export default function AdminDashboard() {
   const fetchBannedUsers = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         bannedUsers: BannedUser[];
         message: string;
-      }>("/api/users/banned", {
+      }>("/users/banned", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBannedUsers(res.data.bannedUsers || []);
@@ -151,8 +152,8 @@ export default function AdminDashboard() {
     if (!confirm("Sure say you wan delete this thread?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(
-        `/api/threads/${threadId}`,
+      const res = await api.delete<{ message: string }>(
+        `/threads/${threadId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
@@ -170,8 +171,8 @@ export default function AdminDashboard() {
     if (!confirm("Sure say you wan dismiss this report?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(
-        `/api/threads/reports/${reportId}`,
+      const res = await api.delete<{ message: string }>(
+        `/threads/reports/${reportId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
@@ -192,8 +193,8 @@ export default function AdminDashboard() {
     if (!confirm(`Sure say you wan ban ${email}?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/users/${userId}/ban`,
+      const res = await api.put<{ message: string }>(
+        `/users/${userId}/ban`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -220,8 +221,8 @@ export default function AdminDashboard() {
       return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/users/${userId}/unban`,
+      const res = await api.put<{ message: string }>(
+        `/users/${userId}/unban`,
         { approve },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -310,8 +311,8 @@ export default function AdminDashboard() {
                         {report.userId.flair && (
                           <span
                             className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
                               }`}
                           >
                             {report.userId.flair}
@@ -348,8 +349,8 @@ export default function AdminDashboard() {
                           {report.reportedUserId.flair && (
                             <span
                               className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
                                 }`}
                             >
                               {report.reportedUserId.flair}
@@ -401,8 +402,8 @@ export default function AdminDashboard() {
                         {user.flair && (
                           <span
                             className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
                               }`}
                           >
                             {user.flair}

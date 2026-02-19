@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep just in case, but usually not needed for simple gets
 
 type Ad = {
   _id: string;
@@ -27,7 +28,7 @@ export default function PopupAdWrapper({
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await axios.get("/api/users/me", {
+          const res = await api.get("/users/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setIsPremium(res.data.isPremium);
@@ -48,7 +49,7 @@ export default function PopupAdWrapper({
 
   const fetchPopupAd = async () => {
     try {
-      const res = await axios.get("/api/ads", {
+      const res = await api.get("/ads", {
         params: { status: "active", type: "popup" },
       });
       console.log("Popup Ads Fetched:", res.data.ads);
@@ -59,7 +60,7 @@ export default function PopupAdWrapper({
       if (activePopups.length > 0) {
         setPopupAd(activePopups[0]);
         console.log("Tracking Popup Impression:", activePopups[0]._id);
-        await axios.get(`/api/ads/impression/${activePopups[0]._id}`);
+        await api.get(`/ads/impression/${activePopups[0]._id}`);
         localStorage.setItem("hasSeenPopup", "true");
       } else {
         console.log("No valid popup ads found.");
@@ -74,7 +75,7 @@ export default function PopupAdWrapper({
   const trackPopupClick = async (adId: string) => {
     try {
       console.log("Tracking Popup Click:", adId);
-      await axios.post(`/api/ads/click/${adId}`);
+      await api.post(`/ads/click/${adId}`);
       console.log("Popup click tracked.");
     } catch (err) {
       console.error("Popup click error:", err);

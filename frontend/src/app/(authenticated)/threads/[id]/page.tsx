@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ThreadCard from "@/components/threads/ThreadCard";
@@ -37,7 +38,7 @@ function ThreadDetailContent() {
 
   const fetchThread = useCallback(async () => {
     try {
-      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      const res = await api.get<Thread>(`/threads/${id}`);
       setThread(res.data);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {

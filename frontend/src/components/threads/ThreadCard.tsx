@@ -4,7 +4,8 @@
 import { FC, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 
 type Reply = {
   _id: string;
@@ -59,8 +60,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const displayTitle = isReply
     ? `Re: ${originalTitle}`
     : isThread(thread)
-    ? thread.title
-    : "Reply";
+      ? thread.title
+      : "Reply";
   const hasReplies =
     isThread(thread) && thread.replies && thread.replies.length > 0;
 
@@ -99,8 +100,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
         router.push("/login");
         return;
       }
-      await axios.post(
-        `/api/threads/${thread._id}/replies`,
+      await api.post(
+        `/threads/${thread._id}/replies`,
         { body: replyText },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -122,8 +123,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const res = await axios.get<{ hasReported: boolean; message: string }>(
-          `/api/threads/${thread._id}/hasReported`,
+        const res = await api.get<{ hasReported: boolean; message: string }>(
+          `/threads/${thread._id}/hasReported`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setIsReported(res.data.hasReported);
@@ -153,8 +154,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `/api/threads/${thread._id}/report`,
+      await api.post(
+        `/threads/${thread._id}/report`,
         { reason: reportReason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -177,8 +178,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
         router.push("/login");
         return;
       }
-      const res = await axios.post(
-        "/api/users/tip",
+      const res = await api.post(
+        "/users/tip",
         { receiverId: thread.userId?._id, amount },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -197,9 +198,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
           <Link
             href={isReply ? "#" : `/threads/${thread._id}`}
-            className={`${
-              isReply ? "text-blue-900" : "text-green-800"
-            } font-bold text-base hover:underline`}
+            className={`${isReply ? "text-blue-900" : "text-green-800"
+              } font-bold text-base hover:underline`}
           >
             {displayTitle}
           </Link>
@@ -211,11 +211,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
               </span>
               {thread.userId?.flair && (
                 <span
-                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                    thread.userId.flair === "Oga at the Top"
+                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
                       ? "bg-yellow-500"
                       : "bg-green-500"
-                  }`}
+                    }`}
                 >
                   {thread.userId.flair}
                 </span>
@@ -261,9 +260,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           <button
             onClick={handleReport}
-            className={`flex items-center gap-1 text-xs ${
-              isReported ? "text-gray-400" : "hover:text-red-600"
-            }`}
+            className={`flex items-center gap-1 text-xs ${isReported ? "text-gray-400" : "hover:text-red-600"
+              }`}
             disabled={isReported}
           >
             <span

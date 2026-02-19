@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter } from "next/navigation";
+import axios from "axios"; // Keep for isAxiosError check
 
 export default function Login() {
   const [email, setEmail] = useState<string>("");
@@ -16,11 +17,11 @@ export default function Login() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await axios.post<{
+      const res = await api.post<{
         token: string;
         userId: string;
         message: string;
-      }>("/api/auth/login", { email, password });
+      }>("/auth/login", { email, password });
       setMessage(res.data.message);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("userId", res.data.userId); // Store userId

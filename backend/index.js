@@ -19,10 +19,12 @@ const PORT = process.env.PORT || 3000;
 // Add CORS middleware
 app.use(
   cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? process.env.FRONTEND_URL
-        : "http://localhost:3000",
+    origin: [
+      process.env.FRONTEND_URL, // Production Vercel URL
+      "http://localhost:3000", // Local development
+      "https://najatalk-talk.vercel.app", // Specific Vercel URL
+    ],
+    credentials: true,
   })
 );
 

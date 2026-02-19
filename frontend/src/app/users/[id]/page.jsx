@@ -3,7 +3,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -20,7 +21,7 @@ export default function UserProfile() {
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get(`/api/users/${id}`);
+      const res = await api.get(`/users/${id}`);
       setUser(res.data.user);
       setListings(res.data.listings);
       setMessage(res.data.message);
@@ -104,8 +105,8 @@ export default function UserProfile() {
               <strong>Flair:</strong>{" "}
               <span
                 className={`inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
+                  ? "bg-yellow-500"
+                  : "bg-green-500"
                   }`}
               >
                 {user.flair}
@@ -137,10 +138,10 @@ export default function UserProfile() {
                       Status:{" "}
                       <span
                         className={`${listing.status === "active"
-                            ? "text-green-600"
-                            : listing.status === "pending"
-                              ? "text-yellow-600"
-                              : "text-gray-600"
+                          ? "text-green-600"
+                          : listing.status === "pending"
+                            ? "text-yellow-600"
+                            : "text-gray-600"
                           } font-semibold`}
                       >
                         {listing.status.charAt(0).toUpperCase() +

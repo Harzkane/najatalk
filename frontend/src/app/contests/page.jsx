@@ -3,7 +3,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 import Link from "next/link";
 
 export default function Contests() {
@@ -16,7 +17,7 @@ export default function Contests() {
 
   const fetchContests = async () => {
     try {
-      const res = await axios.get("/api/contests");
+      const res = await api.get("/contests");
       setContests(res.data.contests);
       setMessage(res.data.message);
     } catch (err) {

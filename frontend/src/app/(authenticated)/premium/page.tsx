@@ -2,7 +2,8 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import Link from "next/link";
 import Header from "@/components/Header";
 
@@ -74,13 +75,13 @@ function PremiumPageContent() {
     try {
       const token = localStorage.getItem("token");
       const [userRes, adsRes] = await Promise.all([
-        axios.get<{
+        api.get<{
           _id: string;
           email: string;
           isPremium: boolean;
           flair?: string;
-        }>("/api/users/me", { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+        }>("/users/me", { headers: { Authorization: `Bearer ${token}` } }),
+        api.get<{ ads: Ad[]; message: string }>("/ads", {
           headers: { Authorization: `Bearer ${token}` },
           params: { status: "pending" },
         }),
@@ -103,24 +104,24 @@ function PremiumPageContent() {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token—abeg login!");
         const [userRes, walletRes, tipHistoryRes, adsRes] = await Promise.all([
-          axios.get<{
+          api.get<{
             _id: string;
             email: string;
             isPremium: boolean;
             flair?: string;
-          }>("/api/users/me", {
+          }>("/users/me", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get<{ balance: number }>("api/premium/wallet", {
+          api.get<{ balance: number }>("/premium/wallet", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get<{ sent: Tip[]; received: Tip[] }>(
-            "/api/premium/tip-history",
+          api.get<{ sent: Tip[]; received: Tip[] }>(
+            "/premium/tip-history",
             {
               headers: { Authorization: `Bearer ${token}` },
             }
           ),
-          axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+          api.get<{ ads: Ad[]; message: string }>("/ads", {
             headers: { Authorization: `Bearer ${token}` },
             params: { status: "pending" },
           }),
@@ -152,8 +153,8 @@ function PremiumPageContent() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ paymentLink: string }>(
-        "/api/premium/initiate",
+      const res = await api.post<{ paymentLink: string }>(
+        "/premium/initiate",
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -171,10 +172,10 @@ function PremiumPageContent() {
   const verifyPayment = async (reference: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         message: string;
         user?: { flair?: string };
-      }>(`/api/premium/verify?reference=${reference}`, {
+      }>(`/premium/verify?reference=${reference}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.message.includes("activated")) {
@@ -194,8 +195,8 @@ function PremiumPageContent() {
   const handleFlairChange = async (newFlair: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string }>(
-        "/api/users/flair",
+      const res = await api.post<{ message: string }>(
+        "/users/flair",
         { flair: newFlair || null },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -233,8 +234,8 @@ function PremiumPageContent() {
         budget: budgetInKobo,
         cpc: cpcInKobo,
       });
-      const res = await axios.post<{ message: string; ad: Ad }>(
-        "/api/ads",
+      const res = await api.post<{ message: string; ad: Ad }>(
+        "/ads",
         {
           brand: adBrand,
           text: adText,

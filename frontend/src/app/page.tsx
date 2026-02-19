@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import Link from "next/link";
 import SearchBar from "@/components/threads/SearchBar";
 import NewThreadButton from "@/components/threads/NewThreadButton";
@@ -71,7 +72,7 @@ export default function Home() {
     const checkPremiumAndAds = async () => {
       const token = localStorage.getItem("token");
       if (token) {
-        const res = await axios.get("/api/users/me", {
+        const res = await api.get("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setIsPremium(res.data.isPremium);
@@ -87,7 +88,7 @@ export default function Home() {
 
   const fetchBannerAd = async () => {
     try {
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         params: { status: "active", type: "banner" },
       });
       console.log("Banner Ads Fetched:", res.data.ads);
@@ -101,7 +102,7 @@ export default function Home() {
         setBannerAd(selectedBanner);
         console.log("Selected Banner:", selectedBanner);
         console.log("Tracking Banner Impression:", selectedBanner._id);
-        await axios.get(`/api/ads/impression/${selectedBanner._id}`);
+        await api.get(`/ads/impression/${selectedBanner._id}`);
       } else {
         console.log("No valid banner ads found.");
         setBannerAd(null);
@@ -115,7 +116,7 @@ export default function Home() {
   const trackBannerClick = async (adId: string) => {
     try {
       console.log("Tracking Banner Click:", adId);
-      await axios.post(`/api/ads/click/${adId}`);
+      await api.post(`/ads/click/${adId}`);
       console.log("Banner click tracked successfully.");
     } catch (err) {
       console.error("Banner click error:", err);
@@ -140,7 +141,7 @@ export default function Home() {
 
   const checkUserStatus = async (token: string) => {
     try {
-      await axios.get("/api/threads", {
+      await api.get("/threads", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setIsLoggedIn(true);
@@ -161,12 +162,12 @@ export default function Home() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get("/api/threads");
+      const res = await api.get("/threads");
       const threads = res.data.threads || [];
       const threadsWithReplies = await Promise.all(
         threads.map(async (thread: Thread) => {
           try {
-            const replyRes = await axios.get(`/api/threads/${thread._id}`);
+            const replyRes = await api.get(`/threads/${thread._id}`);
             return replyRes.data;
           } catch (err) {
             console.error(`Failed to fetch thread ${thread._id}:`, err);
@@ -188,7 +189,7 @@ export default function Home() {
 
   const fetchAds = async () => {
     try {
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         params: { status: "active", type: "sidebar" }, // Filter server-side
       });
       console.log("Sidebar Ads Fetched:", res.data.ads);
@@ -202,7 +203,7 @@ export default function Home() {
 
   const trackImpression = async (adId: string) => {
     try {
-      await axios.get(`/api/ads/impression/${adId}`);
+      await api.get(`/ads/impression/${adId}`);
     } catch (err) {
       console.error("Impression track failed:", err);
     }
@@ -212,14 +213,14 @@ export default function Home() {
     setSearchQuery(query);
     setSelectedCategory(null);
     try {
-      const res = await axios.get<SearchResponse>(
-        `/api/threads/search?q=${query}`
+      const res = await api.get<SearchResponse>(
+        `/threads/search?q=${query}`
       );
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
-            const replyRes = await axios.get<Thread>(
-              `/api/threads/${thread._id}`
+            const replyRes = await api.get<Thread>(
+              `/threads/${thread._id}`
             );
             return replyRes.data;
           } catch (err: unknown) {
@@ -261,8 +262,8 @@ export default function Home() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; thread: Thread }>(
-        "/api/threads",
+      const res = await api.post<{ message: string; thread: Thread }>(
+        "/threads",
         { title, body, category },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -535,7 +536,7 @@ export default function Home() {
                         className="text-blue-600 hover:underline"
                         onClick={async () => {
                           try {
-                            await axios.post(`/api/ads/click/${ad._id}`);
+                            await api.post(`/ads/click/${ad._id}`);
                           } catch (err) {
                             console.error("Click track failed:", err);
                           }

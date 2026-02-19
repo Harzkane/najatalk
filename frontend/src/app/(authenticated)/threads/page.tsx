@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Head from "next/head";
@@ -84,8 +85,8 @@ function ThreadsContent() {
         console.log("[verifyTip] Token:", token.slice(0, 10) + "...");
 
         console.log("[verifyTip] Before axios");
-        const res = await axios.post(
-          "/api/users/verifyTip", // Correct endpoint
+        const res = await api.post(
+          "/users/verifyTip", // Correct endpoint
           { reference, receiverId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -93,7 +94,7 @@ function ThreadsContent() {
         setMessage(res.data.message || "Tip don land—gist too sweet!");
         if (!threadId) await fetchThreads();
 
-        const walletRes = await axios.get("/api/premium/wallet", {
+        const walletRes = await api.get("/premium/wallet", {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("[verifyTip] Wallet after tip:", walletRes.data);
@@ -162,7 +163,7 @@ function ThreadsContent() {
     const checkPremiumAndAds = async () => {
       const token = localStorage.getItem("token");
       if (token) {
-        const userRes = await axios.get("/api/users/me", {
+        const userRes = await api.get("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setIsPremium(userRes.data.isPremium);
@@ -175,7 +176,7 @@ function ThreadsContent() {
 
   const fetchBannerAd = async () => {
     try {
-      const res = await axios.get("/api/ads", {
+      const res = await api.get("/ads", {
         params: { status: "active", type: "banner" },
       });
       const activeBanners = res.data.ads.filter(
@@ -183,7 +184,7 @@ function ThreadsContent() {
       );
       if (activeBanners.length > 0) {
         setBannerAd(activeBanners[0]);
-        await axios.get(`/api/ads/impression/${activeBanners[0]._id}`);
+        await api.get(`/ads/impression/${activeBanners[0]._id}`);
       }
     } catch (err) {
       console.error("Banner fetch error:", err);
@@ -192,7 +193,7 @@ function ThreadsContent() {
 
   const trackBannerClick = async (adId: string) => {
     try {
-      await axios.post(`/api/ads/click/${adId}`);
+      await api.post(`/ads/click/${adId}`);
     } catch (err) {
       console.error("Banner click error:", err);
     }
@@ -200,7 +201,7 @@ function ThreadsContent() {
 
   const fetchSingleThread = async (id: string) => {
     try {
-      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      const res = await api.get<Thread>(`/threads/${id}`);
       setSelectedThread(res.data);
       setThreads([]);
     } catch (err: unknown) {
@@ -216,8 +217,8 @@ function ThreadsContent() {
     async (query: string) => {
       setSearchQuery(query);
       try {
-        const res = await axios.get<SearchResponse>(
-          `/api/threads/search?q=${query}`
+        const res = await api.get<SearchResponse>(
+          `/threads/search?q=${query}`
         );
         setThreads(res.data.threads);
         setMessage(res.data.message);
@@ -247,15 +248,15 @@ function ThreadsContent() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get<{ threads: Thread[]; message: string }>(
-        "/api/threads"
+      const res = await api.get<{ threads: Thread[]; message: string }>(
+        "/threads"
       );
       console.log("Threads Response:", res.data);
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
-            const replyRes = await axios.get<Thread>(
-              `/api/threads/${thread._id}`
+            const replyRes = await api.get<Thread>(
+              `/threads/${thread._id}`
             );
             return replyRes.data;
           } catch (err) {
@@ -289,8 +290,8 @@ function ThreadsContent() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; thread: Thread }>(
-        "/api/threads",
+      const res = await api.post<{ message: string; thread: Thread }>(
+        "/threads",
         { title, body, category },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -329,8 +330,8 @@ function ThreadsContent() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; reply: Reply }>(
-        `/api/threads/${selectedThread._id}/replies`,
+      const res = await api.post<{ message: string; reply: Reply }>(
+        `/threads/${selectedThread._id}/replies`,
         { body: replyBody },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -455,8 +456,8 @@ function ThreadsContent() {
                       {selectedThread.userId?.flair && (
                         <span
                           className={`ml-1 inline-block text-white px-1 rounded text-xs ${selectedThread.userId.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
                             }`}
                         >
                           {selectedThread.userId.flair}
@@ -577,8 +578,8 @@ function ThreadsContent() {
                               {reply.userId?.flair && (
                                 <span
                                   className={`ml-1 inline-block text-white px-1 rounded text-xs ${reply.userId.flair === "Oga at the Top"
-                                      ? "bg-yellow-500"
-                                      : "bg-green-500"
+                                    ? "bg-yellow-500"
+                                    : "bg-green-500"
                                     }`}
                                 >
                                   {reply.userId.flair}

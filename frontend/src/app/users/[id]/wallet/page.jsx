@@ -2,7 +2,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for error handling if needed
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 
@@ -25,7 +26,7 @@ export default function SellerWallet() {
 
   const fetchWallet = async (token) => {
     try {
-      const res = await axios.get(`/api/users/${id}/wallet`, {
+      const res = await api.get(`/users/${id}/wallet`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBalance(res.data.balance / 100);

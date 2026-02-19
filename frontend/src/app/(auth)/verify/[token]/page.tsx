@@ -2,7 +2,8 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
-import axios, { AxiosError } from "axios";
+import api from "@/utils/api";
+import { AxiosError } from "axios";
 
 // Loading component
 function VerifyLoading() {
@@ -26,8 +27,8 @@ function VerifyContent() {
 
   useEffect(() => {
     if (token) {
-      axios
-        .get<{ message: string }>(`/api/auth/verify/${token}`)
+      api
+        .get<{ message: string }>(`/auth/verify/${token}`)
         .then((res) => setMessage(res.data.message))
         .catch((err: AxiosError<{ message: string }>) =>
           setMessage(err.response?.data?.message || "Verification scatter o!")
