@@ -123,27 +123,6 @@ export const getUserProfile = async (req, res) => {
   }
 };
 
-// export const setFlair = async (req, res) => {
-//   const { flair } = req.body;
-//   try {
-//     if (!req.user.isPremium) {
-//       return res.status(403).json({ message: "Abeg, premium only!" });
-//     }
-//     if (!["Verified G", "Oga at the Top"].includes(flair)) {
-//       return res.status(400).json({ message: "Flair no valid!" });
-//     }
-//     const user = await User.findByIdAndUpdate(
-//       req.user._id,
-//       { flair },
-//       { new: true }
-//     );
-//     if (!user) return res.status(404).json({ message: "User no dey!" });
-//     res.json({ message: "Flair set—shine on, bros!", user });
-//   } catch (err) {
-//     res.status(500).json({ message: "Flair scatter: " + err.message });
-//   }
-// };
-
 export const updateUserFlair = async (req, res) => {
   const { flair } = req.body;
   try {
@@ -281,7 +260,7 @@ export const getSellerWallet = async (req, res) => {
 //     });
 //     await transaction.save();
 
-//     const callbackUrl = `${process.env.FRONTEND_URL}/threads/tip-success?reference=${reference}&receiverId=${receiverId}`;
+//     const callbackUrl = `${process.env.FRONTEND_URL}/threads?reference=${reference}&receiverId=${receiverId}`;
 //     console.log(
 //       `[sendTip] Initiating Paystack: ref=${reference}, callback=${callbackUrl}`
 //     );
@@ -319,11 +298,8 @@ export const getSellerWallet = async (req, res) => {
 //   }
 // };
 
-// backend/controllers/users.js
-
-// backend/controllers/users.js
 export const sendTip = async (req, res) => {
-  const { receiverId, amount } = req.body;
+  const { receiverId, amount, threadId, replyId } = req.body; // Added threadId/replyId
   const senderId = req.user._id;
 
   try {
@@ -336,6 +312,12 @@ export const sendTip = async (req, res) => {
         .json({ message: "Tip must be ₦50, ₦100, or ₦200—abeg adjust!" });
     }
 
+    if (senderId.toString() === receiverId.toString()) {
+      return res
+        .status(400)
+        .json({ message: "You no fit tip yourself, bros!" });
+    }
+
     const receiver = await User.findById(receiverId);
     if (!receiver) return res.status(404).json({ message: "Receiver no dey!" });
 
@@ -343,6 +325,22 @@ export const sendTip = async (req, res) => {
     const senderBalance = senderWallet ? senderWallet.balance / 100 : 0;
     if (senderBalance < amount) {
       return res.status(400).json({ message: "Funds no dey—top up!" });
+    }
+
+    // Cooldown check (added below in step 4)
+    const today = new Date().toLocaleString("en-US", {
+      timeZone: "Africa/Lagos",
+    });
+    const startOfDay = new Date(today).setHours(0, 0, 0, 0);
+    const existingTip = await Transaction.findOne({
+      senderId,
+      [threadId ? "threadId" : "replyId"]: threadId || replyId,
+      type: "tip",
+      status: "completed",
+      createdAt: { $gte: startOfDay },
+    });
+    if (existingTip) {
+      return res.status(400).json({ message: "You don tip this one today!" });
     }
 
     const reference = `naijatalk_tip_${Date.now()}`;
@@ -355,10 +353,11 @@ export const sendTip = async (req, res) => {
       reference,
       type: "tip",
       status: "pending",
+      ...(threadId ? { threadId } : { replyId }), // Add threadId or replyId
     });
     await transaction.save();
 
-    const callbackUrl = `${process.env.FRONTEND_URL}/threads?reference=${reference}&receiverId=${receiverId}`;
+    const callbackUrl = `${process.env.FRONTEND_URL}/tip/success?reference=${reference}&receiverId=${receiverId}`;
     console.log(
       `[sendTip] Initiating Paystack: ref=${reference}, callback=${callbackUrl}`
     );
@@ -369,7 +368,7 @@ export const sendTip = async (req, res) => {
         email: req.user.email,
         amount: amount * 100,
         reference,
-        callback_url: callbackUrl,
+        callback_url: callbackUrl, // Updated to /tip/success
       },
       {
         headers: {
@@ -393,6 +392,37 @@ export const sendTip = async (req, res) => {
   } catch (err) {
     console.error("[sendTip] Error:", err.response?.data || err.message);
     res.status(500).json({ message: "Tip scatter: " + (err.message || err) });
+  }
+};
+
+export const hasTipped = async (req, res) => {
+  const { threadId, replyId } = req.query;
+  const senderId = req.user._id;
+
+  try {
+    if (!threadId && !replyId) {
+      return res.status(400).json({ message: "Thread or reply ID must dey!" });
+    }
+
+    const today = new Date().toLocaleString("en-US", {
+      timeZone: "Africa/Lagos",
+    });
+    const startOfDay = new Date(today).setHours(0, 0, 0, 0);
+    const existingTip = await Transaction.findOne({
+      senderId,
+      [threadId ? "threadId" : "replyId"]: threadId || replyId,
+      type: "tip",
+      status: "completed",
+      createdAt: { $gte: startOfDay },
+    });
+
+    res.json({
+      hasTipped: !!existingTip,
+      message: existingTip ? "You don tip this one today!" : "You fit tip am!",
+    });
+  } catch (err) {
+    console.error("[hasTipped] Error:", err.message);
+    res.status(500).json({ message: "Check scatter: " + err.message });
   }
 };
 

@@ -4,11 +4,19 @@ import Wallet from "../models/wallet.js";
 
 export const getAds = async (req, res) => {
   try {
-    const { status, type } = req.query; // Add type to query
+    const { status, type, userId } = req.query; // Add userId to query
     let query = {};
-    if (status && type) query = { status, type }; // Filter by both
-    else if (status) query = { status };
-    else query = { status: "active", budget: { $gt: 0 } }; // Default
+    if (userId) {
+      query.userId = userId; // Filter by userId if provided
+      if (status) query.status = status; // Optional status filter
+      if (type) query.type = type; // Optional type filter
+    } else if (status && type) {
+      query = { status, type }; // Original filter for public ads
+    } else if (status) {
+      query = { status };
+    } else {
+      query = { status: "active", budget: { $gt: 0 } }; // Default for public
+    }
     const ads = await Ad.find(query);
     console.log("Fetched Ads with Query:", query, ads);
     res.json({ ads, message: "Ads dey here—check am!" });
@@ -81,7 +89,6 @@ export const trackClick = async (req, res) => {
   }
 };
 
-// backend/controllers/ads.js
 export const updateAd = async (req, res) => {
   const { adId } = req.params;
   const { status, startDate } = req.body;
@@ -111,16 +118,20 @@ export const trackImpression = async (req, res) => {
   const { adId } = req.params;
   try {
     const ad = await Ad.findById(adId);
-    if (!ad || ad.status !== "active" || ad.budget < ad.cpc) {
+    if (!ad || ad.status !== "active" || ad.budget <= 0) {
       return res
         .status(404)
         .json({ message: "Ad no dey or budget don finish!" });
     }
     ad.impressions += 1;
+    ad.budget -= 500; // ₦5 in kobo
+    if (ad.budget <= 0) ad.status = "expired";
     ad.updatedAt = new Date();
     await ad.save();
+    console.log("Impression tracked:", { adId, budgetLeft: ad.budget });
     res.json({ message: "Impression tracked—ad dey shine!" });
   } catch (err) {
+    console.error("Impression track error:", err);
     res
       .status(500)
       .json({ message: "Impression track scatter: " + err.message });

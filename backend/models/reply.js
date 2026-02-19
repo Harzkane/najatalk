@@ -16,6 +16,11 @@ const replySchema = new mongoose.Schema({
     ref: "Thread",
     required: true,
   },
+  parentReplyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Reply",
+    default: null,
+  },
   createdAt: {
     type: Date,
     default: () =>

@@ -15,3 +15,6 @@
 ## Together
 
 We be team wey dey build “NaijaTalk” from ground up—me wit di code, NaijaShadow wit di brain. Dis na our digital buka, and we dey cook am hot! Check di [NAIJATALK_PROJECT_PLAN.md](NAIJATALK_PROJECT_PLAN.md) for di full gist.
+
+Inspiration Guess
+I’m betting NaijaTalk came from a mix of love and frustration—Nairaland’s golden days in 2005, when it was the raw, unfiltered pulse of Naija gist, clashing with its 2023 shutdown that left a void. You saw Seun’s empire stumble—scammers running wild, trust fading—and thought, “I fit do this better.” A digital “buka” where the fam can vibe, hustle, and chop money, scam-proof and dripping with Naija soul. Nostalgia meets hustle, with a middle finger to the chaos that sank the OG

@@ -1,4 +1,4 @@
-// frontend/src/components/threads/ThreadCard.tsx
+// // frontend/src/components/threads/ThreadCard.tsx
 "use client";
 
 import { FC, useState, useEffect } from "react";
@@ -30,6 +30,7 @@ interface ThreadCardProps {
   originalTitle?: string;
   showReplies?: boolean;
   onReplyAdded?: () => Promise<void>;
+  threadId?: string;
 }
 
 const ThreadCard: FC<ThreadCardProps> = ({
@@ -39,6 +40,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   originalTitle = "",
   showReplies = true,
   onReplyAdded,
+  threadId,
 }) => {
   const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -49,8 +51,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
   const [isPidgin, setIsPidgin] = useState(true);
-  const [showTipDialog, setShowTipDialog] = useState(false);
+  const [showTipModal, setShowTipModal] = useState(false); // Changed from showTipDialog
   const [isTipping, setIsTipping] = useState(false);
+  const [tipAmount, setTipAmount] = useState<number | null>(null);
+  const [hasTipped, setHasTipped] = useState(false); // Added for cooldown
 
   const router = useRouter();
 
@@ -70,11 +74,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
       router.push("/login");
       return;
     }
-    if (isReply) {
-      router.push(`/threads/${thread._id}`);
-    } else {
-      setShowReplyDialog(!showReplyDialog);
-    }
+    // if (isReply) {
+    //   router.push(`/threads/${thread._id}`);
+    // } else {
+    //   setShowReplyDialog(!showReplyDialog);
+    // }
+    setShowReplyDialog(!showReplyDialog); // No redirect for replies
   };
 
   const handleShare = () => {
@@ -99,39 +104,61 @@ const ThreadCard: FC<ThreadCardProps> = ({
         router.push("/login");
         return;
       }
-      await axios.post(
-        `/api/threads/${thread._id}/replies`,
-        { body: replyText },
-        { headers: { Authorization: `Bearer ${token}` } }
+      const payload = {
+        body: replyText,
+        ...(isReply ? { parentReplyId: thread._id } : {}),
+      };
+
+      const targetId = isReply ? threadId : thread._id;
+      if (!targetId) {
+        console.error("threadId is undefined!", { isReply, threadId, thread });
+        setReplyError("Thread ID missing—contact support!");
+        setIsSubmitting(false);
+        return;
+      }
+
+      console.log(
+        "Posting reply:",
+        `/api/threads/${targetId}/replies`,
+        payload
       );
+
+      await axios.post(`/api/threads/${targetId}/replies`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setReplyText("");
       setShowReplyDialog(false);
       if (onReplyAdded) await onReplyAdded();
     } catch (error) {
       console.error("Failed to submit reply:", error);
-      setReplyError(
-        "Failed to submit reply. Try again or continue on thread page."
-      );
+      setReplyError("Failed to submit reply. Try again!");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   useEffect(() => {
-    const checkReported = async () => {
+    const checkReportedAndTipped = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const res = await axios.get<{ hasReported: boolean; message: string }>(
-          `/api/threads/${thread._id}/hasReported`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        setIsReported(res.data.hasReported);
+        const [reportRes, tipRes] = await Promise.all([
+          axios.get<{ hasReported: boolean; message: string }>(
+            `/api/threads/${thread._id}/hasReported`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          ),
+          axios.get<{ hasTipped: boolean }>(
+            `/api/users/hasTipped?threadId=${thread._id}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          ),
+        ]);
+        setIsReported(reportRes.data.hasReported);
+        setHasTipped(tipRes.data.hasTipped);
       } catch (err) {
-        console.error("Failed to check report status:", err);
+        console.error("Failed to check report/tip status:", err);
       }
     };
-    checkReported();
+    checkReportedAndTipped();
   }, [thread._id]);
 
   const handleReport = async () => {
@@ -169,7 +196,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
   };
 
-  const handleTip = async (amount: number) => {
+  const handleTip = async () => {
+    if (!tipAmount) return;
     setIsTipping(true);
     try {
       const token = localStorage.getItem("token");
@@ -177,16 +205,23 @@ const ThreadCard: FC<ThreadCardProps> = ({
         router.push("/login");
         return;
       }
-      const res = await axios.post(
-        "/api/users/tip",
-        { receiverId: thread.userId?._id, amount },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const payload = {
+        receiverId: thread.userId?._id,
+        amount: tipAmount,
+        [isReply ? "replyId" : "threadId"]: thread._id, // Pass threadId or replyId
+      };
+      const res = await axios.post("/api/users/tip", payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       console.log("Tip Response:", res.data);
       window.location.href = res.data.paymentLink;
     } catch (err) {
       console.error("Tip Error:", err);
-      setReplyError("Tip scatter o!");
+      if (axios.isAxiosError(err) && err.response?.data?.message) {
+        setReplyError(err.response.data.message); // Show "You no fit tip yourself, bros!"
+      } else {
+        setReplyError("Tip scatter o!");
+      }
       setIsTipping(false);
     }
   };
@@ -290,9 +325,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <span className="text-xs">Like</span>
           </button>
 
-          <div
-            className="hover:text-yellow-600 flex items-center gap-1 text-xs relative cursor-pointer"
-            onClick={() => setShowTipDialog(!showTipDialog)}
+          <button
+            className={`flex items-center gap-1 text-xs ${
+              hasTipped ? "text-gray-400" : "hover:text-yellow-600"
+            }`}
+            onClick={() => !hasTipped && setShowTipModal(true)}
+            disabled={hasTipped}
           >
             <span
               className="material-icons-outlined"
@@ -300,22 +338,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               monetization_on
             </span>
-            <span className="text-xs">{isPidgin ? "Tip" : "Dash"}</span>
-            {showTipDialog && (
-              <div className="absolute top-6 left-0 bg-white border border-gray-200 rounded shadow-md p-2 z-10">
-                {[50, 100, 200].map((amt) => (
-                  <button
-                    key={amt}
-                    onClick={() => handleTip(amt)}
-                    disabled={isTipping}
-                    className="block w-full text-left px-2 py-1 text-sm text-gray-700 hover:bg-green-100 disabled:text-gray-400"
-                  >
-                    ₦{amt}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+            <span className="text-xs">
+              {hasTipped ? "Tipped today" : isPidgin ? "Tip" : "Dash"}
+            </span>
+          </button>
 
           <button
             className="hover:text-purple-600 flex items-center gap-1 text-xs"
@@ -373,7 +399,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </div>
         )}
 
-        {showReplyDialog && !isReply && (
+        {/* {showReplyDialog && !isReply && ( */}
+        {showReplyDialog && (
           <div className="mt-3 border-t border-gray-200 pt-3">
             <textarea
               className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
@@ -413,6 +440,77 @@ const ThreadCard: FC<ThreadCardProps> = ({
             </div>
           </div>
         )}
+
+        {showTipModal && ( // Removed !isReply condition
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-80 md:w-96">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-green-800">Tip this Gist</h3>
+                <button
+                  onClick={() => {
+                    setShowTipModal(false);
+                    setTipAmount(null);
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <span className="material-icons-outlined">close</span>
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">
+                How much you wan tip {thread.userId?.email || "this oga"}?
+              </p>
+              <div className="flex gap-2 mb-4">
+                {[50, 100, 200].map((amt) => (
+                  <button
+                    key={amt}
+                    onClick={() => setTipAmount(amt)}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      tipAmount === amt
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    }`}
+                  >
+                    ₦{amt}
+                  </button>
+                ))}
+              </div>
+              {replyError && (
+                <p className="text-red-500 text-xs mb-2">{replyError}</p>
+              )}
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    setShowTipModal(false);
+                    setTipAmount(null);
+                  }}
+                  className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
+                  disabled={isTipping}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleTip}
+                  className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700 flex items-center gap-1"
+                  disabled={isTipping || !tipAmount}
+                >
+                  {isTipping ? (
+                    <>
+                      <span
+                        className="material-icons-outlined animate-spin"
+                        style={{ fontSize: "12px" }}
+                      >
+                        refresh
+                      </span>
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Tip"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {!isReply && showRepliesExpanded && hasReplies && (
@@ -427,6 +525,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
                 originalTitle={thread.title}
                 showReplies={false}
                 onReplyAdded={onReplyAdded}
+                threadId={thread._id}
               />
             ))}
         </div>

@@ -7,7 +7,7 @@ import axios from "axios";
 import Link from "next/link";
 import SearchBar from "@/components/threads/SearchBar";
 import NewThreadButton from "@/components/threads/NewThreadButton";
-import Header from "@/components/Header"; // New import
+import Header from "@/components/Header";
 import formatDate from "@/utils/formatDate";
 
 type Reply = {
@@ -38,9 +38,9 @@ type Ad = {
   text: string;
   link: string;
   type: "sidebar" | "banner" | "popup";
-  budget: number; // Added
-  cpc: number; // Added
-  status?: "pending" | "active" | "expired"; // Optional, added for consistency
+  budget: number;
+  cpc: number;
+  status?: "pending" | "active" | "expired";
 };
 
 export default function Home() {
@@ -48,12 +48,12 @@ export default function Home() {
   const [allThreads, setAllThreads] = useState<Thread[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [bannerAd, setBannerAd] = useState<Ad | null>(null);
+  const [sidebarAds, setSidebarAds] = useState<Ad[]>([]);
   const [message, setMessage] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [ads, setAds] = useState<Ad[]>([]);
 
   const router = useRouter();
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
@@ -66,44 +66,49 @@ export default function Home() {
   ];
   const categories = ["General", "Gist", "Politics", "Romance"];
 
-  // Update useEffect to call fetchBannerAd on every mount
   useEffect(() => {
     const checkPremiumAndAds = async () => {
       const token = localStorage.getItem("token");
       if (token) {
-        const res = await axios.get("/api/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setIsPremium(res.data.isPremium);
-        if (!res.data.isPremium) await fetchBannerAd(); // Fetch fresh each time
+        try {
+          const res = await axios.get("/api/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setIsPremium(res.data.isPremium);
+          setIsLoggedIn(true);
+          if (!res.data.isPremium) {
+            await fetchBannerAd();
+            await fetchSidebarAds();
+          }
+        } catch (err) {
+          console.error("User check error:", err);
+          localStorage.removeItem("token");
+          setIsLoggedIn(false);
+          setMessage("Token scatter—abeg login again!");
+          setTimeout(() => router.push("/login"), 1000);
+          return;
+        }
       } else {
-        await fetchBannerAd(); // Non-logged-in users see ads too
+        await fetchBannerAd();
+        await fetchSidebarAds();
       }
       fetchThreads();
-      fetchAds();
     };
     checkPremiumAndAds();
-  }, []); // Still runs once, but fetchBannerAd randomizes
+  }, [router]);
 
   const fetchBannerAd = async () => {
     try {
       const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
         params: { status: "active", type: "banner" },
       });
-      console.log("Banner Ads Fetched:", res.data.ads);
-      const activeBanners = res.data.ads.filter(
-        (ad) => ad.type === "banner" && ad.budget >= ad.cpc
-      );
+      const activeBanners = res.data.ads.filter((ad) => ad.budget >= ad.cpc);
       if (activeBanners.length > 0) {
-        // Randomize: Pick one from active banners
         const randomIndex = Math.floor(Math.random() * activeBanners.length);
         const selectedBanner = activeBanners[randomIndex];
         setBannerAd(selectedBanner);
-        console.log("Selected Banner:", selectedBanner);
-        console.log("Tracking Banner Impression:", selectedBanner._id);
         await axios.get(`/api/ads/impression/${selectedBanner._id}`);
       } else {
-        console.log("No valid banner ads found.");
         setBannerAd(null);
       }
     } catch (err) {
@@ -112,52 +117,56 @@ export default function Home() {
     }
   };
 
-  const trackBannerClick = async (adId: string) => {
+  const fetchSidebarAds = async () => {
     try {
-      console.log("Tracking Banner Click:", adId);
-      await axios.post(`/api/ads/click/${adId}`);
-      console.log("Banner click tracked successfully.");
+      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+        params: { status: "active", type: "sidebar" },
+      });
+      const activeSidebars = res.data.ads.filter((ad) => ad.budget >= ad.cpc);
+      if (activeSidebars.length > 0) {
+        const shuffled = activeSidebars.sort(() => 0.5 - Math.random());
+        const selectedSidebars = shuffled.slice(
+          0,
+          Math.min(4, shuffled.length)
+        );
+        setSidebarAds(selectedSidebars);
+        await Promise.all(
+          selectedSidebars.map((ad) =>
+            axios.get(`/api/ads/impression/${ad._id}`)
+          )
+        );
+      } else {
+        setSidebarAds([]);
+      }
     } catch (err) {
-      console.error("Banner click error:", err);
+      console.error("Sidebar fetch error:", err);
+      setSidebarAds([]);
     }
   };
+
+  const trackClick = async (adId: string) => {
+    try {
+      await axios.post(`/api/ads/click/${adId}`);
+    } catch (err) {
+      console.error("Click track error:", err);
+    }
+  };
+
+  // Auto-shuffle sidebar ads every 15 seconds
+  useEffect(() => {
+    if (isPremium) return; // No shuffling for premium users
+
+    const interval = setInterval(() => {
+      fetchSidebarAds();
+    }, 120000); // 2 minutes
+
+    return () => clearInterval(interval); // Cleanup on unmount
+  }, [isPremium]);
 
   useEffect(() => {
     const savedSearches = localStorage.getItem("recentSearches");
-    if (savedSearches) {
-      setRecentSearches(JSON.parse(savedSearches));
-    }
-
-    const token = localStorage.getItem("token");
-    if (token) {
-      checkUserStatus(token);
-    } else {
-      setIsLoggedIn(false);
-    }
-    fetchThreads();
-    fetchAds();
+    if (savedSearches) setRecentSearches(JSON.parse(savedSearches));
   }, []);
-
-  const checkUserStatus = async (token: string) => {
-    try {
-      await axios.get("/api/threads", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setIsLoggedIn(true);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err) && err.response?.status === 403) {
-        if (err.response.data.message.includes("banned")) {
-          setMessage("You don dey banned—appeal now!");
-          setTimeout(() => router.push("/appeal"), 1000);
-          return;
-        }
-      }
-      localStorage.removeItem("token");
-      setIsLoggedIn(false);
-      setMessage("Token scatter—abeg login again!");
-      setTimeout(() => router.push("/login"), 1000);
-    }
-  };
 
   const fetchThreads = async () => {
     try {
@@ -183,28 +192,6 @@ export default function Home() {
       } else {
         setMessage("No gist yet—drop your own!");
       }
-    }
-  };
-
-  const fetchAds = async () => {
-    try {
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
-        params: { status: "active", type: "sidebar" }, // Filter server-side
-      });
-      console.log("Sidebar Ads Fetched:", res.data.ads);
-      setAds(res.data.ads); // No client-side filter needed
-    } catch (err) {
-      console.error("Failed to fetch ads:", err);
-      setMessage("Ads no dey load—abeg check later!");
-      setAds([]);
-    }
-  };
-
-  const trackImpression = async (adId: string) => {
-    try {
-      await axios.get(`/api/ads/impression/${adId}`);
-    } catch (err) {
-      console.error("Impression track failed:", err);
     }
   };
 
@@ -308,9 +295,8 @@ export default function Home() {
       setThreads(filtered);
       setMessage(
         filtered.length
-          ? `${filtered.length} thread${
-              filtered.length > 1 ? "s" : ""
-            } in ${category}`
+          ? `${filtered.length} thread${filtered.length > 1 ? "s" : ""
+          } in ${category}`
           : `No threads in ${category} yet—start one!`
       );
     }
@@ -326,7 +312,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-200 p-6 pb-20">
-      <div className="max-w-5xl mx-auto mb-3">
+      <div className="max-w-7xl mx-auto mb-3">
         <Header
           title="NaijaTalk Forum—Wetin Dey Happen?"
           isLoggedIn={isLoggedIn}
@@ -351,9 +337,8 @@ export default function Home() {
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-blue-600 hover:underline text-sm ${
-                    !selectedCategory ? "font-bold text-blue-800" : ""
-                  }`}
+                  className={`w-full text-left text-blue-600 hover:underline text-sm ${!selectedCategory ? "font-bold text-blue-800" : ""
+                    }`}
                 >
                   All Categories
                 </button>
@@ -362,9 +347,8 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-blue-600 hover:underline text-sm ${
-                      selectedCategory === cat ? "font-bold text-blue-800" : ""
-                    }`}
+                    className={`w-full text-left text-blue-600 hover:underline text-sm ${selectedCategory === cat ? "font-bold text-blue-800" : ""
+                      }`}
                   >
                     {cat}
                   </button>
@@ -381,7 +365,7 @@ export default function Home() {
                 href={bannerAd.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => trackBannerClick(bannerAd._id)}
+                onClick={() => trackClick(bannerAd._id)}
                 className="text-blue-600 font-bold hover:underline"
               >
                 {bannerAd.brand}: {bannerAd.text}
@@ -422,11 +406,10 @@ export default function Home() {
                       </span>
                       {thread.userId?.flair && (
                         <span
-                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                            thread.userId.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                          }`}
+                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
+                            ? "bg-yellow-500"
+                            : "bg-green-500"
+                            }`}
                         >
                           {thread.userId.flair}
                         </span>
@@ -448,20 +431,19 @@ export default function Home() {
                         ].userId?.email?.split("@")[0] || "Unknown"}
                         {thread.replies[thread.replies.length - 1].userId
                           ?.flair && (
-                          <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              thread.replies[thread.replies.length - 1].userId
+                            <span
+                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
                                 ?.flair === "Oga at the Top"
                                 ? "bg-yellow-500"
                                 : "bg-green-500"
-                            }`}
-                          >
-                            {
-                              thread.replies[thread.replies.length - 1].userId
-                                ?.flair
-                            }
-                          </span>
-                        )}
+                                }`}
+                            >
+                              {
+                                thread.replies[thread.replies.length - 1].userId
+                                  ?.flair
+                              }
+                            </span>
+                          )}
                       </span>
                     )}
                   </div>
@@ -511,51 +493,28 @@ export default function Home() {
         <div className="w-[15%]">
           <div className="bg-white rounded-lg shadow-md p-4">
             <h2 className="text-lg font-semibold text-green-800 mb-3">Ads</h2>
-            {!isPremium && (
-              <div>
-                {ads.length > 0 ? (
-                  ads.map((ad) => (
-                    <div
-                      key={ad._id}
-                      className="mb-4"
-                      ref={(el) => {
-                        if (el) {
-                          const observer = new IntersectionObserver(
-                            ([entry]) => {
-                              if (entry.isIntersecting) {
-                                trackImpression(ad._id);
-                                observer.disconnect(); // Track once per load
-                              }
-                            },
-                            { threshold: 0.5 } // 50% visible
-                          );
-                          observer.observe(el);
-                        }
-                      }}
+            {!isPremium && sidebarAds.length > 0 ? (
+              <div className="space-y-4">
+                {sidebarAds.map((ad) => (
+                  <div key={ad._id}>
+                    <a
+                      href={ad.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => trackClick(ad._id)}
+                      className="text-blue-600 hover:underline"
                     >
-                      <a
-                        href={ad.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                        onClick={async () => {
-                          try {
-                            await axios.post(`/api/ads/click/${ad._id}`);
-                          } catch (err) {
-                            console.error("Click track failed:", err);
-                          }
-                        }}
-                      >
-                        <strong>{ad.brand}</strong>: {ad.text}
-                      </a>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600 text-sm">
-                    Ads dey load—abeg wait small!
-                  </p>
-                )}
+                      <strong>{ad.brand}</strong>: {ad.text}
+                    </a>
+                  </div>
+                ))}
               </div>
+            ) : (
+              !isPremium && (
+                <p className="text-gray-600 text-sm">
+                  Ads dey load—abeg wait small!
+                </p>
+              )
             )}
           </div>
         </div>

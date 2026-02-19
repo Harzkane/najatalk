@@ -1,3 +1,4 @@
+// frontend/src/app/(authenticated)/premium/page.tsx
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -6,22 +7,49 @@ import axios from "axios";
 import Link from "next/link";
 import Header from "@/components/Header";
 
-// Updated Ad type to match backend schema
+// Define response types
+interface UserResponse {
+  _id: string;
+  email: string;
+  isPremium: boolean;
+  flair?: string | null;
+}
+
+interface WalletResponse {
+  balance: number;
+}
+
+interface TipHistoryResponse {
+  sent: Tip[];
+  received: Tip[];
+}
+
+interface AdsResponse {
+  ads: Ad[];
+  message: string;
+}
+
 type Ad = {
   _id: string;
-  // userId: { _id: string; email: string }; // Nested user object
-  userId: string; // Changed to string to match DB
+  userId: string;
   brand: string;
   text: string;
   link: string;
   type: "sidebar" | "banner" | "popup";
   budget: number; // kobo
   cpc: number; // kobo
-  status: "pending" | "active" | "paused" | "expired";
+  status: "pending" | "active" | "expired";
   clicks: number;
   impressions: number;
   createdAt: string;
   updatedAt: string;
+};
+
+type Tip = {
+  amount: number;
+  date: string;
+  from?: string;
+  to?: string;
 };
 
 function PremiumLoading() {
@@ -40,14 +68,8 @@ function PremiumLoading() {
 function PremiumPageContent() {
   const [isPremium, setIsPremium] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [pendingAds, setPendingAds] = useState<Ad[]>([]);
+  const [userAds, setUserAds] = useState<Ad[]>([]);
   const [flair, setFlair] = useState<string | null>(null);
-  interface Tip {
-    amount: number;
-    date: string;
-    from?: string;
-    to?: string;
-  }
   const [tipHistory, setTipHistory] = useState<{
     sent: Tip[];
     received: Tip[];
@@ -70,30 +92,21 @@ function PremiumPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const fetchPendingAds = async () => {
+  const fetchUserAds = async () => {
     try {
       const token = localStorage.getItem("token");
-      const [userRes, adsRes] = await Promise.all([
-        axios.get<{
-          _id: string;
-          email: string;
-          isPremium: boolean;
-          flair?: string;
-        }>("/api/users/me", { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { status: "pending" },
-        }),
-      ]);
-      const userId = userRes.data._id;
-      const filteredAds = adsRes.data.ads.filter((ad) => ad.userId === userId);
-      console.log("User ID:", userId);
-      console.log("Fetched Ads:", adsRes.data.ads);
-      console.log("Filtered Pending Ads:", filteredAds);
-      setPendingAds(filteredAds);
+      const userRes = await axios.get<UserResponse>("/api/users/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const adsRes = await axios.get<AdsResponse>("/api/ads", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { userId: userRes.data._id },
+      });
+      console.log("Fetched User Ads:", adsRes.data.ads);
+      setUserAds(adsRes.data.ads);
     } catch (err) {
-      console.error("Failed to fetch pending ads:", err);
-      setMessage("Pending ads no dey load—check later!");
+      console.error("Failed to fetch user ads:", err);
+      setMessage("Ads no dey load—check later!");
     }
   };
 
@@ -102,41 +115,33 @@ function PremiumPageContent() {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token—abeg login!");
-        const [userRes, walletRes, tipHistoryRes, adsRes] = await Promise.all([
-          axios.get<{
-            _id: string;
-            email: string;
-            isPremium: boolean;
-            flair?: string;
-          }>("/api/users/me", {
+
+        // Fetch user data first
+        const userRes = await axios.get<UserResponse>("/api/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Then fetch everything else with userId
+        const [walletRes, tipHistoryRes, adsRes] = await Promise.all([
+          axios.get<WalletResponse>("/api/premium/wallet", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get<{ balance: number }>("api/premium/wallet", {
+          axios.get<TipHistoryResponse>("/api/premium/tip-history", {
             headers: { Authorization: `Bearer ${token}` },
           }),
-          axios.get<{ sent: Tip[]; received: Tip[] }>(
-            "/api/premium/tip-history",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
-          axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+          axios.get<AdsResponse>("/api/ads", {
             headers: { Authorization: `Bearer ${token}` },
-            params: { status: "pending" },
+            params: { userId: userRes.data._id },
           }),
         ]);
-        const userId = userRes.data._id;
+
         setIsPremium(userRes.data.isPremium);
         setFlair(userRes.data.flair || null);
-        setWalletBalance(walletRes.data.balance); // Already in kobo
+        setWalletBalance(walletRes.data.balance);
         setTipHistory(tipHistoryRes.data);
-        const filteredAds = adsRes.data.ads.filter(
-          (ad) => ad.userId === userId
-        );
-        console.log("Initial User ID:", userId);
-        console.log("Initial Fetched Ads:", adsRes.data.ads);
-        console.log("Initial Filtered Ads:", filteredAds);
-        setPendingAds(filteredAds);
+        console.log("Initial User Ads:", adsRes.data.ads);
+        setUserAds(adsRes.data.ads);
+
         const reference = searchParams.get("reference");
         if (reference && !userRes.data.isPremium)
           await verifyPayment(reference);
@@ -155,7 +160,9 @@ function PremiumPageContent() {
       const res = await axios.post<{ paymentLink: string }>(
         "/api/premium/initiate",
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       window.location.href = res.data.paymentLink;
     } catch (err) {
@@ -171,12 +178,12 @@ function PremiumPageContent() {
   const verifyPayment = async (reference: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
-        message: string;
-        user?: { flair?: string };
-      }>(`/api/premium/verify?reference=${reference}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await axios.get(
+        `/api/premium/verify?reference=${reference}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (res.data.message.includes("activated")) {
         setIsPremium(true);
         setFlair(res.data.user?.flair || null);
@@ -197,7 +204,9 @@ function PremiumPageContent() {
       const res = await axios.post<{ message: string }>(
         "/api/users/flair",
         { flair: newFlair || null },
-        { headers: { Authorization: `Bearer ${token}` } }
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
       );
       setMessage(res.data.message);
       setFlair(newFlair || null);
@@ -214,7 +223,7 @@ function PremiumPageContent() {
     e.preventDefault();
     const budgetInKobo = parseFloat(adBudget) * 100;
     const cpcInKobo = parseFloat(adCpc) * 100;
-    const minCpc = { sidebar: 50, banner: 75, popup: 100 }; // Naira
+    const minCpc = { sidebar: 50, banner: 75, popup: 100 };
     if (cpcInKobo < minCpc[adType] * 100) {
       setMessage(`CPC too low—minimum ₦${minCpc[adType]} for ${adType}!`);
       return;
@@ -255,13 +264,51 @@ function PremiumPageContent() {
       setAdCpc("");
       setIsAdModalOpen(false);
       setWalletBalance(walletBalance - budgetInKobo);
-      fetchPendingAds();
+      fetchUserAds();
     } catch (err) {
       if (axios.isAxiosError(err)) {
         console.error("Ad creation error:", err.response?.data);
         setMessage(err.response?.data?.message || "Ad creation scatter o!");
       } else {
         setMessage("Ad creation scatter o!");
+      }
+    }
+  };
+
+  const handleDuplicateAd = async (ad: Ad) => {
+    const newBudget = prompt("Enter new budget (₦):", "1000");
+    if (!newBudget || isNaN(parseFloat(newBudget))) {
+      setMessage("Invalid budget—try again!");
+      return;
+    }
+    const budgetInKobo = parseFloat(newBudget) * 100;
+    if (walletBalance < budgetInKobo) {
+      setMessage("Wallet no reach—fund am for Premium!");
+      return;
+    }
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post<{ message: string; ad: Ad }>(
+        "/api/ads",
+        {
+          brand: ad.brand,
+          text: ad.text,
+          link: ad.link,
+          type: ad.type,
+          budget: budgetInKobo,
+          cpc: ad.cpc,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Duplicated Ad Response:", res.data);
+      setMessage("Ad duplicated—pending approval!");
+      setWalletBalance(walletBalance - budgetInKobo);
+      fetchUserAds();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        setMessage(err.response?.data?.message || "Duplication scatter o!");
+      } else {
+        setMessage("Duplication scatter o!");
       }
     }
   };
@@ -279,21 +326,21 @@ function PremiumPageContent() {
           isLoggedIn={true}
           onLogout={handleLogout}
         />
-        <div className="bg-white rounded-b-lg shadow-md p-6 max-w-md mx-auto">
+        <div className="bg-white rounded-b-lg shadow-md p-6">
           {message && (
             <p className="text-center text-sm text-gray-600 mb-4">{message}</p>
           )}
           {isPremium ? (
-            <div className="text-center">
-              <p className="text-lg text-green-600 mb-4">
+            <div>
+              <p className="text-lg text-green-600 mb-4 text-center">
                 You be {flair ? flair : "Oga"}!
               </p>
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="text-sm text-gray-600 mb-4 text-center">
                 Enjoy ad-free vibes and VIP gist lounge!
               </p>
               {flair ? (
                 <span
-                  className={`inline-block text-white px-2 py-1 rounded text-sm mb-4 ${
+                  className={`block text-center text-white px-2 py-1 rounded text-sm mb-4 mx-auto w-fit ${
                     flair === "Oga at the Top"
                       ? "bg-yellow-500"
                       : "bg-green-500"
@@ -302,7 +349,7 @@ function PremiumPageContent() {
                   {flair}
                 </span>
               ) : (
-                <span className="inline-block text-gray-500 text-sm mb-4">
+                <span className="block text-center text-gray-500 text-sm mb-4">
                   No flair yet—pick one!
                 </span>
               )}
@@ -321,7 +368,7 @@ function PremiumPageContent() {
                 </select>
               </div>
               <div className="mt-4">
-                <p className="text-sm font-semibold text-gray-700">
+                <p className="text-sm font-semibold text-gray-700 text-center">
                   Wallet Balance: ₦
                   {(walletBalance / 100).toLocaleString("en-NG")}
                 </p>
@@ -331,26 +378,90 @@ function PremiumPageContent() {
                 >
                   Create Ad
                 </button>
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-gray-700">
-                    Pending Ads:
+              </div>
+
+              {/* Ads Dashboard */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold text-green-800 mb-3">
+                  Your Ads
+                </h3>
+                {userAds.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-gray-700">
+                      <thead>
+                        <tr className="bg-gray-100">
+                          <th className="p-2 text-left">Brand</th>
+                          <th className="p-2 text-left">Type</th>
+                          <th className="p-2 text-right">Budget (₦)</th>
+                          <th className="p-2 text-right">CPC (₦)</th>
+                          <th className="p-2 text-center">Clicks</th>
+                          <th className="p-2 text-center">Impressions</th>
+                          <th className="p-2 text-center">Status</th>
+                          <th className="p-2 text-left">Created</th>
+                          <th className="p-2 text-center">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {userAds.map((ad) => (
+                          <tr
+                            key={ad._id}
+                            className="border-b hover:bg-gray-50"
+                          >
+                            <td className="p-2">{ad.brand}</td>
+                            <td className="p-2 capitalize">{ad.type}</td>
+                            <td className="p-2 text-right">
+                              {(ad.budget / 100).toLocaleString("en-NG")}
+                            </td>
+                            <td className="p-2 text-right">
+                              {(ad.cpc / 100).toLocaleString("en-NG")}
+                            </td>
+                            <td className="p-2 text-center">{ad.clicks}</td>
+                            <td className="p-2 text-center">
+                              {ad.impressions}
+                            </td>
+                            <td className="p-2 text-center">
+                              <span
+                                className={`inline-block px-2 py-1 rounded text-xs ${
+                                  ad.status === "active"
+                                    ? "bg-green-500 text-white"
+                                    : ad.status === "pending"
+                                    ? "bg-yellow-500 text-white"
+                                    : "bg-red-500 text-white"
+                                }`}
+                              >
+                                {ad.status}
+                              </span>
+                            </td>
+                            <td className="p-2">
+                              {new Date(ad.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="p-2 text-center">
+                              {ad.status === "expired" && (
+                                <button
+                                  onClick={() => handleDuplicateAd(ad)}
+                                  className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 text-xs"
+                                >
+                                  Duplicate
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 text-center">
+                    No ads yet—create one to start!
                   </p>
-                  {pendingAds.length > 0 ? (
-                    <ul className="text-xs text-gray-600 mt-1 max-h-40 overflow-y-auto">
-                      {pendingAds.map((ad) => (
-                        <li key={ad._id} className="mb-2">
-                          <strong>{ad.brand}</strong>: {ad.text} (₦
-                          {ad.budget / 100})
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-xs text-gray-500">
-                      No pending ads yet—create one!
-                    </p>
-                  )}
-                </div>
-                <p className="text-xs text-gray-500 mt-2">Tip History:</p>
+                )}
+              </div>
+
+              {/* Tip History */}
+              <div className="mt-6">
+                <p className="text-sm font-semibold text-gray-700 text-center">
+                  Tip History:
+                </p>
                 {tipHistory.sent.length > 0 ||
                 tipHistory.received.length > 0 ? (
                   <ul className="text-xs text-gray-600 text-left mt-1 max-h-40 overflow-y-auto">
@@ -368,7 +479,7 @@ function PremiumPageContent() {
                     ))}
                   </ul>
                 ) : (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 text-center">
                     No tips yet—start tipping!
                   </p>
                 )}
@@ -402,7 +513,7 @@ function PremiumPageContent() {
         </div>
       </div>
 
-      {/* ad modal */}
+      {/* Ad Modal */}
       {isAdModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-80 md:w-96">

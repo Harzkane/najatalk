@@ -57,22 +57,36 @@ export const getThreads = async (req, res) => {
 };
 
 export const createReply = async (req, res) => {
-  const { id } = req.params; // threadId
-  const { body } = req.body;
+  const { id } = req.params;
+  const { body, parentReplyId } = req.body;
   try {
+    console.log("Creating reply:", {
+      id,
+      body,
+      parentReplyId,
+      userId: req.user?._id,
+    });
+    if (!req.user || !req.user._id) {
+      return res
+        .status(401)
+        .json({ message: "Abeg, login again—token scatter!" });
+    }
     if (!body) return res.status(400).json({ message: "Reply body no dey!" });
     if (containsBannedContent(body))
       return res.status(400).json({ message: "Abeg, no spam gist!" });
 
     const reply = new Reply({
       body,
-      userId: req.user._id, // From authMiddleware
+      userId: req.user._id,
       threadId: id,
+      parentReplyId: parentReplyId || null,
     });
     await reply.save();
+    console.log("Reply saved:", reply);
 
     res.status(201).json({ message: "Reply posted—gist dey grow!", reply });
   } catch (err) {
+    console.error("Reply error:", err);
     res.status(500).json({ message: "Reply scatter: " + err.message });
   }
 };

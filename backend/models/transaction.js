@@ -44,6 +44,16 @@ const transactionSchema = new mongoose.Schema({
     ref: "Listing",
     default: null,
   },
+  threadId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Thread",
+    default: null, // Optional, for tipping threads
+  },
+  replyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Reply",
+    default: null, // Optional, for tipping replies
+  },
   createdAt: {
     type: Date, // Switch to Date
     default: () =>

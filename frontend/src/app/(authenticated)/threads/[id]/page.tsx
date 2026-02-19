@@ -116,6 +116,7 @@ function ThreadDetailContent() {
                     originalTitle={thread.title}
                     showReplies={false}
                     onReplyAdded={fetchThread}
+                    threadId={thread._id}
                   />
                 ))}
               </div>
