@@ -5,11 +5,14 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import WalletActivityList from "../../../components/wallet/WalletActivityList";
 
 export default function PlatformWallet() {
   const [balance, setBalance] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [summary, setSummary] = useState({ totalCredits: 0, totalDebits: 0 });
+  const [entries, setEntries] = useState([]);
   const [message, setMessage] = useState("");
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
@@ -32,6 +35,8 @@ export default function PlatformWallet() {
       });
       setBalance(res.data.balance / 100);
       setLastUpdated(res.data.lastUpdated);
+      setSummary(res.data.summary || { totalCredits: 0, totalDebits: 0 });
+      setEntries(res.data.entries || []);
       setTransactions(res.data.transactions || []);
       setMessage(res.data.message);
       console.log("Wallet Response:", res.data);
@@ -85,7 +90,7 @@ export default function PlatformWallet() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
         <p className="text-red-600 text-lg">
           {message || "Admins only—abeg comot!"}
         </p>
@@ -94,12 +99,14 @@ export default function PlatformWallet() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto mb-3">
-        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
-          <div className="flex justify-between items-center">
-            <h1 className="text-3xl font-bold">NaijaTalk Platform Wallet</h1>
-            <div className="flex items-center space-x-4">
+    <div className="min-h-screen bg-slate-100 p-6">
+      <div className="max-w-7xl mx-auto mb-3">
+        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+            <h1 className="text-2xl md:text-3xl font-bold text-center md:text-left break-words">
+              NaijaTalk Platform Wallet
+            </h1>
+            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
               <Link
                 href="/"
                 className="text-green-100 hover:text-white text-sm font-medium"
@@ -123,13 +130,13 @@ export default function PlatformWallet() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         {message && (
-          <p className="text-center text-sm text-gray-600 mb-4 bg-white p-2 rounded-lg">
+          <p className="text-center text-sm text-gray-600 mb-4 bg-white border border-slate-200 p-2 rounded-lg">
             {message}
           </p>
         )}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
           <h2 className="text-xl font-semibold text-green-800 mb-4">
             Platform Earnings
           </h2>
@@ -137,6 +144,12 @@ export default function PlatformWallet() {
             <p className="text-2xl font-bold">₦{balance.toLocaleString()}</p>
             <p className="text-sm">Last Updated: {formatDate(lastUpdated)}</p>
           </div>
+          {(summary.totalCredits > 0 || summary.totalDebits > 0) && (
+            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-600 md:grid-cols-2">
+              <p>Total Credits: ₦{(summary.totalCredits / 100).toLocaleString()}</p>
+              <p>Total Debits: ₦{(summary.totalDebits / 100).toLocaleString()}</p>
+            </div>
+          )}
           <button
             onClick={handleWithdraw}
             className="mt-4 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
@@ -145,32 +158,10 @@ export default function PlatformWallet() {
           </button>
         </div>
 
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-green-800 mb-4">
-            Transaction History
-          </h2>
-          {transactions.length > 0 ? (
-            <div className="space-y-4">
-              {transactions.map((tx, index) => (
-                <div key={index} className="bg-gray-50 p-4 rounded-lg shadow">
-                  <p className="text-gray-800 font-semibold">
-                    +₦{tx.amount / 100}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    From: {tx.listingTitle}
-                  </p>
-                  <p className="text-xs text-gray-600">
-                    Date: {formatDate(tx.date)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-600">
-              No transactions yet—abeg keep selling!
-            </p>
-          )}
-        </div>
+        <WalletActivityList
+          transactions={entries.length > 0 ? entries : transactions}
+          formatDate={formatDate}
+        />
       </div>
     </div>
   );

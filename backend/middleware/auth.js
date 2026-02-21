@@ -1,6 +1,7 @@
 // backend/middleware/auth.js
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
+import { syncPremiumAccessState } from "../utils/premiumAccess.js";
 
 export const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
@@ -9,9 +10,15 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select(
-      "_id email role isVerified isBanned appealStatus isPremium"
-    ); // Add isPremium
+      "_id email role isVerified isBanned appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
+    );
     if (!user) return res.status(404).json({ message: "User no dey!" });
+
+    const { changed } = syncPremiumAccessState(user);
+    if (changed) {
+      await user.save();
+    }
+
     if (!user.isVerified)
       return res
         .status(403)
@@ -27,5 +34,36 @@ export const authMiddleware = async (req, res, next) => {
   } catch (err) {
     console.error("Auth Error:", err.message); // Log error
     res.status(401).json({ message: "Token scatter: " + err.message });
+  }
+};
+
+export const optionalAuthMiddleware = async (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id).select(
+      "_id email role isVerified isBanned appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
+    );
+
+    if (!user || !user.isVerified || (user.isBanned && user.appealStatus !== "approved")) {
+      req.user = null;
+      return next();
+    }
+
+    const { changed } = syncPremiumAccessState(user);
+    if (changed) {
+      await user.save();
+    }
+
+    req.user = user;
+    return next();
+  } catch (err) {
+    req.user = null;
+    return next();
   }
 };

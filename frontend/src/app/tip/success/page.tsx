@@ -8,8 +8,8 @@ import axios from "axios";
 
 function LoadingComponent() {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           Processing Tip...
         </h1>
@@ -74,8 +74,8 @@ function TipSuccessContent() {
   }, [searchParams, verifyTip]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           {isProcessing ? "Processing Tip..." : "Tip Result"}
         </h1>

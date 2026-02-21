@@ -9,8 +9,8 @@ import Link from "next/link";
 // Loading component that will be shown while the main content is loading
 function AppealLoading() {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">Appeal Ban</h1>
         <p className="text-center text-sm text-gray-600 mb-4">Loading...</p>
       </div>
@@ -109,8 +109,8 @@ function AppealContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">Appeal Ban</h1>
         {message && (
           <p className="text-center text-sm text-gray-600 mb-4">{message}</p>

@@ -25,8 +25,8 @@ export default function Contests() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-slate-100 p-6">
+      <div className="max-w-7xl mx-auto">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           NaijaTalk Contests
         </h1>

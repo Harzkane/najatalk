@@ -35,6 +35,10 @@ const transactionSchema = new mongoose.Schema({
     type: Number,
     default: 0, // Optional, add later
   },
+  marketplaceFeeBps: {
+    type: Number,
+    default: null,
+  },
   recipientId: {
     type: String,
     default: null, // Optional, for payment gateway
@@ -55,21 +59,17 @@ const transactionSchema = new mongoose.Schema({
     default: null, // Optional, for tipping replies
   },
   createdAt: {
-    type: Date, // Switch to Date
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    type: Date,
+    default: Date.now,
   },
   updatedAt: {
-    type: Date, // Switch to Date
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    type: Date,
+    default: Date.now,
   },
 });
 
 transactionSchema.pre("save", function (next) {
-  this.updatedAt = new Date().toLocaleString("en-US", {
-    timeZone: "Africa/Lagos",
-  });
+  this.updatedAt = Date.now();
   next();
 });
 

@@ -10,18 +10,32 @@ const walletSchema = new mongoose.Schema({
   },
   balance: {
     type: Number,
-    default: 0, // In kobo (₦0.00)
+    default: 0, // Legacy total (available + held), kept for compatibility
+  },
+  availableBalance: {
+    type: Number,
+    default: 0, // Spendable kobo
+  },
+  heldBalance: {
+    type: Number,
+    default: 0, // Escrow-held kobo
   },
   createdAt: {
-    type: String, // Match listing/transaction
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    type: Date,
+    default: Date.now,
   },
   updatedAt: {
     type: Date,
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    default: Date.now,
   },
+});
+
+walletSchema.pre("save", function (next) {
+  this.availableBalance = Number(this.availableBalance || 0);
+  this.heldBalance = Number(this.heldBalance || 0);
+  this.balance = this.availableBalance + this.heldBalance;
+  this.updatedAt = Date.now();
+  next();
 });
 
 export default mongoose.model("Wallet", walletSchema);

@@ -1,52 +1,57 @@
 // backend/routes/premium.js
 import express from "express";
+import crypto from "crypto";
 import {
   initiatePremium,
   verifyPremium,
-  completePremium,
+  subscribePremiumWithWallet,
+  handlePaystackWebhook,
+  listPremiumPaymentsForAdmin,
+  listMyPremiumPayments,
   getWallet,
   getTipHistory,
 } from "../controllers/premium.js";
 import { authMiddleware } from "../middleware/auth.js";
-import User from "../models/user.js";
 
 const router = express.Router();
 
 // Core routes for Paystack
 router.post("/initiate", authMiddleware, initiatePremium);
 router.post("/verify", authMiddleware, verifyPremium);
-router.get("/verify", authMiddleware, verifyPremium); // Add GET for Paystack callback
-router.post("/complete", authMiddleware, completePremium);
+router.get("/verify", authMiddleware, verifyPremium);
+router.post("/subscribe-with-wallet", authMiddleware, subscribePremiumWithWallet);
+router.get("/admin/payments", authMiddleware, listPremiumPaymentsForAdmin);
+router.get("/my-payments", authMiddleware, listMyPremiumPayments);
 router.get("/wallet", authMiddleware, getWallet);
 router.get("/tip-history", authMiddleware, getTipHistory);
 
-// Paystack Webhook (optional, simplified)
-router.post("/webhook", async (req, res) => {
+router.post("/webhook", async (req, res, next) => {
+  const paystackSecret = process.env.PAYSTACK_SECRET;
+  if (!paystackSecret) {
+    return res.status(500).send("Missing PAYSTACK_SECRET");
+  }
+
   const signature = req.headers["x-paystack-signature"];
-  if (!signature || signature !== process.env.PAYSTACK_WEBHOOK_HASH) {
+  const payloadToHash = req.rawBody || JSON.stringify(req.body || {});
+  const expectedSignature = crypto
+    .createHmac("sha512", paystackSecret)
+    .update(payloadToHash)
+    .digest("hex");
+
+  const provided = String(signature || "");
+  const providedBuffer = Buffer.from(provided, "utf8");
+  const expectedBuffer = Buffer.from(expectedSignature, "utf8");
+  const signaturesMatch =
+    providedBuffer.length === expectedBuffer.length &&
+    crypto.timingSafeEqual(providedBuffer, expectedBuffer);
+
+  if (!signature || !signaturesMatch) {
     console.log("Unauthorized webhook attempt");
     return res.status(403).send("Unauthorized");
   }
 
-  const payload = req.body;
-  console.log("Paystack Webhook payload:", payload);
-
-  if (payload.event === "charge.success" && payload.data.status === "success") {
-    try {
-      const user = await User.findOne({ email: payload.data.customer.email });
-      if (user) {
-        user.isPremium = true;
-        await user.save();
-        console.log(`Premium activated for ${user.email} via webhook`);
-      } else {
-        console.log(`User not found for email: ${payload.data.customer.email}`);
-      }
-    } catch (error) {
-      console.error("Webhook processing error:", error);
-    }
-  }
-
-  res.status(200).send("Webhook received");
+  next();
 });
+router.post("/webhook", handlePaystackWebhook);
 
 export default router;

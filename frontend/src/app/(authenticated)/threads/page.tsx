@@ -10,6 +10,7 @@ import ThreadCard from "../../../components/threads/ThreadCard";
 import SearchBar from "../../../components/threads/SearchBar";
 import NewThreadButton from "../../../components/threads/NewThreadButton";
 import formatDate from "../../../utils/formatDate";
+import SponsoredAdCard from "../../../components/ads/SponsoredAdCard";
 
 type Thread = {
   _id: string;
@@ -19,6 +20,11 @@ type Thread = {
   category: string;
   createdAt: string;
   replies?: Reply[];
+  likes?: string[];
+  bookmarks?: string[];
+  isSolved?: boolean;
+  isSticky?: boolean;
+  isLocked?: boolean;
 };
 
 type Reply = {
@@ -26,6 +32,7 @@ type Reply = {
   body: string;
   userId: { _id: string; email: string; flair?: string } | null;
   createdAt: string;
+  parentReplyId?: string | null;
 };
 
 type SearchResponse = {
@@ -49,13 +56,19 @@ function ThreadsContent() {
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [bannerAd, setBannerAd] = useState<Ad | null>(null);
   const [sidebarAd, setSidebarAd] = useState<Ad | null>(null);
-  const [popupAd, setPopupAd] = useState<Ad | null>(null);
   const [isPremium, setIsPremium] = useState(false);
   const [replyBody, setReplyBody] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<
+    "user" | "mod" | "admin" | null
+  >(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<
+    "all" | "unanswered" | "solved" | "bookmarked"
+  >("all");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
   const router = useRouter();
@@ -135,16 +148,18 @@ function ThreadsContent() {
         const userRes = await axios.get("/api/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
+        setCurrentUserId(userRes.data._id || null);
+        setCurrentUserRole((userRes.data.role as "user" | "mod" | "admin") || null);
         setIsPremium(userRes.data.isPremium);
         if (!userRes.data.isPremium) {
           fetchBannerAd();
           fetchSidebarAd();
-          fetchPopupAd();
         }
       } else {
+        setCurrentUserId(null);
+        setCurrentUserRole(null);
         fetchBannerAd();
         fetchSidebarAd();
-        fetchPopupAd();
       }
     };
     checkPremiumAndAds();
@@ -185,23 +200,6 @@ function ThreadsContent() {
       }
     } catch (err) {
       console.error("Sidebar fetch error:", err);
-    }
-  };
-
-  const fetchPopupAd = async () => {
-    try {
-      const res = await axios.get("/api/ads", {
-        params: { status: "active", type: "popup" },
-      });
-      const activePopups = res.data.ads.filter((ad: Ad) => ad.budget >= ad.cpc);
-      if (activePopups.length > 0) {
-        const randomPopup =
-          activePopups[Math.floor(Math.random() * activePopups.length)];
-        setPopupAd(randomPopup);
-        await axios.get(`/api/ads/impression/${randomPopup._id}`);
-      }
-    } catch (err) {
-      console.error("Popup fetch error:", err);
     }
   };
 
@@ -372,8 +370,26 @@ function ThreadsContent() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
+    setCurrentUserId(null);
+    setCurrentUserRole(null);
     router.push("/login");
   };
+
+  const filteredThreads = threads.filter((thread) => {
+    if (activeFilter === "all") return true;
+    if (activeFilter === "unanswered") return (thread.replies?.length || 0) === 0;
+    if (activeFilter === "solved") return Boolean(thread.isSolved);
+    if (activeFilter === "bookmarked") {
+      if (!currentUserId) return false;
+      return (thread.bookmarks || []).includes(currentUserId);
+    }
+    return true;
+  });
+  const canReplySelectedThread = Boolean(
+    !selectedThread?.isLocked ||
+      currentUserRole === "mod" ||
+      currentUserRole === "admin"
+  );
 
   return (
     <>
@@ -383,16 +399,16 @@ function ThreadsContent() {
           content="script-src 'self' https://checkout.paystack.com 'unsafe-inline';"
         />
       </Head>
-      <div className="min-h-screen bg-gray-100 p-6 pb-20">
-        <div className="max-w-5xl mx-auto mb-3">
-          <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
-            <div className="flex justify-between items-center">
-              <h1 className="text-4xl font-bold text-gray-50 text-center">
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
                 {selectedThread
                   ? selectedThread.title
                   : "NaijaTalk Threads—Drop Your Gist!"}
               </h1>
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
                 <Link
                   href="/"
                   className="text-green-100 hover:text-white text-sm font-medium"
@@ -403,7 +419,13 @@ function ThreadsContent() {
                   href="/premium"
                   className="text-green-100 hover:text-white text-sm font-medium"
                 >
-                  Wallet
+                  Premium
+                </Link>
+                <Link
+                  href="/marketplace"
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  Marketplace
                 </Link>
                 <button
                   onClick={handleLogout}
@@ -416,23 +438,13 @@ function ThreadsContent() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           {!isPremium && bannerAd && (
-            <div className="bg-yellow-100 p-4 mb-4 rounded-lg shadow text-center">
-              <a
-                href={bannerAd.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackClick(bannerAd._id)}
-                className="text-blue-600 font-bold hover:underline"
-              >
-                {bannerAd.brand}: {bannerAd.text}
-              </a>
-            </div>
+            <SponsoredAdCard ad={bannerAd} onClick={trackClick} className="mb-4" />
           )}
 
           {!selectedThread && (
-            <div className="bg-white p-4 rounded-lg shadow-md mb-3">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-3">
               <SearchBar
                 onSearch={handleSearch}
                 recentSearches={recentSearches}
@@ -441,114 +453,63 @@ function ThreadsContent() {
             </div>
           )}
 
+          {!selectedThread && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {[
+                { id: "all", label: "All" },
+                { id: "unanswered", label: "Unanswered" },
+                { id: "solved", label: "Solved" },
+                { id: "bookmarked", label: "Saved" },
+              ].map((filterOption) => (
+                <button
+                  key={filterOption.id}
+                  onClick={() =>
+                    setActiveFilter(
+                      filterOption.id as
+                        | "all"
+                        | "unanswered"
+                        | "solved"
+                        | "bookmarked"
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                    activeFilter === filterOption.id
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
+                  }`}
+                >
+                  {filterOption.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {message && (
-            <p className="text-center text-sm text-gray-600 mb-3 bg-white p-2 rounded-lg">
+            <p className="text-center text-sm text-slate-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
               {isVerifyingTip ? "Verifying tip—abeg wait small..." : message}
               {searchQuery && !selectedThread ? `: "${searchQuery}"` : ""}
             </p>
           )}
 
-          <div className="flex gap-4">
-            <div className="w-3/4">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <div
+              className={`w-full ${
+                !isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
+              }`}
+            >
               {selectedThread ? (
                 <div className="space-y-4">
-                  <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-4">
-                    <div className="p-3 bg-gray-200 pb-2">
-                      <div className="flex flex-wrap items-baseline gap-x-1">
-                        <span className="text-green-800 font-bold text-base">
-                          {selectedThread.title}
-                        </span>
-                        <span className="text-xs text-gray-600">
-                          by{" "}
-                          <span className="font-medium">
-                            {selectedThread.userId?.email || "Unknown Oga"}
-                          </span>
-                          {selectedThread.userId?.flair && (
-                            <span
-                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${selectedThread.userId.flair === "Oga at the Top"
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
-                                }`}
-                            >
-                              {selectedThread.userId.flair}
-                            </span>
-                          )}
-                          : {formatDate(selectedThread.createdAt)} •{" "}
-                          {selectedThread.category}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
-                      <p>{selectedThread.body}</p>
-                      <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
-                        <button
-                          onClick={() =>
-                            document.getElementById("replyForm")?.focus()
-                          }
-                          className="hover:text-blue-600 flex items-center gap-1 text-xs"
-                          title={
-                            selectedThread?.userId?.flair
-                              ? `Reply to ${selectedThread.userId.flair}`
-                              : "Reply"
-                          }
-                        >
-                          <span
-                            className="material-icons-outlined"
-                            style={{ fontSize: "12px" }}
-                          >
-                            reply
-                          </span>
-                          <span className="text-xs">Reply</span>
-                        </button>
-                        <button
-                          className="hover:text-red-600 flex items-center gap-1 text-xs"
-                          onClick={() => alert("Report feature coming soon!")}
-                        >
-                          <span
-                            className="material-icons-outlined"
-                            style={{ fontSize: "12px" }}
-                          >
-                            flag
-                          </span>
-                          <span className="text-xs">Report</span>
-                        </button>
-                        <button
-                          className="hover:text-green-600 flex items-center gap-1 text-xs"
-                          onClick={() => alert("Like feature coming soon!")}
-                        >
-                          <span
-                            className="material-icons-outlined"
-                            style={{ fontSize: "12px" }}
-                          >
-                            thumb_up
-                          </span>
-                          <span className="text-xs">Like</span>
-                        </button>
-                        <button
-                          className="hover:text-purple-600 flex items-center gap-1 text-xs"
-                          onClick={() => {
-                            const url = `${window.location.origin}/threads?id=${selectedThread._id}`;
-                            navigator.clipboard
-                              .writeText(url)
-                              .then(() => alert("Link copied to clipboard!"))
-                              .catch((err) =>
-                                console.error("Could not copy text: ", err)
-                              );
-                          }}
-                        >
-                          <span
-                            className="material-icons-outlined"
-                            style={{ fontSize: "12px" }}
-                          >
-                            share
-                          </span>
-                          <span className="text-xs">Share</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <ThreadCard
+                    thread={selectedThread}
+                    formatDate={formatDate}
+                    showReplies={true}
+                    onReplyAdded={() => fetchSingleThread(selectedThread._id)}
+                    currentUserId={currentUserId}
+                    currentUserRole={currentUserRole}
+                    onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
+                  />
 
-                  {isLoggedIn && (
+                  {isLoggedIn && canReplySelectedThread && (
                     <form onSubmit={handleReply} className="mb-6">
                       <textarea
                         id="replyForm"
@@ -567,99 +528,20 @@ function ThreadsContent() {
                     </form>
                   )}
 
+                  {isLoggedIn && !canReplySelectedThread && (
+                    <p className="mb-6 rounded-lg border border-slate-300 bg-slate-50 p-3 text-center text-sm text-slate-600">
+                      This thread is locked. Only moderators/admins can reply.
+                    </p>
+                  )}
+
                   {selectedThread.replies &&
-                    selectedThread.replies.length > 0 ? (
-                    <div className="mb-6">
-                      <h3 className="text-lg font-semibold text-green-800 mb-2">
-                        Replies
-                      </h3>
-                      {selectedThread.replies.map((reply) => (
-                        <div key={reply._id} className="mb-2">
-                          <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                            <div className="p-3 bg-gray-200 pb-2">
-                              <div className="flex flex-wrap items-baseline gap-x-1">
-                                <span className="text-blue-800 font-bold text-base">
-                                  Re: {selectedThread.title}
-                                </span>
-                                <span className="text-xs text-gray-600">
-                                  by{" "}
-                                  <span className="font-medium">
-                                    {reply.userId?.email || "Unknown Oga"}
-                                  </span>
-                                  {reply.userId?.flair && (
-                                    <span
-                                      className={`ml-1 inline-block text-white px-1 rounded text-xs ${reply.userId.flair === "Oga at the Top"
-                                          ? "bg-yellow-500"
-                                          : "bg-green-500"
-                                        }`}
-                                    >
-                                      {reply.userId.flair}
-                                    </span>
-                                  )}
-                                  : {formatDate(reply.createdAt)}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="px-3 py-2 text-sm bg-gray-50 text-gray-800">
-                              <p>{reply.body}</p>
-                              <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
-                                <button
-                                  onClick={() =>
-                                    document
-                                      .getElementById("replyForm")
-                                      ?.focus()
-                                  }
-                                  className="hover:text-blue-600 flex items-center gap-1 text-xs"
-                                >
-                                  <span
-                                    className="material-icons-outlined"
-                                    style={{ fontSize: "12px" }}
-                                  >
-                                    reply
-                                  </span>
-                                  <span className="text-xs">Reply</span>
-                                </button>
-                                <button
-                                  className="hover:text-red-600 flex items-center gap-1 text-xs"
-                                  onClick={() =>
-                                    alert("Report feature coming soon!")
-                                  }
-                                >
-                                  <span
-                                    className="material-icons-outlined"
-                                    style={{ fontSize: "12px" }}
-                                  >
-                                    flag
-                                  </span>
-                                  <span className="text-xs">Report</span>
-                                </button>
-                                <button
-                                  className="hover:text-green-600 flex items-center gap-1 text-xs"
-                                  onClick={() =>
-                                    alert("Like feature coming soon!")
-                                  }
-                                >
-                                  <span
-                                    className="material-icons-outlined"
-                                    style={{ fontSize: "12px" }}
-                                  >
-                                    thumb_up
-                                  </span>
-                                  <span className="text-xs">Like</span>
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="bg-white border border-gray-200 p-4 rounded-md text-center mt-4">
-                      <p className="text-gray-600">
+                  selectedThread.replies.length === 0 ? (
+                    <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
+                      <p className="text-slate-600">
                         No replies yet—be the first!
                       </p>
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="mt-6 text-center">
                     <Link
@@ -672,19 +554,26 @@ function ThreadsContent() {
                 </div>
               ) : (
                 <div className="space-y-1">
-                  {threads.length ? (
-                    threads.map((thread) => (
-                      <ThreadCard
-                        key={thread._id}
-                        thread={thread}
-                        formatDate={formatDate}
-                        showReplies={true}
-                        onReplyAdded={fetchThreads}
-                      />
+                  {filteredThreads.length ? (
+                    filteredThreads.map((thread, index) => (
+                      <div key={thread._id} className="space-y-2">
+                        <ThreadCard
+                          thread={thread}
+                          formatDate={formatDate}
+                          showReplies={true}
+                          onReplyAdded={fetchThreads}
+                          currentUserId={currentUserId}
+                          currentUserRole={currentUserRole}
+                          onThreadUpdated={fetchThreads}
+                        />
+                        {!isPremium && bannerAd && index > 0 && index % 6 === 0 && (
+                          <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
+                        )}
+                      </div>
                     ))
                   ) : (
-                    <div className="bg-white border border-gray-200 p-4 rounded-md text-center">
-                      <p className="text-gray-600 mb-4">
+                    <div className="bg-white border border-slate-200 p-4 rounded-md text-center">
+                      <p className="text-slate-600 mb-4">
                         No gist yet—be the first!
                       </p>
                       {isLoggedIn ? (
@@ -725,51 +614,13 @@ function ThreadsContent() {
             </div>
 
             {!isPremium && sidebarAd && (
-              <div className="w-1/4">
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <h2 className="text-lg font-semibold text-green-800 mb-3">
-                    Ads
-                  </h2>
-                  <div>
-                    <a
-                      href={sidebarAd.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={() => trackClick(sidebarAd._id)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      <strong>{sidebarAd.brand}</strong>: {sidebarAd.text}
-                    </a>
-                  </div>
+              <div className="w-full lg:w-1/4">
+                <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+                  <SponsoredAdCard ad={sidebarAd} onClick={trackClick} compact />
                 </div>
               </div>
             )}
           </div>
-
-          {!isPremium && popupAd && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-lg shadow-lg w-80 md:w-96">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="font-bold text-green-800">Ad</h3>
-                  <button
-                    onClick={() => setPopupAd(null)}
-                    className="text-gray-500 hover:text-gray-700"
-                  >
-                    <span className="material-icons-outlined">close</span>
-                  </button>
-                </div>
-                <a
-                  href={popupAd.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={() => trackClick(popupAd._id)}
-                  className="text-blue-600 hover:underline"
-                >
-                  <strong>{popupAd.brand}</strong>: {popupAd.text}
-                </a>
-              </div>
-            </div>
-          )}
         </div>
 
         <NewThreadButton

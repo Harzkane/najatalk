@@ -27,8 +27,18 @@ export default function Login() {
       console.log("Logged in User ID:", res.data.userId);
       setEmail("");
       setPassword("");
-      // setTimeout(() => router.push("/"), 1000);
-      setTimeout(() => router.push("/marketplace"), 1000); // Redirect to marketplace
+      let destination = "/marketplace";
+      try {
+        const completenessRes = await axios.get("/api/users/me/profile-completeness", {
+          headers: { Authorization: `Bearer ${res.data.token}` },
+        });
+        destination = completenessRes.data?.profileCompleted
+          ? "/marketplace"
+          : "/onboarding/profile";
+      } catch {
+        destination = "/marketplace";
+      }
+      setTimeout(() => router.push(destination), 800);
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
         const errorMsg = err.response?.data?.message || "Login wahala o!";
@@ -46,8 +56,8 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100">
+      <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Login to NaijaTalk
         </h1>

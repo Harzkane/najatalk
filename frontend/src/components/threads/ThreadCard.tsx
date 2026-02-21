@@ -11,6 +11,7 @@ type Reply = {
   body: string;
   userId: { _id: string; email: string; flair?: string } | null;
   createdAt: string;
+  parentReplyId?: string | null;
 };
 
 type Thread = {
@@ -21,6 +22,11 @@ type Thread = {
   category: string;
   createdAt: string;
   replies?: Reply[];
+  likes?: string[];
+  bookmarks?: string[];
+  isSolved?: boolean;
+  isSticky?: boolean;
+  isLocked?: boolean;
 };
 
 interface ThreadCardProps {
@@ -31,6 +37,12 @@ interface ThreadCardProps {
   showReplies?: boolean;
   onReplyAdded?: () => Promise<void>;
   threadId?: string;
+  allThreadReplies?: Reply[];
+  depth?: number;
+  threadLocked?: boolean;
+  currentUserId?: string | null;
+  currentUserRole?: "user" | "mod" | "admin" | null;
+  onThreadUpdated?: () => Promise<void> | void;
 }
 
 const ThreadCard: FC<ThreadCardProps> = ({
@@ -41,6 +53,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
   showReplies = true,
   onReplyAdded,
   threadId,
+  allThreadReplies = [],
+  depth = 0,
+  threadLocked = false,
+  currentUserId = null,
+  currentUserRole = null,
+  onThreadUpdated,
 }) => {
   const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [replyText, setReplyText] = useState("");
@@ -55,6 +73,18 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [isTipping, setIsTipping] = useState(false);
   const [tipAmount, setTipAmount] = useState<number | null>(null);
   const [hasTipped, setHasTipped] = useState(false); // Added for cooldown
+  const [isLikeLoading, setIsLikeLoading] = useState(false);
+  const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
+  const [isSolvedLoading, setIsSolvedLoading] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [bookmarksCount, setBookmarksCount] = useState(0);
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isSolved, setIsSolved] = useState(false);
+  const [isSticky, setIsSticky] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [isStickyLoading, setIsStickyLoading] = useState(false);
+  const [isLockLoading, setIsLockLoading] = useState(false);
 
   const router = useRouter();
 
@@ -65,10 +95,41 @@ const ThreadCard: FC<ThreadCardProps> = ({
     : isThread(thread)
     ? thread.title
     : "Reply";
-  const hasReplies =
-    isThread(thread) && thread.replies && thread.replies.length > 0;
+  const threadReplies = isThread(thread) ? thread.replies || [] : allThreadReplies;
+  const nestedReplies = threadReplies.filter((reply) =>
+    isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId
+  );
+  const hasReplies = nestedReplies.length > 0;
+  const rootThreadId = isReply ? threadId : thread._id;
+  const titleHref = isReply
+    ? rootThreadId
+      ? `/threads/${rootThreadId}`
+      : undefined
+    : `/threads/${thread._id}`;
+  const isCurrentThreadLocked = isThread(thread)
+    ? Boolean(thread.isLocked)
+    : threadLocked;
+  const canToggleSolved = Boolean(
+    isThread(thread) &&
+      currentUserId &&
+      (thread.userId?._id === currentUserId ||
+        currentUserRole === "mod" ||
+        currentUserRole === "admin")
+  );
+  const canModerateThread = Boolean(
+    !isReply && (currentUserRole === "mod" || currentUserRole === "admin")
+  );
+  const canReplyToThread = Boolean(
+    !isCurrentThreadLocked ||
+      currentUserRole === "mod" ||
+      currentUserRole === "admin"
+  );
 
   const handleReplyClick = () => {
+    if (!canReplyToThread) {
+      setReplyError("Thread locked—no new replies.");
+      return;
+    }
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
@@ -142,26 +203,186 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const [reportRes, tipRes] = await Promise.all([
-          axios.get<{ hasReported: boolean; message: string }>(
+        const tipPromise = axios.get<{ hasTipped: boolean }>(
+          `/api/users/hasTipped?${isReply ? "replyId" : "threadId"}=${
+            thread._id
+          }`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        if (!isReply) {
+          const reportRes = await axios.get<{ hasReported: boolean; message: string }>(
             `/api/threads/${thread._id}/hasReported`,
             { headers: { Authorization: `Bearer ${token}` } }
-          ),
-          axios.get<{ hasTipped: boolean }>(
-            `/api/users/hasTipped?threadId=${thread._id}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          ),
-        ]);
-        setIsReported(reportRes.data.hasReported);
+          );
+          setIsReported(reportRes.data.hasReported);
+        } else {
+          setIsReported(false);
+        }
+
+        const tipRes = await tipPromise;
         setHasTipped(tipRes.data.hasTipped);
       } catch (err) {
         console.error("Failed to check report/tip status:", err);
       }
     };
     checkReportedAndTipped();
-  }, [thread._id]);
+  }, [thread._id, isReply]);
+
+  useEffect(() => {
+    if (!isThread(thread)) return;
+
+    const likes = thread.likes || [];
+    const bookmarks = thread.bookmarks || [];
+    setLikesCount(likes.length);
+    setBookmarksCount(bookmarks.length);
+    setIsSolved(Boolean(thread.isSolved));
+    setIsSticky(Boolean(thread.isSticky));
+    setIsLocked(Boolean(thread.isLocked));
+
+    if (!currentUserId) {
+      setIsLiked(false);
+      setIsBookmarked(false);
+      return;
+    }
+
+    setIsLiked(likes.includes(currentUserId));
+    setIsBookmarked(bookmarks.includes(currentUserId));
+  }, [thread, currentUserId]);
+
+  const handleLikeToggle = async () => {
+    if (isReply || !isThread(thread) || isLikeLoading) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setIsLikeLoading(true);
+    try {
+      const res = await axios.post<{ liked: boolean; likesCount: number }>(
+        `/api/threads/${thread._id}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsLiked(res.data.liked);
+      setLikesCount(res.data.likesCount);
+      if (onThreadUpdated) await onThreadUpdated();
+    } catch (err) {
+      console.error("Like toggle failed:", err);
+      setReplyError("Like scatter o!");
+    } finally {
+      setIsLikeLoading(false);
+    }
+  };
+
+  const handleStickyToggle = async () => {
+    if (isReply || !isThread(thread) || !canModerateThread || isStickyLoading) {
+      return;
+    }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setIsStickyLoading(true);
+    try {
+      const res = await axios.post<{ isSticky: boolean }>(
+        `/api/threads/${thread._id}/sticky`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsSticky(res.data.isSticky);
+      if (onThreadUpdated) await onThreadUpdated();
+    } catch (err) {
+      console.error("Sticky toggle failed:", err);
+      setReplyError("Pin scatter o!");
+    } finally {
+      setIsStickyLoading(false);
+    }
+  };
+
+  const handleLockToggle = async () => {
+    if (isReply || !isThread(thread) || !canModerateThread || isLockLoading) {
+      return;
+    }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setIsLockLoading(true);
+    try {
+      const res = await axios.post<{ isLocked: boolean }>(
+        `/api/threads/${thread._id}/lock`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsLocked(res.data.isLocked);
+      if (onThreadUpdated) await onThreadUpdated();
+    } catch (err) {
+      console.error("Lock toggle failed:", err);
+      setReplyError("Lock scatter o!");
+    } finally {
+      setIsLockLoading(false);
+    }
+  };
+
+  const handleBookmarkToggle = async () => {
+    if (isReply || !isThread(thread) || isBookmarkLoading) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setIsBookmarkLoading(true);
+    try {
+      const res = await axios.post<{ bookmarked: boolean; bookmarksCount: number }>(
+        `/api/threads/${thread._id}/bookmark`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsBookmarked(res.data.bookmarked);
+      setBookmarksCount(res.data.bookmarksCount);
+      if (onThreadUpdated) await onThreadUpdated();
+    } catch (err) {
+      console.error("Bookmark toggle failed:", err);
+      setReplyError("Bookmark scatter o!");
+    } finally {
+      setIsBookmarkLoading(false);
+    }
+  };
+
+  const handleSolvedToggle = async () => {
+    if (!isThread(thread) || !canToggleSolved || isSolvedLoading) return;
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    setIsSolvedLoading(true);
+    try {
+      const res = await axios.post<{ isSolved: boolean }>(
+        `/api/threads/${thread._id}/solved`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setIsSolved(res.data.isSolved);
+      if (onThreadUpdated) await onThreadUpdated();
+    } catch (err) {
+      console.error("Solved toggle failed:", err);
+      setReplyError("Solve update scatter o!");
+    } finally {
+      setIsSolvedLoading(false);
+    }
+  };
 
   const handleReport = async () => {
+    if (isReply) return;
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
@@ -227,17 +448,39 @@ const ThreadCard: FC<ThreadCardProps> = ({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-2">
+    <div
+      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${
+        depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
+      }`}
+    >
       <div className="p-3 bg-gray-200 pb-2">
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
           <Link
-            href={isReply ? "#" : `/threads/${thread._id}`}
+            href={titleHref || "#"}
+            onClick={(e) => {
+              if (!titleHref) e.preventDefault();
+            }}
             className={`${
               isReply ? "text-blue-900" : "text-green-800"
             } font-bold text-base hover:underline`}
           >
             {displayTitle}
           </Link>
+          {!isReply && isSolved && (
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+              Solved
+            </span>
+          )}
+          {!isReply && isSticky && (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+              Pinned
+            </span>
+          )}
+          {!isReply && isLocked && (
+            <span className="inline-flex items-center rounded-full bg-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-700">
+              Locked
+            </span>
+          )}
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-600">
               by{" "}
@@ -270,7 +513,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
                 >
                   {showRepliesExpanded ? "expand_less" : "chat"}
                 </span>
-                <span className="text-xs ml-1">{thread.replies?.length}</span>
+                <span className="text-xs ml-1">{threadReplies.length}</span>
               </button>
             )}
           </div>
@@ -283,7 +526,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
         <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
           <button
             onClick={handleReplyClick}
-            className="hover:text-blue-600 flex items-center gap-1 text-xs"
+            className={`flex items-center gap-1 text-xs ${
+              canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
+            }`}
+            disabled={!canReplyToThread}
           >
             <span
               className="material-icons-outlined"
@@ -294,12 +540,53 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <span className="text-xs">{isPidgin ? "Reply" : "Answer"}</span>
           </button>
 
+          {canModerateThread && (
+            <button
+              className={`flex items-center gap-1 text-xs ${
+                isSticky ? "text-amber-600" : "hover:text-amber-600"
+              }`}
+              onClick={handleStickyToggle}
+              disabled={isStickyLoading}
+            >
+              <span
+                className="material-icons-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                push_pin
+              </span>
+              <span className="text-xs">{isSticky ? "Unpin" : "Pin"}</span>
+            </button>
+          )}
+
+          {canModerateThread && (
+            <button
+              className={`flex items-center gap-1 text-xs ${
+                isLocked ? "text-slate-600" : "hover:text-slate-700"
+              }`}
+              onClick={handleLockToggle}
+              disabled={isLockLoading}
+            >
+              <span
+                className="material-icons-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                lock
+              </span>
+              <span className="text-xs">{isLocked ? "Unlock" : "Lock"}</span>
+            </button>
+          )}
+
           <button
             onClick={handleReport}
             className={`flex items-center gap-1 text-xs ${
-              isReported ? "text-gray-400" : "hover:text-red-600"
+              isReply
+                ? "text-gray-300 cursor-not-allowed"
+                : isReported
+                ? "text-gray-400"
+                : "hover:text-red-600"
             }`}
-            disabled={isReported}
+            disabled={isReported || isReply}
+            title={isReply ? "Reply reporting not enabled yet" : "Report"}
           >
             <span
               className="material-icons-outlined"
@@ -313,8 +600,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           <button
-            className="hover:text-green-600 flex items-center gap-1 text-xs"
-            onClick={() => alert("Like feature coming soon!")}
+            className={`flex items-center gap-1 text-xs ${
+              isLiked ? "text-green-600" : "hover:text-green-600"
+            }`}
+            onClick={handleLikeToggle}
+            disabled={isReply || isLikeLoading}
           >
             <span
               className="material-icons-outlined"
@@ -322,8 +612,46 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               thumb_up
             </span>
-            <span className="text-xs">Like</span>
+            <span className="text-xs">Like {likesCount > 0 ? `(${likesCount})` : ""}</span>
           </button>
+
+          {!isReply && (
+            <button
+              className={`flex items-center gap-1 text-xs ${
+                isBookmarked ? "text-blue-600" : "hover:text-blue-600"
+              }`}
+              onClick={handleBookmarkToggle}
+              disabled={isBookmarkLoading}
+            >
+              <span
+                className="material-icons-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                bookmark
+              </span>
+              <span className="text-xs">
+                Save {bookmarksCount > 0 ? `(${bookmarksCount})` : ""}
+              </span>
+            </button>
+          )}
+
+          {!isReply && canToggleSolved && (
+            <button
+              className={`flex items-center gap-1 text-xs ${
+                isSolved ? "text-emerald-600" : "hover:text-emerald-600"
+              }`}
+              onClick={handleSolvedToggle}
+              disabled={isSolvedLoading}
+            >
+              <span
+                className="material-icons-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                task_alt
+              </span>
+              <span className="text-xs">{isSolved ? "Solved" : "Mark solved"}</span>
+            </button>
+          )}
 
           <button
             className={`flex items-center gap-1 text-xs ${
@@ -513,21 +841,26 @@ const ThreadCard: FC<ThreadCardProps> = ({
         )}
       </div>
 
-      {!isReply && showRepliesExpanded && hasReplies && (
+      {showReplies && showRepliesExpanded && hasReplies && (
         <div className="mx-3 mt-2 space-y-2 border-t border-gray-100 py-3">
-          {isThread(thread) &&
-            thread.replies!.map((reply) => (
-              <ThreadCard
-                key={reply._id}
-                thread={reply}
-                formatDate={formatDate}
-                isReply={true}
-                originalTitle={thread.title}
-                showReplies={false}
-                onReplyAdded={onReplyAdded}
-                threadId={thread._id}
-              />
-            ))}
+          {nestedReplies.map((reply) => (
+            <ThreadCard
+              key={reply._id}
+              thread={reply}
+              formatDate={formatDate}
+              isReply={true}
+              originalTitle={originalTitle || displayTitle}
+              showReplies={true}
+              onReplyAdded={onReplyAdded}
+              threadId={rootThreadId}
+              allThreadReplies={threadReplies}
+              depth={depth + 1}
+              threadLocked={isCurrentThreadLocked}
+              currentUserId={currentUserId}
+              currentUserRole={currentUserRole}
+              onThreadUpdated={onThreadUpdated}
+            />
+          ))}
         </div>
       )}
 
@@ -537,8 +870,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
             href={`/threads/${thread._id}`}
             className="text-blue-600 hover:underline"
           >
-            {thread.replies?.length}{" "}
-            {thread.replies?.length === 1 ? "Reply" : "Replies"} - View
+            {threadReplies.length}{" "}
+            {threadReplies.length === 1 ? "Reply" : "Replies"} - View
             discussion →
           </Link>
         </div>
