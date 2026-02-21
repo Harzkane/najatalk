@@ -72,7 +72,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [isPidgin, setIsPidgin] = useState(true);
   const [showTipDialog, setShowTipDialog] = useState(false);
   const [isTipping, setIsTipping] = useState(false);
-  const [tipAmount, setTipAmount] = useState<number | null>(null);
+  // const [tipAmount, setTipAmount] = useState<number | null>(null);
   const [hasTipped, setHasTipped] = useState(false); // Added for cooldown
   const [isLikeLoading, setIsLikeLoading] = useState(false);
   const [isBookmarkLoading, setIsBookmarkLoading] = useState(false);
@@ -94,11 +94,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const displayTitle = isReply
     ? `Re: ${originalTitle}`
     : isThread(thread)
-    ? thread.title
-    : "Reply";
-  const threadReplies = isThread(thread) ? thread.replies || [] : allThreadReplies;
+      ? thread.title
+      : "Reply";
+  const threadReplies = isThread(thread)
+    ? thread.replies || []
+    : allThreadReplies;
   const nestedReplies = threadReplies.filter((reply) =>
-    isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId
+    isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId,
   );
   const hasReplies = nestedReplies.length > 0;
   const rootThreadId = isReply ? threadId : thread._id;
@@ -112,18 +114,18 @@ const ThreadCard: FC<ThreadCardProps> = ({
     : threadLocked;
   const canToggleSolved = Boolean(
     isThread(thread) &&
-      currentUserId &&
-      (thread.userId?._id === currentUserId ||
-        currentUserRole === "mod" ||
-        currentUserRole === "admin")
+    currentUserId &&
+    (thread.userId?._id === currentUserId ||
+      currentUserRole === "mod" ||
+      currentUserRole === "admin"),
   );
   const canModerateThread = Boolean(
-    !isReply && (currentUserRole === "mod" || currentUserRole === "admin")
+    !isReply && (currentUserRole === "mod" || currentUserRole === "admin"),
   );
   const canReplyToThread = Boolean(
     !isCurrentThreadLocked ||
-      currentUserRole === "mod" ||
-      currentUserRole === "admin"
+    currentUserRole === "mod" ||
+    currentUserRole === "admin",
   );
 
   const handleReplyClick = () => {
@@ -168,7 +170,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       await api.post(
         `/threads/${thread._id}/replies`,
         { body: replyText },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setReplyText("");
       setShowReplyDialog(false);
@@ -176,7 +178,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     } catch (error) {
       console.error("Failed to submit reply:", error);
       setReplyError(
-        "Failed to submit reply. Try again or continue on thread page."
+        "Failed to submit reply. Try again or continue on thread page.",
       );
     } finally {
       setIsSubmitting(false);
@@ -184,7 +186,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   };
 
   useEffect(() => {
-    const checkReported = async () => {
+    const checkReportedAndTipped = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
@@ -192,14 +194,16 @@ const ThreadCard: FC<ThreadCardProps> = ({
           `/api/users/hasTipped?${isReply ? "replyId" : "threadId"}=${
             thread._id
           }`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         if (!isReply) {
-          const reportRes = await axios.get<{ hasReported: boolean; message: string }>(
-            `/api/threads/${thread._id}/hasReported`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          const reportRes = await axios.get<{
+            hasReported: boolean;
+            message: string;
+          }>(`/api/threads/${thread._id}/hasReported`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
           setIsReported(reportRes.data.hasReported);
         } else {
           setIsReported(false);
@@ -208,7 +212,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
         const tipRes = await tipPromise;
         setHasTipped(tipRes.data.hasTipped);
       } catch (err) {
-        console.error("Failed to check report status:", err);
+        console.error("Failed to check status:", err);
       }
     };
     checkReportedAndTipped();
@@ -248,7 +252,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await axios.post<{ liked: boolean; likesCount: number }>(
         `/api/threads/${thread._id}/like`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsLiked(res.data.liked);
       setLikesCount(res.data.likesCount);
@@ -276,7 +280,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await axios.post<{ isSticky: boolean }>(
         `/api/threads/${thread._id}/sticky`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsSticky(res.data.isSticky);
       if (onThreadUpdated) await onThreadUpdated();
@@ -303,7 +307,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await axios.post<{ isLocked: boolean }>(
         `/api/threads/${thread._id}/lock`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsLocked(res.data.isLocked);
       if (onThreadUpdated) await onThreadUpdated();
@@ -325,10 +329,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsBookmarkLoading(true);
     try {
-      const res = await axios.post<{ bookmarked: boolean; bookmarksCount: number }>(
+      const res = await axios.post<{
+        bookmarked: boolean;
+        bookmarksCount: number;
+      }>(
         `/api/threads/${thread._id}/bookmark`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsBookmarked(res.data.bookmarked);
       setBookmarksCount(res.data.bookmarksCount);
@@ -354,7 +361,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await axios.post<{ isSolved: boolean }>(
         `/api/threads/${thread._id}/solved`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsSolved(res.data.isSolved);
       if (onThreadUpdated) await onThreadUpdated();
@@ -389,7 +396,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       await api.post(
         `/threads/${thread._id}/report`,
         { reason: reportReason },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setReportReason("");
       setIsReporting(false);
@@ -413,7 +420,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await api.post(
         "/users/tip",
         { receiverId: thread.userId?._id, amount },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       console.log("Tip Response:", res.data);
       window.location.href = res.data.paymentLink;
@@ -426,8 +433,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
-        }`}
+      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${
+        depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
+      }`}
     >
       <div className="p-3 bg-gray-200 pb-2">
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
@@ -465,10 +473,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
               </span>
               {thread.userId?.flair && (
                 <span
-                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
-                    }`}
+                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                    thread.userId.flair === "Oga at the Top"
+                      ? "bg-yellow-500"
+                      : "bg-green-500"
+                  }`}
                 >
                   {thread.userId.flair}
                 </span>
@@ -501,8 +510,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
         <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
           <button
             onClick={handleReplyClick}
-            className={`flex items-center gap-1 text-xs ${canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
-              }`}
+            className={`flex items-center gap-1 text-xs ${
+              canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
+            }`}
             disabled={!canReplyToThread}
           >
             <span
@@ -516,8 +526,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${isSticky ? "text-amber-600" : "hover:text-amber-600"
-                }`}
+              className={`flex items-center gap-1 text-xs ${
+                isSticky ? "text-amber-600" : "hover:text-amber-600"
+              }`}
               onClick={handleStickyToggle}
               disabled={isStickyLoading}
             >
@@ -533,8 +544,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${isLocked ? "text-slate-600" : "hover:text-slate-700"
-                }`}
+              className={`flex items-center gap-1 text-xs ${
+                isLocked ? "text-slate-600" : "hover:text-slate-700"
+              }`}
               onClick={handleLockToggle}
               disabled={isLockLoading}
             >
@@ -554,8 +566,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
               isReply
                 ? "text-gray-300 cursor-not-allowed"
                 : isReported
-                ? "text-gray-400"
-                : "hover:text-red-600"
+                  ? "text-gray-400"
+                  : "hover:text-red-600"
             }`}
             disabled={isReported || isReply}
             title={isReply ? "Reply reporting not enabled yet" : "Report"}
@@ -572,8 +584,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           <button
-            className={`flex items-center gap-1 text-xs ${isLiked ? "text-green-600" : "hover:text-green-600"
-              }`}
+            className={`flex items-center gap-1 text-xs ${
+              isLiked ? "text-green-600" : "hover:text-green-600"
+            }`}
             onClick={handleLikeToggle}
             disabled={isReply || isLikeLoading}
           >
@@ -583,7 +596,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               thumb_up
             </span>
-            <span className="text-xs">Like {likesCount > 0 ? `(${likesCount})` : ""}</span>
+            <span className="text-xs">
+              Like {likesCount > 0 ? `(${likesCount})` : ""}
+            </span>
           </button>
 
           {!isReply && (
@@ -620,24 +635,28 @@ const ThreadCard: FC<ThreadCardProps> = ({
               >
                 task_alt
               </span>
-              <span className="text-xs">{isSolved ? "Solved" : "Mark solved"}</span>
+              <span className="text-xs">
+                {isSolved ? "Solved" : "Mark solved"}
+              </span>
             </button>
           )}
 
-          <button
-            className={`flex items-center gap-1 text-xs ${
-              hasTipped ? "text-gray-400" : "hover:text-yellow-600"
-            }`}
-            onClick={() => !hasTipped && setShowTipModal(true)}
-            disabled={hasTipped}
-          >
-            <span
-              className="material-icons-outlined"
-              style={{ fontSize: "12px" }}
+          <div className="relative">
+            <button
+              className={`flex items-center gap-1 text-xs ${
+                hasTipped ? "text-gray-400" : "hover:text-yellow-600"
+              }`}
+              onClick={() => !hasTipped && setShowTipDialog(!showTipDialog)}
+              disabled={hasTipped}
             >
-              monetization_on
-            </span>
-            <span className="text-xs">{isPidgin ? "Tip" : "Dash"}</span>
+              <span
+                className="material-icons-outlined"
+                style={{ fontSize: "12px" }}
+              >
+                monetization_on
+              </span>
+              <span className="text-xs">{isPidgin ? "Tip" : "Dash"}</span>
+            </button>
             {showTipDialog && (
               <div className="absolute top-6 left-0 bg-white border border-gray-200 rounded shadow-md p-2 z-10">
                 {[50, 100, 200].map((amt) => (
@@ -673,89 +692,87 @@ const ThreadCard: FC<ThreadCardProps> = ({
           >
             <span className="text-xs">{isPidgin ? "English" : "Pidgin"}</span>
           </button>
-        </div >
+        </div>
 
-  { isReporting && !isReply && (
-    <div className="mt-3 border-t border-gray-200 pt-3">
-      <textarea
-        className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
-        placeholder="Why you dey report this gist?"
-        rows={3}
-        value={reportReason}
-        onChange={(e) => setReportReason(e.target.value)}
-      />
-      {replyError && (
-        <p className="text-red-500 text-xs mt-1">{replyError}</p>
-      )}
-      <div className="flex justify-end gap-2 mt-2">
-        <button
-          className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
-          onClick={() => {
-            setIsReporting(false);
-            setReportReason("");
-            setReplyError("");
-          }}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
-          onClick={submitReport}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Reporting..." : "Send Report"}
-        </button>
+        {isReporting && !isReply && (
+          <div className="mt-3 border-t border-gray-200 pt-3">
+            <textarea
+              className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              placeholder="Why you dey report this gist?"
+              rows={3}
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+            />
+            {replyError && (
+              <p className="text-red-500 text-xs mt-1">{replyError}</p>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
+                onClick={() => {
+                  setIsReporting(false);
+                  setReportReason("");
+                  setReplyError("");
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1 bg-red-600 text-white rounded-md text-xs hover:bg-red-700"
+                onClick={submitReport}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Reporting..." : "Send Report"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showReplyDialog && !isReply && (
+          <div className="mt-3 border-t border-gray-200 pt-3">
+            <textarea
+              className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              placeholder="Drop your reply..."
+              rows={3}
+              value={replyText}
+              onChange={(e) => setReplyText(e.target.value)}
+            />
+            {replyError && (
+              <p className="text-red-500 text-xs mt-1">{replyError}</p>
+            )}
+            <div className="flex justify-end gap-2 mt-2">
+              <button
+                className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
+                onClick={() => {
+                  setShowReplyDialog(false);
+                  setReplyError("");
+                }}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700"
+                onClick={() => router.push(`/threads/${thread._id}`)}
+                disabled={isSubmitting}
+              >
+                Continue on Thread Page
+              </button>
+              <button
+                className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
+                onClick={handleSubmitReply}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Posting..." : "Post Reply"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  )}
 
-{
-  showReplyDialog && !isReply && (
-    <div className="mt-3 border-t border-gray-200 pt-3">
-      <textarea
-        className="w-full p-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
-        placeholder="Drop your reply..."
-        rows={3}
-        value={replyText}
-        onChange={(e) => setReplyText(e.target.value)}
-      />
-      {replyError && (
-        <p className="text-red-500 text-xs mt-1">{replyError}</p>
-      )}
-      <div className="flex justify-end gap-2 mt-2">
-        <button
-          className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
-          onClick={() => {
-            setShowReplyDialog(false);
-            setReplyError("");
-          }}
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button
-          className="px-3 py-1 bg-blue-600 text-white rounded-md text-xs hover:bg-blue-700"
-          onClick={() => router.push(`/threads/${thread._id}`)}
-          disabled={isSubmitting}
-        >
-          Continue on Thread Page
-        </button>
-        <button
-          className="px-3 py-1 bg-green-600 text-white rounded-md text-xs hover:bg-green-700"
-          onClick={handleSubmitReply}
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? "Posting..." : "Post Reply"}
-        </button>
-      </div>
-    </div>
-  )
-}
-      </div >
-
-  { showReplies && showRepliesExpanded && hasReplies && (
-    <div className="mx-3 mt-2 space-y-2 border-t border-gray-100 py-3">
+      {showReplies && showRepliesExpanded && hasReplies && (
+        <div className="mx-3 mt-2 space-y-2 border-t border-gray-100 py-3">
           {nestedReplies.map((reply) => (
             <ThreadCard
               key={reply._id}
@@ -774,24 +791,22 @@ const ThreadCard: FC<ThreadCardProps> = ({
               onThreadUpdated={onThreadUpdated}
             />
           ))}
-        </div >
+        </div>
       )}
 
-{
-  !isReply && showReplies && hasReplies && !showRepliesExpanded && (
-    <div className="flex justify-end px-3 py-2 text-xs border-t border-gray-100">
-      <Link
-        href={`/threads/${thread._id}`}
-        className="text-blue-600 hover:underline"
-      >
-        {threadReplies.length}{" "}
-        {threadReplies.length === 1 ? "Reply" : "Replies"} - View
-        discussion →
-      </Link>
+      {!isReply && showReplies && hasReplies && !showRepliesExpanded && (
+        <div className="flex justify-end px-3 py-2 text-xs border-t border-gray-100">
+          <Link
+            href={`/threads/${thread._id}`}
+            className="text-blue-600 hover:underline"
+          >
+            {threadReplies.length}{" "}
+            {threadReplies.length === 1 ? "Reply" : "Replies"} - View discussion
+            →
+          </Link>
+        </div>
+      )}
     </div>
-  )
-}
-    </div >
   );
 };
 
