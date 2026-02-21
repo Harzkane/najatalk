@@ -204,15 +204,28 @@ function ThreadsContent() {
       const res = await api.get("/ads", {
         params: { status: "active", type: "banner" },
       });
-      const activeBanners = res.data.ads.filter(
-        (ad: Ad) => ad.budget >= ad.cpc
-      );
+      const activeBanners = res.data.ads.filter((ad: Ad) => ad.budget >= ad.cpc);
       if (activeBanners.length > 0) {
         setBannerAd(activeBanners[0]);
         await api.get(`/ads/impression/${activeBanners[0]._id}`);
       }
     } catch (err) {
       console.error("Banner fetch error:", err);
+    }
+  };
+
+  const fetchSidebarAd = async () => {
+    try {
+      const res = await api.get("/ads", {
+        params: { status: "active", type: "sidebar" },
+      });
+      const activeSidebars = res.data.ads.filter((ad: Ad) => ad.budget >= ad.cpc);
+      if (activeSidebars.length > 0) {
+        setSidebarAd(activeSidebars[0]);
+        await api.get(`/ads/impression/${activeSidebars[0]._id}`);
+      }
+    } catch (err) {
+      console.error("Sidebar fetch error:", err);
     }
   };
 
@@ -427,280 +440,199 @@ function ThreadsContent() {
         />
       </Head>
       <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-              <div className="max-w-7xl mx-auto mb-4">
-                <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
-                  <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-                    <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
-                      {selectedThread
-                        ? selectedThread.title
-                        : "NaijaTalk Threads—Drop Your Gist!"}
-                    </h1>
-                    <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
-                      <Link
-                        href="/"
-                        className="text-green-100 hover:text-white text-sm font-medium"
-                      >
-                        Home
-                      </Link>
-                      <Link
-                        href="/premium"
-                        className="text-green-100 hover:text-white text-sm font-medium"
-                      >
-                        Premium
-                      </Link>
-                      <Link
-                        href="/marketplace"
-                        className="text-green-100 hover:text-white text-sm font-medium"
-                      >
-                        Marketplace
-                      </Link>
-                      <button
-                        onClick={handleLogout}
-                        className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
-                      >
-                        Logout
-                      </button>
-                    </div>
-                  </div>
-                </div>
+        <div className="max-w-7xl mx-auto mb-4">
+          <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
+                {selectedThread
+                  ? selectedThread.title
+                  : "NaijaTalk Threads—Drop Your Gist!"}
+              </h1>
+              <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
+                <Link
+                  href="/"
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  Home
+                </Link>
+                <Link
+                  href="/premium"
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  Premium
+                </Link>
+                <Link
+                  href="/marketplace"
+                  className="text-green-100 hover:text-white text-sm font-medium"
+                >
+                  Marketplace
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+                >
+                  Logout
+                </button>
               </div>
+            </div>
+          </div>
+        </div>
 
-              <div className="max-w-7xl mx-auto">
-                {!isPremium && bannerAd && (
-                  <SponsoredAdCard ad={bannerAd} onClick={trackClick} className="mb-4" />
-                )}
+        <div className="max-w-7xl mx-auto">
+          {!isPremium && bannerAd && (
+            <SponsoredAdCard ad={bannerAd} onClick={trackClick} className="mb-4" />
+          )}
 
-                {!selectedThread && (
-                  <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-3">
-                    <SearchBar
-                      onSearch={handleSearch}
-                      recentSearches={recentSearches}
-                      trendingTopics={trendingTopics}
-                    />
-                  </div>
-                )}
+          {!selectedThread && (
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-3">
+              <SearchBar
+                onSearch={handleSearch}
+                recentSearches={recentSearches}
+                trendingTopics={trendingTopics}
+              />
+            </div>
+          )}
 
-                {!selectedThread && (
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    {[
-                      { id: "all", label: "All" },
-                      { id: "unanswered", label: "Unanswered" },
-                      { id: "solved", label: "Solved" },
-                      { id: "bookmarked", label: "Saved" },
-                    ].map((filterOption) => (
-                      <button
-                        key={filterOption.id}
-                        onClick={() =>
-                          setActiveFilter(
-                            filterOption.id as
-                            | "all"
-                            | "unanswered"
-                            | "solved"
-                            | "bookmarked"
-                          )
-                        }
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeFilter === filterOption.id
-                          ? "bder-green-600 bg-green-600 text-white"
-                          : "bder-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
-                          }`}
-                      >
-                        {filterOption.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+          {!selectedThread && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {[
+                { id: "all", label: "All" },
+                { id: "unanswered", label: "Unanswered" },
+                { id: "solved", label: "Solved" },
+                { id: "bookmarked", label: "Saved" },
+              ].map((filterOption) => (
+                <button
+                  key={filterOption.id}
+                  onClick={() =>
+                    setActiveFilter(
+                      filterOption.id as
+                      | "all"
+                      | "unanswered"
+                      | "solved"
+                      | "bookmarked"
+                    )
+                  }
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeFilter === filterOption.id
+                    ? "bder-green-600 bg-green-600 text-white"
+                    : "bder-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
+                    }`}
+                >
+                  {filterOption.label}
+                </button>
+              ))}
+            </div>
+          )}
 
-                {message && (
-                  <p className="text-center text-sm text-slate-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
-                    {isVerifyingTip ? "Verifying tip—abeg wait small..." : message}
-                    {searchQuery && !selectedThread ? `: "${searchQuery}"` : ""}
-                  </p>
-                )}
+          {message && (
+            <p className="text-center text-sm text-slate-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
+              {isVerifyingTip ? "Verifying tip—abeg wait small..." : message}
+              {searchQuery && !selectedThread ? `: "${searchQuery}"` : ""}
+            </p>
+          )}
 
           <div className="flex flex-col lg:flex-row gap-4">
-                  <div
-                    className={`w-full ${!isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
-                      }`}
-                  >
-                    {selectedThread ? (
-                      <div className="space-y-4">
-                        <ThreadCard
-                          thread={selectedThread}
-                          formatDate={formatDate}
-                          showReplies={true}
-                          onReplyAdded={() => fetchSingleThread(selectedThread._id)}
-                          currentUserId={currentUserId}
-                          currentUserRole={currentUserRole}
-                          onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
-                        />
+            <div className={`w-full ${!isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"}`}>
+              {selectedThread ? (
+                <div className="space-y-4">
+                  <ThreadCard
+                    thread={selectedThread}
+                    formatDate={formatDate}
+                    showReplies={true}
+                    onReplyAdded={() => fetchSingleThread(selectedThread._id)}
+                    currentUserId={currentUserId}
+                    currentUserRole={currentUserRole}
+                    onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
+                  />
 
-                        {isLoggedIn && canReplySelectedThread && (
-                          <form onSubmit={handleReply} className="mb-6">
-                            <textarea
-                              id="replyForm"
-                              placeholder="Drop your reply..."
-                              value={replyBody}
-                              onChange={(e) => setReplyBody(e.target.value)}
-                              className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800"
-                            />
-                            <button
-                              type="submit"
-                              disabled={isSubmitting}
-                              className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
-                            >
-                              {isSubmitting ? "Posting..." : "Reply am!"}
-                            </button>
-                          </form>
-                        )}
-
-                        {isLoggedIn && !canReplySelectedThread && (
-                          <p className="mb-6 rounded-lg border border-slate-300 bg-slate-50 p-3 text-center text-sm text-slate-600">
-                            This thread is locked. Only moderators/admins can reply.
-                          </p>
-                        )}
-
-                        {selectedThread.replies &&
-                          selectedThread.replies.length === 0 ? (
-                          <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
-                            <p className="text-slate-600">
-                              No replies yet—be the first!
-                            </p>
-                          </div>
-                        ) : null}
-
-                        <div className="mt-6 text-center">
-                          <Link
-                            href="/threads"
-                            className="text-blue-600 hover:underline text-sm"
-                          >
-                            ← Back to all threads
-                          </Link>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1">
-                        {filteredThreads.length ? (
-                          filteredThreads.map((thread, index) => (
-                            <div key={thread._id} className="space-y-2">
-                              <ThreadCard
-                                thread={thread}
-                                formatDate={formatDate}
-                                showReplies={true}
-                                onReplyAdded={fetchThreads}
-                                currentUserId={currentUserId}
-                                currentUserRole={currentUserRole}
-                                onThreadUpdated={fetchThreads}
-                              />
-                              {!isPremium && bannerAd && index > 0 && index % 6 === 0 && (
-                                <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <div className="bg-white border border-slate-200 p-4 rounded-md text-center">
-                            <p className="text-slate-600 mb-4">
-                              No gist yet—be the first!
-                            </p>
-                            {isLoggedIn ? (
-                              <button
-                                onClick={() => {
-                                  if (newThreadButtonRef.current) {
-                                    newThreadButtonRef.current.click();
-                                  }
-                                }}
-                                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
-                              >
-                                <span
-                                  className="material-icons-outlined mr-1"
-                                  style={{ fontSize: "16px" }}
-                                >
-                                  add
-                                </span>
-                                Start a New Thread
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => router.push("/login")}
-                                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto"
-                              >
-                                <span
-                                  className="material-icons-outlined mr-1"
-                                  style={{ fontSize: "16px" }}
-                                >
-                                  login
-                                </span>
-                                Login to Post
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                    <div className="bg-white border border-gray-200 p-4 rounded-md text-center mt-4">
-                      <p className="text-gray-600">No replies yet—be the first!</p>
-                    </div>
-              )}
-
-                    <div className="mt-6 text-center">
-                      <Link
-                        href="/threads"
-                        className="text-blue-600 hover:underline text-sm"
+                  {isLoggedIn && canReplySelectedThread && (
+                    <form onSubmit={handleReply} className="mb-6">
+                      <textarea
+                        id="replyForm"
+                        placeholder="Drop your reply..."
+                        value={replyBody}
+                        onChange={(e) => setReplyBody(e.target.value)}
+                        className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800"
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSubmitting}
+                        className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
                       >
-                        ← Back to all threads
-                      </Link>
+                        {isSubmitting ? "Posting..." : "Reply am!"}
+                      </button>
+                    </form>
+                  )}
+
+                  {isLoggedIn && !canReplySelectedThread && (
+                    <p className="mb-6 rounded-lg border border-slate-300 bg-slate-50 p-3 text-center text-sm text-slate-600">
+                      This thread is locked. Only moderators/admins can reply.
+                    </p>
+                  )}
+
+                  {selectedThread.replies && selectedThread.replies.length === 0 && (
+                    <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
+                      <p className="text-slate-600">No replies yet—be the first!</p>
                     </div>
+                  )}
+
+                  <div className="mt-6 text-center">
+                    <Link href="/threads" className="text-blue-600 hover:underline text-sm">
+                      ← Back to all threads
+                    </Link>
                   </div>
-                  ) : (
-                  <div className="space-y-1">
-                    {threads.length ? (
-                      threads.map((thread) => (
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {filteredThreads.length ? (
+                    filteredThreads.map((thread, index) => (
+                      <div key={thread._id} className="space-y-2">
                         <ThreadCard
-                          key={thread._id}
                           thread={thread}
                           formatDate={formatDate}
                           showReplies={true}
                           onReplyAdded={fetchThreads}
+                          currentUserId={currentUserId}
+                          currentUserRole={currentUserRole}
+                          onThreadUpdated={fetchThreads}
                         />
-                      ))
-                    ) : (
-                      <div className="bg-white border border-gray-200 p-4 rounded-md text-center">
-                        <p className="text-gray-600 mb-4">
-                          No gist yet—be the first!
-                        </p>
-                        {isLoggedIn ? (
-                          <button
-                            onClick={() => {
-                              if (newThreadButtonRef.current) {
-                                newThreadButtonRef.current.click();
-                              }
-                            }}
-                            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
-                          >
-                            <span
-                              className="material-icons-outlined mr-1"
-                              style={{ fontSize: "16px" }}
-                            >
-                              add
-                            </span>
-                            Start a New Thread
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => router.push("/login")}
-                            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto"
-                          >
-                            <span
-                              className="material-icons-outlined mr-1"
-                              style={{ fontSize: "16px" }}
-                            >
-                              login
-                            </span>
-                            Login to Post
-                          </button>
+                        {!isPremium && bannerAd && index > 0 && index % 6 === 0 && (
+                          <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
                         )}
                       </div>
-                    )}
-                  </div>
+                    ))
+                  ) : (
+                    <div className="bg-white border border-slate-200 p-4 rounded-md text-center">
+                      <p className="text-slate-600 mb-4">No gist yet—be the first!</p>
+                      {isLoggedIn ? (
+                        <button
+                          onClick={() => {
+                            if (newThreadButtonRef.current) {
+                              newThreadButtonRef.current.click();
+                            }
+                          }}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
+                        >
+                          <span className="material-icons-outlined mr-1" style={{ fontSize: "16px" }}>
+                            add
+                          </span>
+                          Start a New Thread
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => router.push("/login")}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto"
+                        >
+                          <span className="material-icons-outlined mr-1" style={{ fontSize: "16px" }}>
+                            login
+                          </span>
+                          Login to Post
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {!isPremium && sidebarAd && (
               <div className="w-full lg:w-1/4">
@@ -712,11 +644,11 @@ function ThreadsContent() {
           </div>
         </div >
 
-    <NewThreadButton
-      isLoggedIn={isLoggedIn}
-      onSubmit={handleSubmitThread}
-      buttonRef={newThreadButtonRef}
-    />
+        <NewThreadButton
+          isLoggedIn={isLoggedIn}
+          onSubmit={handleSubmitThread}
+          buttonRef={newThreadButtonRef}
+        />
       </div >
     </>
   );
