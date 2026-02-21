@@ -2,12 +2,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import api from "../../../../utils/api";
+import api from "@/utils/api";
 import axios from "axios"; // Keep for isAxiosError check
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import ThreadCard from "../../../../components/threads/ThreadCard";
-import formatDate from "../../../../utils/formatDate";
+import ThreadCard from "@/components/threads/ThreadCard";
+import formatDate from "@/utils/formatDate";
 
 type Thread = {
   _id: string;
@@ -98,91 +98,72 @@ function ThreadDetailContent() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6">
-      <div className="max-w-7xl mx-auto mb-3">
-        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
-              {thread ? thread.title : "NaijaTalk Threads—Drop Your Gist!"}
-            </h1>
-            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
-              <Link
-                href="/"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="/threads"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Threads
-              </Link>
-              <Link
-                href="/marketplace"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Marketplace
-              </Link>
-              <Link
-                href="/premium"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Premium
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+                <div className="max-w-7xl mx-auto mb-3">
+                  <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
+                    <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+                      <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
+                        {thread ? thread.title : "NaijaTalk Threads—Drop Your Gist!"}
+                      </h1>
+                      <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
+                        <Link
+                          href="/"
+                          className="text-green-100 hover:text-white text-sm font-medium"
+                        >
+                          Home
+                        </Link>
+                        <Link
+                          href="/threads"
+                          className="text-green-100 hover:text-white text-sm font-medium"
+                        >
+                          Threads
+                        </Link>
+                        <Link
+                          href="/marketplace"
+                          className="text-green-100 hover:text-white text-sm font-medium"
+                        >
+                          Marketplace
+                        </Link>
+                        <Link
+                          href="/premium"
+                          className="text-green-100 hover:text-white text-sm font-medium"
+                        >
+                          Premium
+                        </Link>
+                        <button
+                          onClick={handleLogout}
+                          className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-      <div className="max-w-7xl mx-auto">
-        {message && (
-          <p className="text-center text-sm text-gray-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
-            {message}
-          </p>
-        )}
+                <div className="max-w-7xl mx-auto">
+                  {message && (
+                    <p className="text-center text-sm text-gray-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
+                      {message}
+                    </p>
+                  )}
 
-        {thread && (
-          <>
-            <ThreadCard
-              thread={thread}
-              formatDate={formatDate}
-              showReplies={true}
-              onReplyAdded={fetchThread}
-              currentUserId={currentUserId}
-              currentUserRole={currentUserRole}
-              onThreadUpdated={fetchThread}
-            />
+                  {thread && (
+                    <>
+                      <ThreadCard
+                        thread={thread}
+                        formatDate={formatDate}
+                        showReplies={true}
+                        onReplyAdded={fetchThread}
+                        currentUserId={currentUserId}
+                        currentUserRole={currentUserRole}
+                        onThreadUpdated={fetchThread}
+                      />
 
             {thread.replies.length === 0 ? (
-              <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
-                <p className="text-slate-600">No replies yet—be the first!</p>
-              </div>
-            ) : (
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                  Replies
-                </h3>
-                {thread.replies.map((reply) => (
-                  <ThreadCard
-                    key={reply._id}
-                    thread={reply}
-                    formatDate={formatDate}
-                    isReply={true}
-                    originalTitle={thread.title}
-                    showReplies={false}
-                    onReplyAdded={fetchThread}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
+          <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
+            <p className="text-slate-600">No replies yet—be the first!</p>
+          </div>
+        ) : null}
 
         <div className="mt-6 text-center">
           <Link
@@ -192,8 +173,11 @@ function ThreadDetailContent() {
             ← Back to all threads
           </Link>
         </div>
-      </div>
-    </div>
+      </>
+    )
+  }
+    </div >
+    </div >
   );
 }
 

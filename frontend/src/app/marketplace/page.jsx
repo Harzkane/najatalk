@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import api from "../../utils/api";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import ListingCard from "../../components/marketplace/ListingCard";
-import ConfirmModal from "../../components/ConfirmModal";
+import ListingCard from "@/components/marketplace/ListingCard";
+import ConfirmModal from "@/components/ConfirmModal";
 
 const STATUS_OPTIONS = ["all", "active", "pending", "sold"];
 const SORT_OPTIONS = [
@@ -183,7 +182,7 @@ export default function Marketplace() {
   const fetchListings = async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await api.get("/marketplace/listings", {
+      const res = await axios.get("/api/marketplace/listings", {
         params: { includeSold: true },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -196,7 +195,7 @@ export default function Marketplace() {
 
   const fetchFavorites = async (token) => {
     try {
-      const res = await api.get("/marketplace/favorites", {
+      const res = await axios.get("/api/marketplace/favorites", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSavedListingIds((res.data.savedListingIds || []).map((id) => id.toString()));
@@ -208,7 +207,7 @@ export default function Marketplace() {
 
   const fetchMarketplacePolicy = async (token) => {
     try {
-      const res = await api.get("/marketplace/me/policy", {
+      const res = await axios.get("/api/marketplace/me/policy", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMarketplacePolicy(res.data || null);
@@ -221,7 +220,7 @@ export default function Marketplace() {
   const fetchWalletData = async (token) => {
     try {
       setIsWalletLoading(true);
-      const res = await api.get("/users/me/wallet-ledger", {
+      const res = await axios.get("/api/users/me/wallet-ledger", {
         params: { limit: 12, includePending: true },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -248,7 +247,7 @@ export default function Marketplace() {
 
   const fetchCategories = async () => {
     try {
-      const res = await api.get("/marketplace/categories");
+      const res = await axios.get("/api/marketplace/categories");
       setCategories(res.data.categories || []);
     } catch (err) {
       showMessage(err.response?.data?.message || "Categories load scatter o!", "error");
@@ -424,7 +423,7 @@ export default function Marketplace() {
         : "/marketplace/listings";
       const method = editId ? "put" : "post";
 
-      const res = await api({
+      const res = await axios({
         method,
         url,
         data: { title, description, price: Number(price), category, imageUrls },
@@ -464,8 +463,8 @@ export default function Marketplace() {
     }
 
     try {
-      const res = await api.post(
-        `/marketplace/favorites/${listingId}`,
+      const res = await axios.post(
+        `/api/marketplace/favorites/${listingId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -557,16 +556,16 @@ export default function Marketplace() {
 
     try {
       setIsSubmittingBuyOrder(true);
-      const res = await api.post(
-        `/marketplace/buy/${pendingBuyListingId}`,
+      const res = await axios.post(
+        `/api/marketplace/buy/${pendingBuyListingId}`,
         { orderDetails },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (saveDeliveryAsDefault) {
         const normalizedAddress = normalizeDeliveryAddress(orderDetails);
         try {
-          await api.patch(
-            "/users/me/profile",
+          await axios.patch(
+            "/api/users/me/profile",
             { defaultDeliveryAddress: normalizedAddress },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -597,8 +596,8 @@ export default function Marketplace() {
       return;
     }
     try {
-      const res = await api.post(
-        `/marketplace/ship/${id}`,
+      const res = await axios.post(
+        `/api/marketplace/ship/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -658,8 +657,8 @@ export default function Marketplace() {
           showMessage("Select a listing to boost first.", "warning");
           return;
         }
-        const res = await api.post(
-          `/marketplace/listings/${selectedBoostListingId}/boost`,
+        const res = await axios.post(
+          `/api/marketplace/listings/${selectedBoostListingId}/boost`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -668,8 +667,8 @@ export default function Marketplace() {
         setShowBoostSuccessModal(true);
         setTimeout(() => setShowBoostSuccessModal(false), 1200);
       } else {
-        const res = await api.post(
-          "/premium/subscribe-with-wallet",
+        const res = await axios.post(
+          "/api/premium/subscribe-with-wallet",
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -704,8 +703,7 @@ export default function Marketplace() {
     router.push("/login");
   };
 
-  const formatDate = (dateString = "") => {
-    if (!dateString) return "No date";
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     const time = date
       .toLocaleTimeString("en-US", {
@@ -745,706 +743,662 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-      <div className="max-w-7xl mx-auto mb-4">
-        <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Marketplace</h1>
-                <p className="text-sm text-slate-600">
-                  Buy trusted listings, sell quickly, and settle safely with escrow.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/"
-                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                >
-                  Home
-                </Link>
-                {isLoggedIn && currentUserId && (
-                  <Link
-                    href={`/users/${currentUserId}`}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    My Profile
-                  </Link>
-                )}
-                {isLoggedIn && (
-                  <Link
-                    href="/wallet"
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    My Wallet
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link
-                    href="/marketplace/wallet"
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
-                  >
-                    Platform Wallet
-                  </Link>
-                )}
-                {isLoggedIn ? (
-                  <button
-                    onClick={handleLogout}
-                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
-                  >
-                    Login
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
+                    <div className="max-w-7xl mx-auto mb-4">
+                      <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
+                        <div className="border-b border-slate-200 p-4">
+                          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                              <h1 className="text-2xl font-bold text-slate-900">Marketplace</h1>
+                              <p className="text-sm text-slate-600">
+                                Buy trusted listings, sell quickly, and settle safely with escrow.
+                              </p>
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2">
+                              <Link href="/" className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
+                                Home
+                              </Link>
+                              {isLoggedIn && currentUserId && (
+                                <Link
+                                  href={`/users/${currentUserId}`}
+                                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  My Profile
+                                </Link>
+                              )}
+                              {isLoggedIn && currentUserId && (
+                                <Link
+                                  href="/wallet"
+                                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  My Wallet
+                                </Link>
+                              )}
+                              {isAdmin && (
+                                <Link
+                                  href="/marketplace/wallet"
+                                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+                                >
+                                  Platform Wallet
+                                </Link>
+                              )}
+                              {isLoggedIn ? (
+                                <button
+                                  onClick={handleLogout}
+                                  className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
+                                >
+                                  Logout
+                                </button>
+                              ) : (
+                                <Link
+                                  href="/login"
+                                  className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
+                                >
+                                  Login
+                                </Link>
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-          <div className="p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                { key: "browse", label: "Browse", value: listings.length, sub: "All listings" },
-                { key: "sell", label: "Sell", value: "Quick Post", sub: "Create or edit listing" },
-                { key: "my_listings", label: "My Listings", value: myListingsCount, sub: "Seller inventory" },
-                {
-                  key: "orders",
-                  label: "Orders",
-                  value: myPendingOrdersCount,
-                  sub:
-                    sellerPendingOrdersCount > 0
-                      ? `${sellerPendingOrdersCount} response needed`
-                      : buyerPendingOrdersCount > 0
-                        ? `${buyerPendingOrdersCount} waiting for delivery`
-                        : "No active orders",
-                },
-                { key: "saved", label: "Saved", value: savedListingIds.length, sub: "Favorite items" },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveView(item.key)}
-                  className={`rounded-lg border p-3 text-left transition-colors ${activeView === item.key
-                    ? "border-green-600 bg-green-50 shadow-sm"
-                    : "border-slate-200 bg-white hover:border-slate-300"
-                    }`}
-                >
-                  <p className="text-xs uppercase font-bold tracking-wider text-slate-500">{item.label}</p>
-                  <p className="text-xl font-bold text-slate-900">{item.value}</p>
-                  <p className="text-xs text-slate-600 truncate">{item.sub}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-7xl">
-        {message && (
-          <div className={`mb-4 rounded-lg border p-3 text-sm shadow-sm flex flex-col gap-2 ${messageClass}`}>
-            <p className="font-medium">{message}</p>
-            {isTierLimitMessage && (
-              <div>
-                <button
-                  type="button"
-                  onClick={handleUpgradeFromMarketplace}
-                  className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700"
-                >
-                  Upgrade to Premium
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {isLoggedIn && sellerPendingOrdersCount > 0 && activeView !== "orders" && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 shadow-sm">
-            <span className="font-bold">Gist:</span> You have {sellerPendingOrdersCount} pending order{sellerPendingOrdersCount === 1 ? "" : "s"} in escrow. Open the
-            <button onClick={() => setActiveTab("orders")} className="mx-1 font-bold underline">Orders tab</button>
-            to confirm shipping.
-          </div>
-        )}
-
-        {activeView === "sell" && isLoggedIn && (
-          <div className="mb-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            {marketplacePolicy && (
-              <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div>
-                    <p className="text-xs uppercase font-bold text-slate-500">Seller Policy</p>
-                    <p className="text-sm font-bold text-slate-900">
-                      {marketplacePolicy.tier === "premium" ? "Premium Seller" : "Free Seller"}
-                    </p>
-                  </div>
-                  <div className="text-right text-xs text-slate-600">
-                    <p>Commission: <span className="font-bold">{marketplacePolicy.commissionPercent}%</span></p>
-                    <p>
-                      Boost: <span className="font-bold">{marketplacePolicy.boostCostLabel}</span> / {marketplacePolicy.boostHours}h
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-2">
-                  <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                    <span>Active Listings</span>
-                    <span className="font-bold">
-                      {marketplacePolicy.activeListingCount}/{marketplacePolicy.activeListingLimit}
-                    </span>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded bg-slate-200">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-500"
-                      style={{ width: `${listingUsagePercent}%` }}
-                    />
-                  </div>
-                </div>
-                {marketplacePolicy.tier === "free" && (
-                  <p className="mt-2 text-xs text-slate-600 font-medium italic">
-                    Upgrade to Premium for higher limits and lower fees!
-                  </p>
-                )}
-              </div>
-            )}
-            <h2 className="mb-4 text-lg font-bold text-slate-900">
-              {editId ? "Edit Your Listing" : "Post a New Item"}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Clean iPhone 13 Pro Max"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-slate-700 mb-1">Description</label>
-                <textarea
-                  placeholder="Tell us about the condition, accessories, and location..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="h-24 w-full rounded-lg border border-slate-300 p-2 text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-                  required
-                />
-              </div>
-
-              <div className="rounded-lg border border-slate-200 p-3 bg-slate-50/50">
-                <p className="mb-2 text-sm font-bold text-slate-700">Images (Max 8)</p>
-                <div className="mb-3 flex flex-wrap items-center gap-3">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="text-xs file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-bold file:bg-green-100 file:text-green-800 hover:file:bg-green-200"
-                  />
-                  <div className="flex-1 flex gap-1">
-                    <input
-                      type="text"
-                      placeholder="Or paste image URL"
-                      value={manualImageUrl}
-                      onChange={(e) => setManualImageUrl(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          handleAddManualImage();
-                        }
-                      }}
-                      className="flex-1 rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddManualImage}
-                      className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-                {isUploadingImages && (
-                  <p className="mb-2 text-xs text-slate-500 animate-pulse">Uploading...</p>
-                )}
-                {imageUrls.length > 0 && (
-                  <div className="grid grid-cols-4 gap-2 md:grid-cols-8">
-                    {imageUrls.map((url, index) => (
-                      <div key={`${url}-${index}`} className="group relative aspect-square overflow-hidden rounded border border-slate-200 bg-white">
-                        <img
-                          src={getImageSrc(url)}
-                          alt={`Listing ${index + 1}`}
-                          className="h-full w-full object-cover"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeImageAt(index)}
-                          className="absolute right-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          X
-                        </button>
+                        <div className="p-4">
+                          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+                            {[
+                              { key: "browse", label: "Browse", value: listings.length, sub: "All listings" },
+                              { key: "sell", label: "Sell", value: "Quick Post", sub: "Create or edit listing" },
+                              { key: "my_listings", label: "My Listings", value: myListingsCount, sub: "Seller inventory" },
+                              {
+                                key: "orders",
+                                label: "Orders",
+                                value: myPendingOrdersCount,
+                                sub:
+                                  sellerPendingOrdersCount > 0
+                                    ? `${sellerPendingOrdersCount} waiting buyer confirmation`
+                                    : buyerPendingOrdersCount > 0
+                                      ? `${buyerPendingOrdersCount} awaiting your delivery confirmation`
+                                      : "Pending confirmations",
+                              },
+                              { key: "saved", label: "Saved", value: savedListingIds.length, sub: "Favorite items" },
+                            ].map((item) => (
+                              <button
+                                key={item.key}
+                                onClick={() => setActiveView(item.key)}
+                                className={`rounded-lg border p-3 text-left ${activeView === item.key
+                                    ? "border-green-300 bg-green-50"
+                                    : "border-slate-200 bg-white"
+                                  }`}
+                              >
+                                <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
+                                <p className="text-lg font-semibold text-slate-900">{item.value}</p>
+                                <p className="text-xs text-slate-600">{item.sub}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Price (₦)</label>
-                  <input
-                    type="number"
-                    placeholder="Enter amount"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-                    min="1"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 p-2 text-slate-800 outline-none focus:ring-2 focus:ring-green-600 bg-white"
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg bg-green-700 px-4 py-2 font-bold text-white hover:bg-green-800 shadow-sm transition-transform active:scale-95"
-                  >
-                    {editId ? "Update Listing" : "Post Item Now"}
-                  </button>
-                </div>
-              </div>
-            </form>
+                    <div className="max-w-7xl mx-auto">
+        {isLoggedIn && sellerPendingOrdersCount > 0 && activeView !== "orders" && (
+          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            You have {sellerPendingOrdersCount} pending order
+            {sellerPendingOrdersCount === 1 ? "" : "s"} in escrow. Open the
+            Orders tab to track delivery confirmation.
           </div>
-        )}
+    )
+  }
 
-        {activeView === "sell" && !isLoggedIn && (
-          <div className="mb-4 rounded-lg border border-slate-200 bg-white p-6 text-center shadow-sm">
-            <p className="text-slate-600 mb-4 font-medium">You need to login to start selling on NaijaTalk.</p>
-            <Link
-              href="/login"
-              className="inline-block rounded-md bg-green-700 px-6 py-2.5 text-sm font-bold text-white hover:bg-green-800 shadow-md"
-            >
-              Login to Sell
-            </Link>
-          </div>
-        )}
-
-        <div className="mb-6 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
-            <div className="lg:col-span-2">
-              <input
-                type="text"
-                placeholder="Search items..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-              />
-            </div>
-            <div>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600 bg-white"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600 bg-white"
-              >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status === "all" ? "Any Status" : status.charAt(0).toUpperCase() + status.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <select
-                value={selectedFlair}
-                onChange={(e) => setSelectedFlair(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600 bg-white"
-              >
-                <option value="all">All Sellers</option>
-                <option value="Verified G">Verified G</option>
-                <option value="Oga at the Top">Oga at the Top</option>
-              </select>
-            </div>
-            <div>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-green-600 bg-white"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-4 py-2 border-t border-slate-100 pt-4">
-            <div className="flex gap-2 items-center">
-              <span className="text-xs font-bold text-slate-500 uppercase">Price Range:</span>
-              <input
-                type="number"
-                placeholder="Min ₦"
-                value={minPrice}
-                onChange={(e) => setMinPrice(e.target.value)}
-                className="w-24 rounded-lg border border-slate-300 p-1.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-              />
-              <span className="text-slate-400">—</span>
-              <input
-                type="number"
-                placeholder="Max ₦"
-                value={maxPrice}
-                onChange={(e) => setMaxPrice(e.target.value)}
-                className="w-24 rounded-lg border border-slate-300 p-1.5 text-xs text-slate-800 outline-none focus:ring-2 focus:ring-green-600"
-              />
-            </div>
-            <div className="flex items-center gap-4">
-              <button
-                onClick={resetFilters}
-                className="text-xs font-bold text-slate-500 hover:text-slate-700 underline underline-offset-4"
-              >
-                Clear Filters
-              </button>
-              <p className="text-sm font-bold text-slate-700 bg-slate-100 px-3 py-1 rounded-full">
-                {filteredListings.length} item{filteredListings.length === 1 ? "" : "s"} found
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredListings.map((listing) => (
-              <ListingCard
-                key={listing._id}
-                listing={listing}
-                currentUserId={currentUserId}
-                isLoggedIn={isLoggedIn}
-                isSaved={savedListingIds.includes(listing._id?.toString())}
-                onToggleFavorite={handleToggleFavorite}
-                onBuy={handleBuy}
-                onEdit={handleEdit}
-                onDelete={requestDelete}
-                onRelease={handleRelease}
-                onShip={handleShipOrder}
-                onBoost={handleBoost}
-                getImageSrc={getImageSrc}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-16 text-center shadow-sm">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-50 text-slate-400">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-            </div>
-            <p className="text-lg font-bold text-slate-900">No items found</p>
-            <p className="text-slate-500">Try adjusting your search or filters to see more listings.</p>
+  {
+    message && (
+      <div className={`mb-4 rounded-lg border p-3 text-sm ${messageClass}`}>
+        <p>{message}</p>
+        {isTierLimitMessage && (
+          <div className="mt-2">
             <button
-              onClick={resetFilters}
-              className="mt-6 rounded-md bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-800"
+              type="button"
+              onClick={handleUpgradeFromMarketplace}
+              className="inline-flex rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
             >
-              Clear All Filters
+              Upgrade to Premium
             </button>
           </div>
         )}
       </div>
+    )
+  }
 
-      {/* Modals */}
-      <ConfirmModal
-        open={Boolean(pendingDeleteListingId)}
-        title="Delete Listing?"
-        description="This action comot the item from marketplace forever. You sure say you wan delete am?"
-        confirmLabel="Yes, Delete"
-        cancelLabel="Abeg comot"
-        danger
-        onCancel={() => setPendingDeleteListingId(null)}
-        onConfirm={async () => {
-          if (!pendingDeleteListingId) return;
-          const targetId = pendingDeleteListingId;
-          setPendingDeleteListingId(null);
-          await handleDelete(targetId);
-        }}
+  {
+    activeView === "sell" && isLoggedIn && (
+      <div className="mb-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        {marketplacePolicy && (
+          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-slate-500">Seller Policy</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {marketplacePolicy.tier === "premium" ? "Premium Seller" : "Free Seller"}
+                </p>
+              </div>
+              <div className="text-right text-xs text-slate-600">
+                <p>Commission: {marketplacePolicy.commissionPercent}%</p>
+                <p>
+                  Boost: {marketplacePolicy.boostCostLabel} / {marketplacePolicy.boostHours}h
+                </p>
+              </div>
+            </div>
+            <div className="mt-2">
+              <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
+                <span>Active Listings</span>
+                <span>
+                  {marketplacePolicy.activeListingCount}/{marketplacePolicy.activeListingLimit}
+                </span>
+              </div>
+              <div className="h-2 overflow-hidden rounded bg-slate-200">
+                <div
+                  className="h-full bg-emerald-500"
+                  style={{ width: `${listingUsagePercent}%` }}
+                />
+              </div>
+            </div>
+            {marketplacePolicy.tier === "free" && (
+              <p className="mt-2 text-xs text-slate-600">
+                Premium sellers get higher listing limits and lower marketplace fees.
+              </p>
+            )}
+          </div>
+        )}
+        <h2 className="mb-4 text-lg font-semibold text-slate-900">
+          {editId ? "Edit Listing" : "Post New Listing"}
+        </h2>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Item title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 p-2 text-slate-800"
+            required
+          />
+          <textarea
+            placeholder="Describe item condition, accessories, and pickup details"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="h-24 w-full rounded-lg border border-slate-300 p-2 text-slate-800"
+            required
+          />
+
+          <div className="rounded-lg border border-slate-200 p-3">
+            <p className="mb-2 text-sm font-medium text-slate-700">Listing Images (up to 8)</p>
+            <div className="mb-2 flex flex-wrap gap-2">
+              <input
+                type="file"
+                multiple
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Or paste image URL"
+                value={manualImageUrl}
+                onChange={(e) => setManualImageUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleAddManualImage();
+                  }
+                }}
+                className="min-w-[220px] flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800"
+              />
+              <button
+                type="button"
+                onClick={handleAddManualImage}
+                className="rounded-md border border-slate-300 px-3 py-1 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Add URL
+              </button>
+            </div>
+            {isUploadingImages && (
+              <p className="mb-2 text-xs text-slate-500">Uploading images...</p>
+            )}
+            {imageUrls.length > 0 && (
+              <div className="grid grid-cols-4 gap-2 md:grid-cols-8">
+                {imageUrls.map((url, index) => (
+                  <div key={`${url}-${index}`} className="relative overflow-hidden rounded border border-slate-200">
+                    <img
+                      src={getImageSrc(url)}
+                      alt={`Listing ${index + 1}`}
+                      className="h-16 w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImageAt(index)}
+                      className="absolute right-1 top-1 rounded bg-black/60 px-1 text-[10px] text-white"
+                    >
+                      x
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+            <input
+              type="number"
+              placeholder="Price (₦)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+              min="1"
+              required
+            />
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            >
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700"
+            >
+              {editId ? "Save Changes" : "Publish Listing"}
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  {
+    activeView === "sell" && !isLoggedIn && (
+      <div className="mb-4 rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
+        Login to create or edit listings.
+        <Link href="/login" className="ml-1 font-semibold text-green-700 hover:underline">
+          Go to login
+        </Link>
+      </div>
+    )
+  }
+
+  <div className="mb-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-6">
+      <input
+        type="text"
+        placeholder="Search title or description"
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800 lg:col-span-2"
       />
 
-      {pendingBuyListingId && (
-        <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">Delivery Information</h3>
-                <p className="text-sm text-slate-600">Secure escrow payment: funds only comot when you confirm delivery.</p>
-              </div>
-              <button onClick={() => setPendingBuyListingId(null)} className="text-slate-400 hover:text-slate-600 text-2xl">×</button>
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. John Doe"
-                  value={orderDetails.fullName}
-                  onChange={(e) => updateOrderDetail("fullName", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number *</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 08012345678"
-                  value={orderDetails.phone}
-                  onChange={(e) => updateOrderDetail("phone", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Delivery Address *</label>
-                <input
-                  type="text"
-                  placeholder="Street address, building, etc."
-                  value={orderDetails.addressLine1}
-                  onChange={(e) => updateOrderDetail("addressLine1", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <input
-                  type="text"
-                  placeholder="Landmark, apartment number (optional)"
-                  value={orderDetails.addressLine2}
-                  onChange={(e) => updateOrderDetail("addressLine2", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">City *</label>
-                <input
-                  type="text"
-                  placeholder="Lagos, Abuja, etc."
-                  value={orderDetails.city}
-                  onChange={(e) => updateOrderDetail("city", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">State *</label>
-                <input
-                  type="text"
-                  placeholder="State"
-                  value={orderDetails.state}
-                  onChange={(e) => updateOrderDetail("state", e.target.value)}
-                  className="w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Special Note for Rider</label>
-                <textarea
-                  placeholder="e.g. Call before you comot, drop am with security, etc."
-                  value={orderDetails.deliveryNote}
-                  onChange={(e) => updateOrderDetail("deliveryNote", e.target.value)}
-                  className="h-20 w-full rounded-lg border border-slate-300 p-2 text-sm text-slate-800 outline-none focus:ring-2 focus:ring-emerald-500"
-                />
-              </div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 md:col-span-2 select-none cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={saveDeliveryAsDefault}
-                  onChange={(e) => setSaveDeliveryAsDefault(e.target.checked)}
-                  className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
-                />
-                Use this as my default address for next time
-              </label>
-            </div>
-            <div className="mt-6 flex justify-end gap-3 border-t border-slate-100 pt-5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isSubmittingBuyOrder) return;
-                  setPendingBuyListingId(null);
-                  resetOrderDetails();
-                }}
-                className="rounded-lg border border-slate-300 bg-white px-5 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50"
-              >
-                No be now
-              </button>
-              <button
-                type="button"
-                disabled={isSubmittingBuyOrder}
-                onClick={confirmBuyOrder}
-                className="rounded-lg bg-emerald-600 px-6 py-2 text-sm font-bold text-white hover:bg-emerald-700 shadow-lg disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
-              >
-                {isSubmittingBuyOrder ? "Just a sec..." : "Confirm Buy & Pay Escrow"}
-              </button>
-            </div>
+      <select
+        value={selectedCategory}
+        onChange={(e) => setSelectedCategory(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+      >
+        <option value="all">All Categories</option>
+        {categories.map((cat) => (
+          <option key={cat} value={cat}>
+            {cat}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={selectedStatus}
+        onChange={(e) => setSelectedStatus(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+      >
+        {STATUS_OPTIONS.map((status) => (
+          <option key={status} value={status}>
+            {status === "all" ? "All Status" : status[0].toUpperCase() + status.slice(1)}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={selectedFlair}
+        onChange={(e) => setSelectedFlair(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+      >
+        <option value="all">All Sellers</option>
+        <option value="Verified G">Verified G</option>
+        <option value="Oga at the Top">Oga at the Top</option>
+      </select>
+
+      <select
+        value={sortBy}
+        onChange={(e) => setSortBy(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+      >
+        {SORT_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-4">
+      <input
+        type="number"
+        placeholder="Min ₦"
+        value={minPrice}
+        onChange={(e) => setMinPrice(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+        min="0"
+      />
+      <input
+        type="number"
+        placeholder="Max ₦"
+        value={maxPrice}
+        onChange={(e) => setMaxPrice(e.target.value)}
+        className="rounded-lg border border-slate-300 p-2 text-sm text-slate-800"
+        min="0"
+      />
+      <button
+        onClick={resetFilters}
+        className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+      >
+        Reset Filters
+      </button>
+      <p className="self-center text-sm text-slate-500">
+        {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}
+      </p>
+    </div>
+  </div>
+
+  {
+    filteredListings.length > 0 ? (
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filteredListings.map((listing) => (
+          <ListingCard
+            key={listing._id}
+            listing={listing}
+            currentUserId={currentUserId}
+            isLoggedIn={isLoggedIn}
+            isSaved={savedListingIds.includes(listing._id?.toString())}
+            onToggleFavorite={handleToggleFavorite}
+            onBuy={handleBuy}
+            onEdit={handleEdit}
+            onDelete={requestDelete}
+            onRelease={handleRelease}
+            onShip={handleShipOrder}
+            onBoost={handleBoost}
+            getImageSrc={getImageSrc}
+            formatDate={formatDate}
+          />
+        ))}
+      </div>
+    ) : (
+    <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
+      No listings match this filter set. Try adjusting search, price, or status.
+    </div>
+  )
+  }
+      </div >
+
+    <ConfirmModal
+      open={Boolean(pendingDeleteListingId)}
+      title="Delete Listing?"
+      description="This action cannot be undone. The listing will be removed from the marketplace."
+      confirmLabel="Delete"
+      cancelLabel="Cancel"
+      danger
+      onCancel={() => setPendingDeleteListingId(null)}
+      onConfirm={async () => {
+        if (!pendingDeleteListingId) return;
+        const targetId = pendingDeleteListingId;
+        setPendingDeleteListingId(null);
+        await handleDelete(targetId);
+      }}
+    />
+  {
+    pendingBuyListingId && (
+      <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className="mb-3">
+            <h3 className="text-lg font-semibold text-slate-900">Delivery Details</h3>
+            <p className="text-sm text-slate-600">
+              Only you and the seller can see this address after checkout.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <input
+              type="text"
+              placeholder="Full name *"
+              value={orderDetails.fullName}
+              onChange={(e) => updateOrderDetail("fullName", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            />
+            <input
+              type="text"
+              placeholder="Phone number *"
+              value={orderDetails.phone}
+              onChange={(e) => updateOrderDetail("phone", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            />
+            <input
+              type="text"
+              placeholder="Address line 1 *"
+              value={orderDetails.addressLine1}
+              onChange={(e) => updateOrderDetail("addressLine1", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
+            />
+            <input
+              type="text"
+              placeholder="Address line 2"
+              value={orderDetails.addressLine2}
+              onChange={(e) => updateOrderDetail("addressLine2", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
+            />
+            <input
+              type="text"
+              placeholder="City *"
+              value={orderDetails.city}
+              onChange={(e) => updateOrderDetail("city", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            />
+            <input
+              type="text"
+              placeholder="State *"
+              value={orderDetails.state}
+              onChange={(e) => updateOrderDetail("state", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            />
+            <input
+              type="text"
+              placeholder="Postal code"
+              value={orderDetails.postalCode}
+              onChange={(e) => updateOrderDetail("postalCode", e.target.value)}
+              className="rounded-lg border border-slate-300 p-2 text-slate-800"
+            />
+            <textarea
+              placeholder="Delivery note (landmark, preferred time)"
+              value={orderDetails.deliveryNote}
+              onChange={(e) => updateOrderDetail("deliveryNote", e.target.value)}
+              className="h-20 rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
+            />
+            <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
+              <input
+                type="checkbox"
+                checked={saveDeliveryAsDefault}
+                onChange={(e) => setSaveDeliveryAsDefault(e.target.checked)}
+              />
+              Save this as my default delivery address
+            </label>
+          </div>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (isSubmittingBuyOrder) return;
+                setPendingBuyListingId(null);
+                resetOrderDetails();
+              }}
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              disabled={isSubmittingBuyOrder}
+              onClick={confirmBuyOrder}
+              className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSubmittingBuyOrder ? "Placing Order..." : "Place Order with Escrow"}
+            </button>
           </div>
         </div>
-      )}
+      </div>
+    )
+  }
 
-      <ConfirmModal
-        open={Boolean(pendingBoostListingId)}
-        title="Boost Dis Item?"
-        description={`This one go charge ${marketplacePolicy?.boostCostLabel || "your wallet"} and make the item show for top for ${marketplacePolicy?.boostHours || 72}h. Business go grow!`}
-        confirmLabel={isBoosting ? "Checking Wallet..." : "Show Me Wallet"}
-        cancelLabel="Maybe Later"
-        confirmDisabled={isBoosting}
-        cancelDisabled={isBoosting}
-        onCancel={() => {
-          if (isBoosting) return;
-          setPendingBoostListingId(null);
-          setSelectedBoostListingId(null);
-        }}
-        onConfirm={confirmBoost}
-      />
+  <ConfirmModal
+    open={Boolean(pendingBoostListingId)}
+    title="Boost Listing?"
+    description={`This will charge ${marketplacePolicy?.boostCostLabel || "your wallet"} and keep the listing boosted for ${marketplacePolicy?.boostHours || 72}h.`}
+    confirmLabel={isBoosting ? "Opening Wallet..." : "Continue to Wallet"}
+    cancelLabel="Cancel"
+    confirmDisabled={isBoosting}
+    cancelDisabled={isBoosting}
+    onCancel={() => {
+      if (isBoosting) return;
+      setPendingBoostListingId(null);
+      setSelectedBoostListingId(null);
+    }}
+    onConfirm={confirmBoost}
+  />
 
-      {walletModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-3 mb-5">
-              <div>
-                <h3 className="text-xl font-bold text-slate-900">
-                  {walletModalContext === "premium" ? "Activate Premium via Wallet" : "Listing Boost via Wallet"}
-                </h3>
-                <p className="text-sm text-slate-600">No need to comot from marketplace—pay sharp sharp from your balance.</p>
-              </div>
+  {
+    walletModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
+        <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-900">
+                {walletModalContext === "premium" ? "Upgrade via Wallet" : "Boost via Wallet"}
+              </h3>
+              <p className="text-sm text-slate-600">
+                Stay on marketplace, pay from wallet, and watch activity update live.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (isWalletActionLoading) return;
+                setWalletModalOpen(false);
+              }}
+              className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-700 hover:bg-slate-50"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
+              <p className="text-base font-semibold text-slate-900">{formatKobo(walletTotal)}</p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Available</p>
+              <p className="text-base font-semibold text-emerald-700">
+                {formatKobo(walletAvailable)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Held</p>
+              <p className="text-base font-semibold text-amber-700">{formatKobo(walletHeld)}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-sm text-slate-700">
+              Charge now: <span className="font-semibold">{formatKobo(actionCostKobo)}</span>
+            </p>
+            {!hasEnoughWalletForAction && (
+              <p className="mt-1 text-xs text-red-700">
+                Insufficient available balance. Fund your wallet and try again.
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap gap-2">
               <button
-                type="button"
-                onClick={() => !isWalletActionLoading && setWalletModalOpen(false)}
-                className="rounded-full bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase font-bold text-slate-500">Total Balance</p>
-                <p className="text-lg font-bold text-slate-900">{formatKobo(walletTotal)}</p>
-              </div>
-              <div className="rounded-lg border border-emerald-100 bg-emerald-50 p-3">
-                <p className="text-xs uppercase font-bold text-emerald-600">Available</p>
-                <p className="text-lg font-bold text-emerald-700">{formatKobo(walletAvailable)}</p>
-              </div>
-              <div className="rounded-lg border border-amber-100 bg-amber-50 p-3">
-                <p className="text-xs uppercase font-bold text-amber-600">Held (Escrow)</p>
-                <p className="text-lg font-bold text-amber-700">{formatKobo(walletHeld)}</p>
-              </div>
-            </div>
-
-            <div className="mt-6 rounded-lg border border-blue-100 bg-blue-50 p-4">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-bold text-blue-900">Total to Charge:</p>
-                <p className="text-lg font-black text-blue-900">{formatKobo(actionCostKobo)}</p>
-              </div>
-              {!hasEnoughWalletForAction && (
-                <p className="mt-2 text-xs font-bold text-red-700 flex items-center gap-1">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  Abeg fund your wallet—balance no reach.
-                </p>
-              )}
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-              <Link href="/wallet" className="text-sm font-bold text-slate-500 hover:text-slate-800 underline underline-offset-4">
-                Manage My Wallet
-              </Link>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setWalletModalOpen(false)}
-                  className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
-                >
-                  Cancel
-                </button>
-                <button
                   type="button"
                   onClick={executeWalletAction}
-                  disabled={isWalletActionLoading || isWalletLoading || !hasEnoughWalletForAction || !isBoostActionReady}
-                  className="rounded-lg bg-emerald-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 shadow-md disabled:cursor-not-allowed disabled:opacity-50 transition-all active:scale-95"
-                >
-                  {isWalletActionLoading ? "Processing..." : actionCtaLabel}
-                </button>
-              </div>
-            </div>
-
-            <div className="mt-8 border-t border-slate-100 pt-6">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Recent Wallet Gists</h4>
-              {isWalletLoading ? (
-                <div className="flex items-center justify-center p-8 space-x-2">
-                  <div className="h-2 w-2 bg-slate-300 rounded-full animate-bounce" />
-                  <div className="h-2 w-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-.15s]" />
-                  <div className="h-2 w-2 bg-slate-300 rounded-full animate-bounce [animation-delay:-.3s]" />
-                </div>
-              ) : walletEntries.length === 0 ? (
-                <p className="py-8 text-center text-sm text-slate-400 italic">No activity yet—wallet is clean!</p>
-              ) : (
-                <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
-                  {walletEntries.map((entry) => {
-                    const effect = Number(entry.walletEffect || 0);
-                    return (
-                      <div key={entry._id || entry.reference} className="flex items-center justify-between rounded-md bg-slate-50 p-2.5">
-                        <div>
-                          <p className="text-xs font-bold text-slate-800 truncate max-w-[180px]">
-                            {entry.entryKind?.replace(/_/g, " ").toUpperCase() || "TRANSACTION"}
-                          </p>
-                          <p className="text-[10px] text-slate-500">{new Date(entry.date || Date.now()).toLocaleDateString("en-NG")}</p>
-                        </div>
-                        <p className={`text-xs font-black ${effect >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                          {effect >= 0 ? "+" : ""}{formatKobo(effect)}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
+                  disabled={
+                    isWalletActionLoading ||
+                    isWalletLoading ||
+                    !hasEnoughWalletForAction ||
+                    !isBoostActionReady
+                  }
+                  className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isWalletActionLoading ? "Processing..." : actionCtaLabel}
+              </button>
+                <Link
+            href="/wallet"
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-100"
+          >
+            Open Wallet Page
+          </Link>
         </div>
-      )}
+      </div>
+
+      <div className="mt-4">
+        <h4 className="text-sm font-semibold text-slate-900">Recent Wallet Activity</h4>
+        <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
+          {isWalletLoading ? (
+            <p className="p-3 text-sm text-slate-500">Loading wallet activity...</p>
+          ) : walletEntries.length === 0 ? (
+            <p className="p-3 text-sm text-slate-500">No wallet activity yet.</p>
+          ) : (
+            <div className="divide-y divide-slate-200">
+              {walletEntries.map((entry) => {
+                const effect = Number(entry.walletEffect || 0);
+                return (
+                  <div key={entry._id || entry.reference} className="p-3 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-slate-800">
+                        {entry.entryKind || entry.type || "activity"}
+                      </p>
+                      <p
+                        className={
+                          effect >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-red-700"
+                        }
+                      >
+                        {effect >= 0 ? "+" : "-"}
+                        {formatKobo(Math.abs(effect))}
+                      </p>
+                    </div>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {new Date(entry.date || Date.now()).toLocaleString("en-NG")}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+          </div >
+        </div >
+      )
+  }
 
       {showBoostSuccessModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4">
-          <div className="w-full max-w-xs scale-in rounded-2xl border border-emerald-200 bg-white p-8 text-center shadow-2xl">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <p className="text-lg font-black text-emerald-900">Boost Activated!</p>
-            <p className="mt-2 text-sm font-medium text-slate-600">Your item is now trending on the front page.</p>
-          </div>
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
+        <div className="w-full max-w-xs rounded-xl border border-emerald-200 bg-white p-6 text-center shadow-xl">
+          <div className="mx-auto mb-3 h-12 w-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
+          <p className="text-sm font-semibold text-emerald-700">Boost Activated</p>
+          <p className="mt-1 text-xs text-slate-500">Updating listing visibility...</p>
         </div>
-      )}
-    </div>
+      </div>
+    )}
+  </div>
   );
 }

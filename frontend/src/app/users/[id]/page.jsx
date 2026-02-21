@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import api from "../../../utils/api";
 import axios from "axios";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
-import ListingCard from "../../../components/marketplace/ListingCard";
-import TrustBadge from "../../../components/marketplace/TrustBadge";
+import ListingCard from "@/components/marketplace/ListingCard";
+import TrustBadge from "@/components/marketplace/TrustBadge";
 
 const TABS = ["all", "active", "pending", "sold"];
 
@@ -29,7 +28,6 @@ export default function UserProfile() {
   const [isOwnerProfile, setIsOwnerProfile] = useState(false);
 
   const { id } = useParams();
-  const router = useRouter();
 
   useEffect(() => {
     fetchProfile();
@@ -64,8 +62,7 @@ export default function UserProfile() {
     return listings.filter((listing) => listing.status === activeTab);
   }, [listings, activeTab]);
 
-  const formatDate = (dateString = "") => {
-    if (!dateString) return "No date";
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
     const time = date
       .toLocaleTimeString("en-US", {
@@ -83,8 +80,8 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
-        <div className="max-w-md w-full rounded-lg border border-slate-200 bg-white p-6 text-center text-slate-600">
+      <div className="min-h-screen bg-slate-100 p-6">
+        <div className="mx-auto max-w-7xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
           Loading profile...
         </div>
       </div>
@@ -93,12 +90,9 @@ export default function UserProfile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
-        <div className="max-w-md w-full rounded-lg border border-slate-200 bg-white p-6 text-center text-slate-600">
+      <div className="min-h-screen bg-slate-100 p-6">
+        <div className="mx-auto max-w-7xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
           {message || "Profile unavailable."}
-          <div className="mt-4">
-            <Link href="/marketplace" className="text-green-600 font-bold underline">Back to Marketplace</Link>
-          </div>
         </div>
       </div>
     );
@@ -107,105 +101,100 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-slate-100 p-4 pb-20 md:p-6">
       <div className="mx-auto mb-4 max-w-7xl">
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-          <div className="bg-green-800 h-24 hidden md:block" />
-          <div className="p-5 relative">
-            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div className="flex items-start gap-4">
-                <div className="md:-mt-12">
-                  {user.avatarUrl ? (
-                    <img
-                      src={user.avatarUrl}
-                      alt={user.displayName}
-                      className="h-24 w-24 rounded-full border-4 border-white shadow-md object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full border-4 border-white bg-slate-900 text-3xl font-bold text-white shadow-md">
-                      {(user.displayName || "U").charAt(0).toUpperCase()}
-                    </div>
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+          <div className="border-b border-slate-200 p-5">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex items-start gap-3">
+                {user.avatarUrl ? (
+                  <img
+                    src={user.avatarUrl}
+                    alt={user.displayName}
+                    className="h-12 w-12 rounded-full border border-slate-200 object-cover"
+                  />
+                ) : (
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-lg font-bold text-white">
+                    {(user.displayName || "U").charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <h1 className="text-2xl font-bold text-slate-900">{user.displayName}</h1>
+                  <p className="text-sm text-slate-600">{user.maskedEmail}</p>
+                  {user.location && (
+                    <p className="text-xs text-slate-500">Location: {user.location}</p>
                   )}
-                </div>
-                <div className="pt-2">
-                  <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-                    {user.displayName}
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
                     {user.flair && (
-                      <span className={`text-[10px] uppercase px-1.5 py-0.5 rounded font-black text-white ${user.flair === "Oga at the Top" ? "bg-amber-500" : "bg-green-500"}`}>
+                      <span className="rounded bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-700">
                         {user.flair}
                       </span>
                     )}
-                  </h1>
-                  <p className="text-sm text-slate-500">{user.maskedEmail}</p>
-                  {user.location && (
-                    <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                      </svg>
-                      {user.location}
-                    </p>
+                    {user.isPremium && (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 font-semibold text-amber-700">
+                        Premium
+                      </span>
+                    )}
+                  </div>
+                  {user.bio && (
+                    <p className="mt-2 max-w-2xl text-sm text-slate-700">{user.bio}</p>
                   )}
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 pb-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <Link
                   href="/"
-                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                 >
                   Home
                 </Link>
                 <Link
                   href="/marketplace"
-                  className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                 >
                   Marketplace
                 </Link>
                 {isOwnerProfile && (
                   <Link
-                    href={`/wallet`}
-                    className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                    href={`/users/${id}/wallet`}
+                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
                   >
                     My Wallet
                   </Link>
                 )}
               </div>
             </div>
-
-            {user.bio && (
-              <div className="mt-6 border-t border-slate-100 pt-4">
-                <p className="max-w-3xl text-sm leading-relaxed text-slate-600">{user.bio}</p>
-              </div>
-            )}
           </div>
 
-          <div className="bg-slate-50/50 p-5 border-t border-slate-100">
+          <div className="p-5">
             <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Total Items</p>
-                <p className="text-xl font-bold text-slate-900">{sellerStats?.totalListings || 0}</p>
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Total Listings</p>
+                <p className="text-lg font-semibold text-slate-900">{sellerStats?.totalListings || 0}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">On Sale</p>
-                <p className="text-xl font-bold text-slate-900">{sellerStats?.activeListings || 0}</p>
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Active</p>
+                <p className="text-lg font-semibold text-slate-900">{sellerStats?.activeListings || 0}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Sold Already</p>
-                <p className="text-xl font-bold text-slate-900">{sellerStats?.soldListings || 0}</p>
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Sold</p>
+                <p className="text-lg font-semibold text-slate-900">{sellerStats?.soldListings || 0}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Completed</p>
-                <p className="text-xl font-bold text-slate-900">{sellerStats?.completedDeals || 0}</p>
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Completed Deals</p>
+                <p className="text-lg font-semibold text-slate-900">{sellerStats?.completedDeals || 0}</p>
               </div>
-              <div className="rounded-lg border border-slate-200 bg-white p-3">
-                <p className="text-[10px] uppercase font-bold text-slate-400">Response</p>
-                <p className="text-xl font-bold text-slate-900">
-                  {sellerStats?.avgResponseHours !== null && sellerStats?.avgResponseHours !== undefined
+              <div className="rounded-lg border border-slate-200 p-3">
+                <p className="text-xs uppercase tracking-wide text-slate-500">Avg Response</p>
+                <p className="text-lg font-semibold text-slate-900">
+                  {sellerStats?.avgResponseHours !== null &&
+                  sellerStats?.avgResponseHours !== undefined
                     ? `${sellerStats.avgResponseHours}h`
                     : "--"}
                 </p>
               </div>
             </div>
 
-            <div className="mt-4">
+            <div className="mt-3">
               <TrustBadge sellerStats={sellerStats || {}} />
             </div>
           </div>
@@ -214,51 +203,51 @@ export default function UserProfile() {
 
       <div className="mx-auto max-w-7xl">
         {message && (
-          <div className="mb-4 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600 shadow-sm">
+          <p className="mb-4 rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
             {message}
-          </div>
+          </p>
         )}
 
-        <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {TABS.map((tab) => {
             const isActive = activeTab === tab;
-            const label = tab === "all" ? "All Items" : tab.charAt(0).toUpperCase() + tab.slice(1);
+            const label = tab === "all" ? "All" : tab.charAt(0).toUpperCase() + tab.slice(1);
             return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-2 text-sm font-bold transition-colors relative ${isActive
-                    ? "text-green-700"
-                    : "text-slate-500 hover:text-slate-700"
-                  }`}
+                className={`rounded-md border px-3 py-1.5 text-sm ${
+                  isActive
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                    : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
+                }`}
               >
                 {label}
-                {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-green-600" />}
               </button>
             );
           })}
         </div>
 
         {filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filteredListings.map((listing) => (
-              <ListingCard
-                key={listing._id}
-                listing={listing}
-                showSeller={false}
-                showActions={false}
-                showSave={false}
-                getImageSrc={getImageSrc}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-12 text-center text-slate-500">
-            No items to show for "{activeTab === "all" ? "All Items" : activeTab}".
-          </div>
-        )}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {filteredListings.map((listing) => (
+          <ListingCard
+            key={listing._id}
+            listing={listing}
+            showSeller={false}
+            showActions={false}
+            showSave={false}
+            getImageSrc={getImageSrc}
+            formatDate={formatDate}
+          />
+        ))}
       </div>
-    </div>
+    ) : (
+      <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
+        No listings in this tab yet.
+      </div>
+    )}
+      </div>
+    </div >
   );
 }

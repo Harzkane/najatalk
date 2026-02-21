@@ -2,11 +2,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import api from "../../../utils/api";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import formatDate from "../../../utils/formatDate";
+import formatDate from "@/utils/formatDate";
 
 type Report = {
   _id: string;
@@ -642,634 +641,634 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6">
-      <div className="max-w-7xl mx-auto mb-3">
-        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <h1 className="text-2xl md:text-4xl font-bold text-center md:text-left break-words">
-              Admin Dashboard—NaijaTalk
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
-            >
-              Logout
-            </button>
+              <div className="max-w-7xl mx-auto mb-3">
+                <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
+                  <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
+                    <h1 className="text-2xl md:text-4xl font-bold text-center md:text-left break-words">
+                      Admin Dashboard—NaijaTalk
+                    </h1>
+                    <button
+                      onClick={handleLogout}
+                      className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="max-w-7xl mx-auto">
+                {message && (
+                  <p className="text-center text-sm text-gray-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
+                    {message}
+                  </p>
+                )}
+
+                {/* Reports Section */}
+                <div className="mb-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Reports
+                  </h2>
+                  {reports && reports.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Thread
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Reported By
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Reason
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Date
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {reports.map((report) => (
+                            <tr key={report._id} className="border-t border-gray-100">
+                              <td className="p-3">
+                                <Link
+                                  href={`/threads/${report.threadId._id}`}
+                                  className="text-green-800 hover:underline"
+                                >
+                                  {report.threadId.title}
+                                </Link>
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                {report.userId.email}
+                                {report.userId.flair && (
+                                  <span
+                                    className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                      }`}
+                                  >
+                                    {report.userId.flair}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-gray-700">{report.reason}</td>
+                              <td className="p-3 text-gray-600">
+                                {formatDate(report.createdAt)}
+                              </td>
+                              <td className="p-3">
+                                <button
+                                  onClick={() => handleDelete(report.threadId._id)}
+                                  className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm mr-2"
+                                >
+                                  Delete
+                                </button>
+                                <button
+                                  onClick={() => handleDismiss(report._id)}
+                                  className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm mr-2"
+                                >
+                                  Dismiss
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    handleBanUser(
+                                      report.reportedUserId._id,
+                                      report.reportedUserId.email
+                                    )
+                                  }
+                                  className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
+                                >
+                                  Ban{" "}
+                                  {report.reportedUserId.flair && (
+                                    <span
+                                      className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
+                                        ? "bg-yellow-500"
+                                        : "bg-green-500"
+                                        }`}
+                                    >
+                                      {report.reportedUserId.flair}
+                                    </span>
+                                  )}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No reports yet—clean slate!
+                    </p>
+                  )}
+                </div>
+
+                {/* Banned Users Section */}
+                <div>
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Banned Users
+                  </h2>
+                  {bannedUsers && bannedUsers.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Email
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Appeal Reason
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Status
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bannedUsers.map((user) => (
+                            <tr key={user.email} className="border-t border-gray-100">
+                              <td className="p-3 text-gray-700">
+                                {user.email}
+                                {user.flair && (
+                                  <span
+                                    className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                      }`}
+                                  >
+                                    {user.flair}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                {user.appealReason || "No appeal yet"}
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                {user.appealStatus || "N/A"}
+                              </td>
+                              <td className="p-3">
+                                {user.appealStatus === "pending" && (
+                                  <>
+                                    <button
+                                      onClick={() => handleUnbanUser(user._id, true)}
+                                      className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => handleUnbanUser(user._id, false)}
+                                      className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No banned users yet—everybody dey behave!
+                    </p>
+                  )}
+                </div>
+
+                {/* Ads Section */}
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Pending Ads
+                  </h2>
+                  {ads.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Brand
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Text
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Type
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Budget
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              CPC
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {ads.map((ad) => (
+                            <tr key={ad._id} className="border-t border-gray-100">
+                              <td className="p-3 text-gray-700">{ad.brand}</td>
+                              <td className="p-3 text-gray-700">{ad.text}</td>
+                              <td className="p-3 text-gray-700">{ad.type}</td>
+                              <td className="p-3 text-gray-700">₦{ad.budget / 100}</td>
+                              <td className="p-3 text-gray-700">₦{ad.cpc / 100}</td>
+                              <td className="p-3">
+                                <button
+                                  onClick={() => approveAd(ad._id)}
+                                  className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  onClick={() => rejectAd(ad._id)}
+                                  className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                                >
+                                  Reject
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No pending ads yet—advertisers dey sleep!
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Payout Reconciliation
+                  </h2>
+                  <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
+                      <select
+                        value={payoutStatusFilter}
+                        onChange={(e) =>
+                          setPayoutStatusFilter(
+                            e.target.value as "all" | "pending" | "completed" | "failed"
+                          )
+                        }
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                        <option value="all">All</option>
+                      </select>
+                      <input
+                        type="date"
+                        value={payoutDateFrom}
+                        onChange={(e) => setPayoutDateFrom(e.target.value)}
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      />
+                      <input
+                        type="date"
+                        value={payoutDateTo}
+                        onChange={(e) => setPayoutDateTo(e.target.value)}
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      />
+                      <button
+                        onClick={fetchPendingPayouts}
+                        className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        onClick={exportPayoutsCsv}
+                        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Export CSV
+                      </button>
+                      <button
+                        onClick={exportPayoutsPdf}
+                        className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                      >
+                        Export PDF
+                      </button>
+                    </div>
+                    <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-4">
+                      <p>Total: ₦{(payoutSummary.totalAmount / 100).toLocaleString("en-NG")} ({payoutSummary.totalCount})</p>
+                      <p>Pending: ₦{(payoutSummary.pendingAmount / 100).toLocaleString("en-NG")} ({payoutSummary.pendingCount})</p>
+                      <p>Completed: ₦{(payoutSummary.completedAmount / 100).toLocaleString("en-NG")} ({payoutSummary.completedCount})</p>
+                      <p>Failed: ₦{(payoutSummary.failedAmount / 100).toLocaleString("en-NG")} ({payoutSummary.failedCount})</p>
+                    </div>
+                  </div>
+                  {payouts.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">User</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Amount</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Status</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Destination
+                            </th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Date</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {payouts.map((payout) => (
+                            <tr key={payout._id} className="border-t border-gray-100">
+                              <td className="p-3 text-gray-700">
+                                {payout.user?.username || payout.user?.email || "Unknown user"}
+                              </td>
+                              <td className="p-3 text-gray-700 font-medium">
+                                ₦{(payout.amount / 100).toLocaleString("en-NG")}
+                              </td>
+                              <td className="p-3 text-gray-700">{payout.status}</td>
+                              <td className="p-3 text-gray-700 text-sm">
+                                {payout.recipientId || "No payout account details"}
+                              </td>
+                              <td className="p-3 text-gray-600">{formatDate(payout.createdAt)}</td>
+                              <td className="p-3">
+                                {payout.status === "pending" ? (
+                                  <>
+                                    <button
+                                      onClick={() => decidePayout(payout._id, true)}
+                                      className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
+                                    >
+                                      Approve
+                                    </button>
+                                    <button
+                                      onClick={() => decidePayout(payout._id, false)}
+                                      className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
+                                    >
+                                      Reject
+                                    </button>
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-slate-500">Processed</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No payouts found for selected filters.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Premium Payments Audit
+                  </h2>
+                  <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
+                      <select
+                        value={premiumStatusFilter}
+                        onChange={(e) =>
+                          setPremiumStatusFilter(
+                            e.target.value as "all" | "initiated" | "processing" | "completed" | "failed"
+                          )
+                        }
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="initiated">Initiated</option>
+                        <option value="processing">Processing</option>
+                        <option value="completed">Completed</option>
+                        <option value="failed">Failed</option>
+                      </select>
+                      <select
+                        value={premiumSourceFilter}
+                        onChange={(e) =>
+                          setPremiumSourceFilter(e.target.value as "all" | "manual" | "webhook")
+                        }
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="all">All Sources</option>
+                        <option value="manual">Manual Verify</option>
+                        <option value="webhook">Webhook</option>
+                      </select>
+                      <input
+                        type="date"
+                        value={premiumDateFrom}
+                        onChange={(e) => setPremiumDateFrom(e.target.value)}
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      />
+                      <input
+                        type="date"
+                        value={premiumDateTo}
+                        onChange={(e) => setPremiumDateTo(e.target.value)}
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      />
+                      <button
+                        onClick={fetchPremiumPaymentsAudit}
+                        className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
+                      >
+                        Refresh Audit
+                      </button>
+                    </div>
+                    <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={premiumMismatchOnly}
+                        onChange={(e) => setPremiumMismatchOnly(e.target.checked)}
+                      />
+                      Show mismatches only
+                    </label>
+                    <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-6">
+                      <p>Total: {premiumAuditSummary.total}</p>
+                      <p>Mismatches: {premiumAuditSummary.mismatchCount}</p>
+                      <p>Completed: {premiumAuditSummary.completedCount}</p>
+                      <p>Failed: {premiumAuditSummary.failedCount}</p>
+                      <p>Processing: {premiumAuditSummary.processingCount}</p>
+                      <p>Initiated: {premiumAuditSummary.initiatedCount}</p>
+                    </div>
+                  </div>
+                  {premiumAuditRows.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">User</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Reference</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Amount</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Status</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Source</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Mismatch</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Date</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {premiumAuditRows.map((row) => (
+                            <tr key={row._id} className="border-t border-gray-100">
+                              <td className="p-3 text-gray-700">
+                                {row.user?.username || row.user?.email || "Unknown"}
+                              </td>
+                              <td className="p-3 text-xs text-gray-700">{row.reference}</td>
+                              <td className="p-3 text-gray-700">
+                                {row.currency} {(row.amount / 100).toLocaleString("en-NG")}
+                              </td>
+                              <td className="p-3 text-gray-700">{row.status}</td>
+                              <td className="p-3 text-gray-700">{row.verificationSource || "-"}</td>
+                              <td className="p-3 text-gray-700 text-xs">
+                                {row.hasMismatch ? row.mismatchReasons.join(", ") : "OK"}
+                              </td>
+                              <td className="p-3 text-gray-600">{formatDate(row.createdAt)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No premium payment rows for selected filters.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Settlement Rollups
+                  </h2>
+                  <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={rollupPeriod}
+                        onChange={(e) =>
+                          setRollupPeriod(e.target.value as "daily" | "monthly")
+                        }
+                        className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
+                      >
+                        <option value="daily">Daily</option>
+                        <option value="monthly">Monthly</option>
+                      </select>
+                      <button
+                        onClick={fetchPayoutRollups}
+                        className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
+                      >
+                        Refresh Rollups
+                      </button>
+                    </div>
+                  </div>
+                  {rollupBuckets.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Bucket</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Total</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Pending</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Completed</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Failed</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rollupBuckets.map((bucket) => (
+                            <tr key={bucket.bucket} className="border-t border-gray-100">
+                              <td className="p-3 text-gray-700">{bucket.bucket}</td>
+                              <td className="p-3 text-gray-700">
+                                ₦{(bucket.totalAmount / 100).toLocaleString("en-NG")} ({bucket.totalCount})
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                ₦{(bucket.pendingAmount / 100).toLocaleString("en-NG")} ({bucket.pendingCount})
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                ₦{(bucket.completedAmount / 100).toLocaleString("en-NG")} ({bucket.completedCount})
+                              </td>
+                              <td className="p-3 text-gray-700">
+                                ₦{(bucket.failedAmount / 100).toLocaleString("en-NG")} ({bucket.failedCount})
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                      No rollup buckets yet for selected filters.
+                    </p>
+                  )}
+                </div>
+
+                <div className="mt-6">
+                  <h2 className="text-2xl font-semibold text-green-800 mb-3">
+                    Wallet Mismatch Alerts
+                  </h2>
+                  <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
+                    <div className="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-5">
+                      <p>Checked Users: {mismatchSummary.totalUsersChecked}</p>
+                      <p>Mismatched: {mismatchSummary.mismatchedUsers}</p>
+                      <p>High: {mismatchSummary.highCount}</p>
+                      <p>Medium: {mismatchSummary.mediumCount}</p>
+                      <p>Low: {mismatchSummary.lowCount}</p>
+                    </div>
+                    <button
+                      onClick={fetchWalletMismatches}
+                      className="mt-3 rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
+                    >
+                      Run Scan
+                    </button>
+                  </div>
+                  {mismatches.length > 0 ? (
+                    <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+                      <table className="w-full text-left">
+                        <thead className="bg-slate-100">
+                          <tr>
+                            <th className="p-3 text-sm font-semibold text-gray-700">User ID</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Expected</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Ledger</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Delta</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Tx/Ledger Count</th>
+                            <th className="p-3 text-sm font-semibold text-gray-700">Severity</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mismatches.map((item) => (
+                            <tr key={item.userId} className="border-t border-gray-100">
+                              <td className="p-3 text-xs text-gray-700">{item.userId}</td>
+                              <td className="p-3 text-gray-700">₦{(item.expectedEffect / 100).toLocaleString("en-NG")}</td>
+                              <td className="p-3 text-gray-700">₦{(item.ledgerEffect / 100).toLocaleString("en-NG")}</td>
+                              <td className="p-3 text-gray-700">₦{(item.delta / 100).toLocaleString("en-NG")}</td>
+                              <td className="p-3 text-gray-700">
+                                {item.transactionCount}/{item.ledgerCount}
+                              </td>
+                              <td className="p-3">
+                                <span
+                                  className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${item.severity === "high"
+                                      ? "bg-red-100 text-red-700"
+                                      : item.severity === "medium"
+                              "bg-yellow-100 text-yellow-700"
+                                "bg-slate-100 text-slate-700"
+                          }`}
+                        >
+                                {item.severity}
+                              </span>
+                            </td>
+                    </tr>
+                  ))}
+                      </tbody>
+                    </table>
+            </div>
+                ) : (
+                <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
+                  No wallet mismatches found in latest scan.
+                </p>
+          )}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto">
-        {message && (
-          <p className="text-center text-sm text-gray-600 mb-3 bg-white border border-slate-200 p-2 rounded-lg">
-            {message}
-          </p>
-        )}
-
-        {/* Reports Section */}
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Reports
-          </h2>
-          {reports && reports.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Thread
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Reported By
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Reason
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Date
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.map((report) => (
-                    <tr key={report._id} className="border-t border-gray-100">
-                      <td className="p-3">
-                        <Link
-                          href={`/threads/${report.threadId._id}`}
-                          className="text-green-800 hover:underline"
-                        >
-                          {report.threadId.title}
-                        </Link>
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        {report.userId.email}
-                        {report.userId.flair && (
-                          <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                              }`}
-                          >
-                            {report.userId.flair}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-gray-700">{report.reason}</td>
-                      <td className="p-3 text-gray-600">
-                        {formatDate(report.createdAt)}
-                      </td>
-                      <td className="p-3">
-                        <button
-                          onClick={() => handleDelete(report.threadId._id)}
-                          className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm mr-2"
-                        >
-                          Delete
-                        </button>
-                        <button
-                          onClick={() => handleDismiss(report._id)}
-                          className="bg-yellow-600 text-white px-2 py-1 rounded-lg hover:bg-yellow-700 text-sm mr-2"
-                        >
-                          Dismiss
-                        </button>
-                        <button
-                          onClick={() =>
-                            handleBanUser(
-                              report.reportedUserId._id,
-                              report.reportedUserId.email
-                            )
-                          }
-                          className="bg-purple-600 text-white px-2 py-1 rounded-lg hover:bg-purple-700 text-sm"
-                        >
-                          Ban{" "}
-                          {report.reportedUserId.flair && (
-                            <span
-                              className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                                }`}
-                            >
-                              {report.reportedUserId.flair}
-                            </span>
-                          )}
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No reports yet—clean slate!
-            </p>
-          )}
-        </div>
-
-        {/* Banned Users Section */}
-        <div>
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Banned Users
-          </h2>
-          {bannedUsers && bannedUsers.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Email
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Appeal Reason
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Status
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bannedUsers.map((user) => (
-                    <tr key={user.email} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">
-                        {user.email}
-                        {user.flair && (
-                          <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                              }`}
-                          >
-                            {user.flair}
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        {user.appealReason || "No appeal yet"}
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        {user.appealStatus || "N/A"}
-                      </td>
-                      <td className="p-3">
-                        {user.appealStatus === "pending" && (
-                          <>
-                            <button
-                              onClick={() => handleUnbanUser(user._id, true)}
-                              className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleUnbanUser(user._id, false)}
-                              className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No banned users yet—everybody dey behave!
-            </p>
-          )}
-        </div>
-
-        {/* Ads Section */}
-        <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Pending Ads
-          </h2>
-          {ads.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Brand
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Text
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Type
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Budget
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      CPC
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ads.map((ad) => (
-                    <tr key={ad._id} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">{ad.brand}</td>
-                      <td className="p-3 text-gray-700">{ad.text}</td>
-                      <td className="p-3 text-gray-700">{ad.type}</td>
-                      <td className="p-3 text-gray-700">₦{ad.budget / 100}</td>
-                      <td className="p-3 text-gray-700">₦{ad.cpc / 100}</td>
-                      <td className="p-3">
-                        <button
-                          onClick={() => approveAd(ad._id)}
-                          className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => rejectAd(ad._id)}
-                          className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
-                        >
-                          Reject
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No pending ads yet—advertisers dey sleep!
-            </p>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Payout Reconciliation
-          </h2>
-          <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-4">
-              <select
-                value={payoutStatusFilter}
-                onChange={(e) =>
-                  setPayoutStatusFilter(
-                    e.target.value as "all" | "pending" | "completed" | "failed"
-                  )
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              >
-                <option value="pending">Pending</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-                <option value="all">All</option>
-              </select>
-              <input
-                type="date"
-                value={payoutDateFrom}
-                onChange={(e) => setPayoutDateFrom(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              />
-              <input
-                type="date"
-                value={payoutDateTo}
-                onChange={(e) => setPayoutDateTo(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              />
-              <button
-                onClick={fetchPendingPayouts}
-                className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
-              >
-                Apply Filters
-              </button>
-            </div>
-            <div className="mt-2 flex flex-wrap gap-2">
-              <button
-                onClick={exportPayoutsCsv}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Export CSV
-              </button>
-              <button
-                onClick={exportPayoutsPdf}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Export PDF
-              </button>
-            </div>
-            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-4">
-              <p>Total: ₦{(payoutSummary.totalAmount / 100).toLocaleString("en-NG")} ({payoutSummary.totalCount})</p>
-              <p>Pending: ₦{(payoutSummary.pendingAmount / 100).toLocaleString("en-NG")} ({payoutSummary.pendingCount})</p>
-              <p>Completed: ₦{(payoutSummary.completedAmount / 100).toLocaleString("en-NG")} ({payoutSummary.completedCount})</p>
-              <p>Failed: ₦{(payoutSummary.failedAmount / 100).toLocaleString("en-NG")} ({payoutSummary.failedCount})</p>
-            </div>
-          </div>
-          {payouts.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">User</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Amount</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Status</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Destination
-                    </th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Date</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {payouts.map((payout) => (
-                    <tr key={payout._id} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">
-                        {payout.user?.username || payout.user?.email || "Unknown user"}
-                      </td>
-                      <td className="p-3 text-gray-700 font-medium">
-                        ₦{(payout.amount / 100).toLocaleString("en-NG")}
-                      </td>
-                      <td className="p-3 text-gray-700">{payout.status}</td>
-                      <td className="p-3 text-gray-700 text-sm">
-                        {payout.recipientId || "No payout account details"}
-                      </td>
-                      <td className="p-3 text-gray-600">{formatDate(payout.createdAt)}</td>
-                      <td className="p-3">
-                        {payout.status === "pending" ? (
-                          <>
-                            <button
-                              onClick={() => decidePayout(payout._id, true)}
-                              className="bg-green-600 text-white px-2 py-1 rounded-lg hover:bg-green-700 text-sm mr-2"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => decidePayout(payout._id, false)}
-                              className="bg-red-600 text-white px-2 py-1 rounded-lg hover:bg-red-700 text-sm"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        ) : (
-                          <span className="text-xs text-slate-500">Processed</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No payouts found for selected filters.
-            </p>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Premium Payments Audit
-          </h2>
-          <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
-            <div className="grid grid-cols-1 gap-2 md:grid-cols-5">
-              <select
-                value={premiumStatusFilter}
-                onChange={(e) =>
-                  setPremiumStatusFilter(
-                    e.target.value as "all" | "initiated" | "processing" | "completed" | "failed"
-                  )
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              >
-                <option value="all">All Statuses</option>
-                <option value="initiated">Initiated</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
-              <select
-                value={premiumSourceFilter}
-                onChange={(e) =>
-                  setPremiumSourceFilter(e.target.value as "all" | "manual" | "webhook")
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              >
-                <option value="all">All Sources</option>
-                <option value="manual">Manual Verify</option>
-                <option value="webhook">Webhook</option>
-              </select>
-              <input
-                type="date"
-                value={premiumDateFrom}
-                onChange={(e) => setPremiumDateFrom(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              />
-              <input
-                type="date"
-                value={premiumDateTo}
-                onChange={(e) => setPremiumDateTo(e.target.value)}
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              />
-              <button
-                onClick={fetchPremiumPaymentsAudit}
-                className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
-              >
-                Refresh Audit
-              </button>
-            </div>
-            <label className="mt-2 inline-flex items-center gap-2 text-sm text-slate-700">
-              <input
-                type="checkbox"
-                checked={premiumMismatchOnly}
-                onChange={(e) => setPremiumMismatchOnly(e.target.checked)}
-              />
-              Show mismatches only
-            </label>
-            <div className="mt-3 grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-6">
-              <p>Total: {premiumAuditSummary.total}</p>
-              <p>Mismatches: {premiumAuditSummary.mismatchCount}</p>
-              <p>Completed: {premiumAuditSummary.completedCount}</p>
-              <p>Failed: {premiumAuditSummary.failedCount}</p>
-              <p>Processing: {premiumAuditSummary.processingCount}</p>
-              <p>Initiated: {premiumAuditSummary.initiatedCount}</p>
-            </div>
-          </div>
-          {premiumAuditRows.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">User</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Reference</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Amount</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Status</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Source</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Mismatch</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {premiumAuditRows.map((row) => (
-                    <tr key={row._id} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">
-                        {row.user?.username || row.user?.email || "Unknown"}
-                      </td>
-                      <td className="p-3 text-xs text-gray-700">{row.reference}</td>
-                      <td className="p-3 text-gray-700">
-                        {row.currency} {(row.amount / 100).toLocaleString("en-NG")}
-                      </td>
-                      <td className="p-3 text-gray-700">{row.status}</td>
-                      <td className="p-3 text-gray-700">{row.verificationSource || "-"}</td>
-                      <td className="p-3 text-gray-700 text-xs">
-                        {row.hasMismatch ? row.mismatchReasons.join(", ") : "OK"}
-                      </td>
-                      <td className="p-3 text-gray-600">{formatDate(row.createdAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No premium payment rows for selected filters.
-            </p>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Settlement Rollups
-          </h2>
-          <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
-            <div className="flex flex-wrap items-center gap-2">
-              <select
-                value={rollupPeriod}
-                onChange={(e) =>
-                  setRollupPeriod(e.target.value as "daily" | "monthly")
-                }
-                className="rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-700"
-              >
-                <option value="daily">Daily</option>
-                <option value="monthly">Monthly</option>
-              </select>
-              <button
-                onClick={fetchPayoutRollups}
-                className="rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
-              >
-                Refresh Rollups
-              </button>
-            </div>
-          </div>
-          {rollupBuckets.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Bucket</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Total</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Pending</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Completed</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Failed</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rollupBuckets.map((bucket) => (
-                    <tr key={bucket.bucket} className="border-t border-gray-100">
-                      <td className="p-3 text-gray-700">{bucket.bucket}</td>
-                      <td className="p-3 text-gray-700">
-                        ₦{(bucket.totalAmount / 100).toLocaleString("en-NG")} ({bucket.totalCount})
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        ₦{(bucket.pendingAmount / 100).toLocaleString("en-NG")} ({bucket.pendingCount})
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        ₦{(bucket.completedAmount / 100).toLocaleString("en-NG")} ({bucket.completedCount})
-                      </td>
-                      <td className="p-3 text-gray-700">
-                        ₦{(bucket.failedAmount / 100).toLocaleString("en-NG")} ({bucket.failedCount})
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No rollup buckets yet for selected filters.
-            </p>
-          )}
-        </div>
-
-        <div className="mt-6">
-          <h2 className="text-2xl font-semibold text-green-800 mb-3">
-            Wallet Mismatch Alerts
-          </h2>
-          <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3">
-            <div className="grid grid-cols-1 gap-2 text-sm text-slate-700 md:grid-cols-5">
-              <p>Checked Users: {mismatchSummary.totalUsersChecked}</p>
-              <p>Mismatched: {mismatchSummary.mismatchedUsers}</p>
-              <p>High: {mismatchSummary.highCount}</p>
-              <p>Medium: {mismatchSummary.mediumCount}</p>
-              <p>Low: {mismatchSummary.lowCount}</p>
-            </div>
-            <button
-              onClick={fetchWalletMismatches}
-              className="mt-3 rounded-md bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800"
-            >
-              Run Scan
-            </button>
-          </div>
-          {mismatches.length > 0 ? (
-            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-100">
-                  <tr>
-                    <th className="p-3 text-sm font-semibold text-gray-700">User ID</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Expected</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Ledger</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Delta</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Tx/Ledger Count</th>
-                    <th className="p-3 text-sm font-semibold text-gray-700">Severity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mismatches.map((item) => (
-                    <tr key={item.userId} className="border-t border-gray-100">
-                      <td className="p-3 text-xs text-gray-700">{item.userId}</td>
-                      <td className="p-3 text-gray-700">₦{(item.expectedEffect / 100).toLocaleString("en-NG")}</td>
-                      <td className="p-3 text-gray-700">₦{(item.ledgerEffect / 100).toLocaleString("en-NG")}</td>
-                      <td className="p-3 text-gray-700">₦{(item.delta / 100).toLocaleString("en-NG")}</td>
-                      <td className="p-3 text-gray-700">
-                        {item.transactionCount}/{item.ledgerCount}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${item.severity === "high"
-                            ? "bg-red-100 text-red-700"
-                            : item.severity === "medium"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-slate-100 text-slate-700"
-                            }`}
-                        >
-                          {item.severity}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <p className="text-center text-gray-600 bg-white p-4 rounded-lg">
-              No wallet mismatches found in latest scan.
-            </p>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+          );
 }

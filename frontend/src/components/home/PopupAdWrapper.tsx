@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import api from "../../utils/api";
 import axios from "axios";
 
 type Ad = {
@@ -31,13 +30,13 @@ export default function PopupAdWrapper({
       });
       console.log("Popup Ads Fetched:", res.data.ads);
       const activePopups = res.data.ads.filter(
-        (ad: Ad) => ad.type === "popup" && ad.budget >= ad.cpc
+        (ad: Ad) => ad.type === "popup" && ad.budget >= ad.cpc // Explicit type check
       );
-
+      console.log("Filtered Active Popups:", activePopups);
       if (activePopups.length > 0) {
         setPopupAd(activePopups[0]);
         console.log("Tracking Popup Impression:", activePopups[0]._id);
-        await api.get(`/ads/impression/${activePopups[0]._id}`);
+        await axios.get(`/api/ads/impression/${activePopups[0]._id}`);
       } else {
         console.log("No valid popup ads found.");
         setPopupAd(null);
@@ -54,7 +53,7 @@ export default function PopupAdWrapper({
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await api.get("/users/me", {
+          const res = await axios.get("/api/users/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
           userIsPremium = Boolean(res.data.isPremium);

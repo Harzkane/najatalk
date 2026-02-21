@@ -4,8 +4,8 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import api from "../../utils/api";
-import axios from "axios";
+import api from "@/utils/api";
+import axios from "axios"; // Keep for isAxiosError check
 
 function LoadingComponent() {
   return (
@@ -63,6 +63,37 @@ function PremiumSuccessContent() {
     [router]
   );
 
+  const completePayment = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        console.error("No token found—abeg login!");
+        router.push("/login");
+        return;
+      }
+      setIsProcessing(true);
+      const res = await api.post(
+        "/premium/complete",
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      console.log("Manual Complete Response:", res.data);
+      if (res.data.success) {
+        router.push("/?premium=success");
+      } else {
+        setError("Manual activation failed. Please contact support.");
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        console.error("Completion Error:", err.response?.data || err.message);
+      } else {
+        console.error("Completion Error:", err);
+      }
+      setError("Unknown error during manual activation. Please try again.");
+      setIsProcessing(false);
+    }
+  }, [router]);
 
   useEffect(() => {
     const reference = searchParams.get("reference");

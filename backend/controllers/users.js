@@ -1699,12 +1699,6 @@ export const sendTip = async (req, res) => {
     const receiver = await User.findById(receiverId);
     if (!receiver) return res.status(404).json({ message: "Receiver no dey!" });
 
-<<<<<<< HEAD
-    const senderWallet = await Wallet.findOne({ userId: senderId });
-    const senderBalance = senderWallet ? senderWallet.balance / 100 : 0;
-    if (senderBalance < amount) {
-      return res.status(400).json({ message: "Funds no dey—top up!" });
-=======
     // Cooldown check (added below in step 4)
     const startOfDay = getLagosStartOfDayUTCDate();
     const existingTip = await Transaction.findOne({
@@ -1716,7 +1710,6 @@ export const sendTip = async (req, res) => {
     });
     if (existingTip) {
       return res.status(400).json({ message: "You don tip this one today!" });
->>>>>>> 0d2b4e0 (feat: implement premium payments, wallet ledger, marketplace policies, and comprehensive UI/backend refinements)
     }
 
     const reference = `naijatalk_tip_${Date.now()}`;
@@ -1770,8 +1763,6 @@ export const sendTip = async (req, res) => {
   }
 };
 
-<<<<<<< HEAD
-=======
 export const hasTipped = async (req, res) => {
   const { threadId, replyId } = req.query;
   const senderId = req.user._id;
@@ -1800,7 +1791,6 @@ export const hasTipped = async (req, res) => {
   }
 };
 
->>>>>>> 0d2b4e0 (feat: implement premium payments, wallet ledger, marketplace policies, and comprehensive UI/backend refinements)
 export const verifyTip = async (req, res) => {
   const { reference, receiverId } = req.body;
   const senderId = req.user._id;
