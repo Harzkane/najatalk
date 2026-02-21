@@ -1,17 +1,30 @@
+// frontend/src/app/(authenticated)/premium/page.tsx
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import api from "@/utils/api";
+import api from "../../../utils/api";
 import axios from "axios"; // Keep for isAxiosError check
 import Link from "next/link";
-import Header from "@/components/Header";
+import Header from "../../../components/Header";
 
-// Updated Ad type to match backend schema
-type Ad = {
+// Define response types
+interface UserResponse {
   _id: string;
-  // userId: { _id: string; email: string }; // Nested user object
-  userId: string; // Changed to string to match DB
+  email: string;
+  isPremium: boolean;
+  premiumStatus?: "inactive" | "active" | "expired" | "canceled" | "legacy";
+  premiumPlan?: "monthly" | null;
+  premiumStartedAt?: string | null;
+  premiumExpiresAt?: string | null;
+  nextBillingAt?: string | null;
+  cancelAtPeriodEnd?: boolean;
+  flair?: string | null;
+}
+
+interface Ad {
+  _id: string;
+  userId: string;
   brand: string;
   text: string;
   link: string;
@@ -23,12 +36,61 @@ type Ad = {
   impressions: number;
   createdAt: string;
   updatedAt: string;
-};
+}
+
+interface WalletLedgerEntry {
+  _id: string;
+  status: "pending" | "completed" | "failed";
+  entryKind: string;
+  walletEffect: number;
+  amount: number;
+  counterparty: string;
+  date: string;
+}
+
+interface WalletLedgerResponse {
+  balance: number;
+  availableBalance?: number;
+  heldBalance?: number;
+  entries: WalletLedgerEntry[];
+}
+
+interface PremiumBillingRow {
+  _id: string;
+  reference: string;
+  status: "initiated" | "processing" | "completed" | "failed";
+  amount: number;
+  currency: string;
+  verificationSource: "manual" | "webhook" | null;
+  verifyAttempts: number;
+  failureReason: string | null;
+  createdAt: string;
+  verifiedAt: string | null;
+}
+
+interface PremiumBillingResponse {
+  summary: {
+    total: number;
+    completedCount: number;
+    failedCount: number;
+    processingCount: number;
+    initiatedCount: number;
+  };
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasPrev: boolean;
+    hasNext: boolean;
+  };
+  rows: PremiumBillingRow[];
+}
 
 function PremiumLoading() {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           NaijaTalk Premium
         </h1>
@@ -39,10 +101,16 @@ function PremiumLoading() {
 }
 
 function PremiumPageContent() {
+  const [activeTab, setActiveTab] = useState<"subscription" | "benefits" | "billing">(
+    "subscription"
+  );
   const [isPremium, setIsPremium] = useState(false);
   const [walletBalance, setWalletBalance] = useState(0);
-  const [pendingAds, setPendingAds] = useState<Ad[]>([]);
+  const [premiumStatus, setPremiumStatus] = useState<UserResponse["premiumStatus"]>("inactive");
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState<string | null>(null);
+  const [userAds, setUserAds] = useState<Ad[]>([]);
   const [flair, setFlair] = useState<string | null>(null);
+
   interface Tip {
     amount: number;
     date: string;
@@ -56,6 +124,28 @@ function PremiumPageContent() {
     sent: [],
     received: [],
   });
+
+  const [billingRows, setBillingRows] = useState<PremiumBillingRow[]>([]);
+  const [billingSummary, setBillingSummary] = useState<PremiumBillingResponse["summary"]>({
+    total: 0,
+    completedCount: 0,
+    failedCount: 0,
+    processingCount: 0,
+    initiatedCount: 0,
+  });
+  const [billingStatusFilter, setBillingStatusFilter] = useState<
+    "all" | "initiated" | "processing" | "completed" | "failed"
+  >("all");
+  const [billingPage, setBillingPage] = useState(1);
+  const [billingPagination, setBillingPagination] = useState({
+    page: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+    hasPrev: false,
+    hasNext: false,
+  });
+
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isAdModalOpen, setIsAdModalOpen] = useState(false);
@@ -71,73 +161,105 @@ function PremiumPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const fetchPendingAds = async () => {
+  const fetchBillingHistory = useCallback(async (status: string, page = 1) => {
     try {
       const token = localStorage.getItem("token");
-      const [userRes, adsRes] = await Promise.all([
-        api.get<{
-          _id: string;
-          email: string;
-          isPremium: boolean;
-          flair?: string;
-        }>("/users/me", { headers: { Authorization: `Bearer ${token}` } }),
-        api.get<{ ads: Ad[]; message: string }>("/ads", {
-          headers: { Authorization: `Bearer ${token}` },
-          params: { status: "pending" },
-        }),
-      ]);
-      const userId = userRes.data._id;
-      const filteredAds = adsRes.data.ads.filter((ad) => ad.userId === userId);
-      console.log("User ID:", userId);
-      console.log("Fetched Ads:", adsRes.data.ads);
-      console.log("Filtered Pending Ads:", filteredAds);
-      setPendingAds(filteredAds);
+      const res = await api.get<PremiumBillingResponse>("/premium/my-payments", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status, page, limit: 10 },
+      });
+      setBillingRows(res.data.rows || []);
+      setBillingPagination(
+        res.data.pagination || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 1,
+          hasPrev: false,
+          hasNext: false,
+        }
+      );
+      setBillingSummary(
+        res.data.summary || {
+          total: 0,
+          completedCount: 0,
+          failedCount: 0,
+          processingCount: 0,
+          initiatedCount: 0,
+        }
+      );
     } catch (err) {
-      console.error("Failed to fetch pending ads:", err);
-      setMessage("Pending ads no dey load—check later!");
+      console.error("Failed to fetch billing history:", err);
+      setMessage("Billing history no load. Try again.");
     }
-  };
+  }, []);
+
+  const fetchUserAds = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { status: "pending" }, // Only show pending ads in the dashboard for now
+      });
+      setUserAds(res.data.ads || []);
+    } catch (err) {
+      console.error("Failed to fetch user ads:", err);
+    }
+  }, []);
 
   useEffect(() => {
     const checkPremiumAndWallet = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token—abeg login!");
-        const [userRes, walletRes, tipHistoryRes, adsRes] = await Promise.all([
-          api.get<{
-            _id: string;
-            email: string;
-            isPremium: boolean;
-            flair?: string;
-          }>("/users/me", {
+
+        // Fetch user data first
+        const userRes = await api.get<UserResponse>("/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        // Then fetch everything else
+        const [walletLedgerRes, adsRes] = await Promise.all([
+          api.get<WalletLedgerResponse>("/users/me/wallet-ledger", {
             headers: { Authorization: `Bearer ${token}` },
+            params: { includePending: false, limit: 100 },
           }),
-          api.get<{ balance: number }>("/premium/wallet", {
-            headers: { Authorization: `Bearer ${token}` },
-          }),
-          api.get<{ sent: Tip[]; received: Tip[] }>(
-            "/premium/tip-history",
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            }
-          ),
           api.get<{ ads: Ad[]; message: string }>("/ads", {
             headers: { Authorization: `Bearer ${token}` },
             params: { status: "pending" },
           }),
         ]);
-        const userId = userRes.data._id;
+
         setIsPremium(userRes.data.isPremium);
+        setPremiumStatus(userRes.data.premiumStatus || (userRes.data.isPremium ? "active" : "inactive"));
+        setPremiumExpiresAt(userRes.data.premiumExpiresAt || null);
         setFlair(userRes.data.flair || null);
-        setWalletBalance(walletRes.data.balance); // Already in kobo
-        setTipHistory(tipHistoryRes.data);
-        const filteredAds = adsRes.data.ads.filter(
-          (ad) => ad.userId === userId
+
+        setWalletBalance(
+          walletLedgerRes.data.availableBalance ?? walletLedgerRes.data.balance ?? 0
         );
-        console.log("Initial User ID:", userId);
-        console.log("Initial Fetched Ads:", adsRes.data.ads);
-        console.log("Initial Filtered Ads:", filteredAds);
-        setPendingAds(filteredAds);
+
+        const entries = walletLedgerRes.data.entries || [];
+        setTipHistory({
+          sent: entries
+            .filter((entry) => entry.entryKind === "tip_external" && entry.status === "completed")
+            .map((entry) => ({
+              amount: entry.amount / 100,
+              date: entry.date,
+              to: entry.counterparty,
+            })),
+          received: entries
+            .filter((entry) => entry.entryKind === "tip_received" && entry.status === "completed")
+            .map((entry) => ({
+              amount: Math.max(0, entry.walletEffect) / 100,
+              date: entry.date,
+              from: entry.counterparty,
+            })),
+        });
+
+        setUserAds(adsRes.data.ads || []);
+        await fetchBillingHistory(billingStatusFilter, 1);
+
         const reference = searchParams.get("reference");
         if (reference && !userRes.data.isPremium)
           await verifyPayment(reference);
@@ -147,7 +269,7 @@ function PremiumPageContent() {
       }
     };
     checkPremiumAndWallet();
-  }, [router, searchParams]);
+  }, [router, searchParams, fetchBillingHistory, billingStatusFilter]);
 
   const handleSubscribe = async () => {
     setIsLoading(true);
@@ -174,12 +296,14 @@ function PremiumPageContent() {
       const token = localStorage.getItem("token");
       const res = await api.get<{
         message: string;
-        user?: { flair?: string };
+        user?: { flair?: string; premiumStatus?: any; premiumExpiresAt?: any };
       }>(`/premium/verify?reference=${reference}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.data.message.includes("activated")) {
         setIsPremium(true);
+        setPremiumStatus(res.data.user?.premiumStatus || "active");
+        setPremiumExpiresAt(res.data.user?.premiumExpiresAt || null);
         setFlair(res.data.user?.flair || null);
         setMessage("Premium activated—enjoy the VIP vibes!");
       }
@@ -193,15 +317,20 @@ function PremiumPageContent() {
   };
 
   const handleFlairChange = async (newFlair: string) => {
+    const normalized = newFlair || null;
+    if ((flair || null) === normalized) {
+      setMessage("You already dey use this flair.");
+      return;
+    }
     try {
       const token = localStorage.getItem("token");
       const res = await api.post<{ message: string }>(
         "/users/flair",
-        { flair: newFlair || null },
+        { flair: normalized },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
-      setFlair(newFlair || null);
+      setFlair(normalized);
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setMessage(err.response?.data?.message || "Flair update scatter o!");
@@ -226,14 +355,6 @@ function PremiumPageContent() {
     }
     try {
       const token = localStorage.getItem("token");
-      console.log("Creating Ad:", {
-        brand: adBrand,
-        text: adText,
-        link: adLink,
-        type: adType,
-        budget: budgetInKobo,
-        cpc: cpcInKobo,
-      });
       const res = await api.post<{ message: string; ad: Ad }>(
         "/ads",
         {
@@ -246,7 +367,6 @@ function PremiumPageContent() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log("Ad Creation Response:", res.data);
       setMessage(res.data.message);
       setAdBrand("");
       setAdText("");
@@ -256,10 +376,9 @@ function PremiumPageContent() {
       setAdCpc("");
       setIsAdModalOpen(false);
       setWalletBalance(walletBalance - budgetInKobo);
-      fetchPendingAds();
+      fetchUserAds();
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        console.error("Ad creation error:", err.response?.data);
         setMessage(err.response?.data?.message || "Ad creation scatter o!");
       } else {
         setMessage("Ad creation scatter o!");
@@ -273,214 +392,273 @@ function PremiumPageContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto mb-3">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+      <div className="max-w-7xl mx-auto mb-4">
         <Header
           title="NaijaTalk Premium"
           isLoggedIn={true}
           onLogout={handleLogout}
+          secondaryLink={{ href: "/threads", label: "Threads" }}
         />
-        <div className="bg-white rounded-b-lg shadow-md p-6 mt-6 max-w-md mx-auto">
+        <div className="bg-white rounded-b-lg shadow-sm border border-slate-200 border-t-0 p-6">
           {message && (
-            <p className="text-center text-sm text-gray-600 mb-4">{message}</p>
+            <p className="text-center text-sm text-slate-600 mb-4">{message}</p>
           )}
-          {isPremium ? (
-            <div className="text-center">
-              <p className="text-lg text-green-600 mb-4">
-                You be {flair ? flair : "Oga"}!
-              </p>
-              <p className="text-sm text-gray-600 mb-4">
-                Enjoy ad-free vibes and VIP gist lounge!
-              </p>
-              {flair ? (
-                <span
-                  className={`inline-block text-white px-2 py-1 rounded text-sm mb-4 ${flair === "Oga at the Top"
-                    ? "bg-yellow-500"
-                    : "bg-green-500"
-                    }`}
-                >
-                  {flair}
-                </span>
-              ) : (
-                <span className="inline-block text-gray-500 text-sm mb-4">
-                  No flair yet—pick one!
-                </span>
-              )}
-              <div className="mb-6">
-                <label className="block text-gray-700 text-sm font-semibold mb-2">
-                  Pick Your Shine, Oga!
-                </label>
-                <select
-                  value={flair || ""}
-                  onChange={(e) => handleFlairChange(e.target.value)}
-                  className="w-full p-2 border rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600"
-                >
-                  <option value="">No Flair</option>
-                  <option value="Verified G">Verified G</option>
-                  <option value="Oga at the Top">Oga at the Top</option>
-                </select>
-              </div>
-              <div className="mt-4">
-                <p className="text-sm font-semibold text-gray-700">
-                  Wallet Balance: ₦
-                  {(walletBalance / 100).toLocaleString("en-NG")}
-                </p>
-                <button
-                  onClick={() => setIsAdModalOpen(true)}
-                  className="mt-4 w-full bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 text-sm"
-                >
-                  Create Ad
-                </button>
-                <div className="mt-4">
-                  <p className="text-sm font-semibold text-gray-700">
-                    Pending Ads:
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab("subscription")}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "subscription"
+                  ? "bg-green-700 text-white"
+                  : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              Subscription
+            </button>
+            <button
+              onClick={() => setActiveTab("benefits")}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "benefits"
+                  ? "bg-green-700 text-white"
+                  : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              Benefits
+            </button>
+            <button
+              onClick={() => setActiveTab("billing")}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "billing"
+                  ? "bg-green-700 text-white"
+                  : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+                }`}
+            >
+              Billing History
+            </button>
+          </div>
+
+          {activeTab === "subscription" && (
+            <>
+              {isPremium ? (
+                <div className="mx-auto max-w-3xl rounded-lg border border-slate-200 bg-white p-5">
+                  <p className="text-lg font-semibold text-green-700 mb-1 text-center">
+                    You be {flair ? flair : "Oga"}!
                   </p>
-                  {pendingAds.length > 0 ? (
-                    <ul className="text-xs text-gray-600 mt-1 max-h-40 overflow-y-auto">
-                      {pendingAds.map((ad) => (
-                        <li key={ad._id} className="mb-2">
-                          <strong>{ad.brand}</strong>: {ad.text} (₦
-                          {ad.budget / 100})
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="text-xs text-gray-500">
-                      No pending ads yet—create one!
+                  <p className="text-xs text-slate-600 mb-5 text-center">
+                    Status: {premiumStatus || "active"}
+                    {premiumExpiresAt
+                      ? ` | Expires: ${new Date(premiumExpiresAt).toLocaleDateString("en-NG")}`
+                      : ""}
+                  </p>
+                  <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <label className="block text-slate-700 text-sm font-semibold mb-2">
+                      Pick Your Shine, Oga
+                    </label>
+                    <select
+                      value={flair || ""}
+                      onChange={(e) => handleFlairChange(e.target.value)}
+                      className="w-full max-w-md p-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
+                    >
+                      <option value="">No Flair</option>
+                      <option value="Verified G">Verified G</option>
+                      <option value="Oga at the Top">Oga at the Top</option>
+                    </select>
+                  </div>
+                  <div className="mt-5 mx-auto max-w-md rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-sm font-semibold text-slate-700 text-center mb-3">
+                      Wallet Balance: ₦
+                      {(walletBalance / 100).toLocaleString("en-NG")}
                     </p>
-                  )}
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => setIsAdModalOpen(true)}
+                        className="inline-flex min-w-40 justify-center bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 text-sm"
+                      >
+                        Create Ad
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">Tip History:</p>
-                {tipHistory.sent.length > 0 ||
-                  tipHistory.received.length > 0 ? (
-                  <ul className="text-xs text-gray-600 text-left mt-1 max-h-40 overflow-y-auto">
-                    {tipHistory.sent.map((tip, idx) => (
-                      <li key={idx}>
-                        Sent ₦{tip.amount} to {tip.to || "someone"} on{" "}
-                        {new Date(tip.date).toLocaleString()}
-                      </li>
-                    ))}
-                    {tipHistory.received.map((tip, idx) => (
-                      <li key={idx}>
-                        Received ₦{tip.amount} from {tip.from || "someone"} on{" "}
-                        {new Date(tip.date).toLocaleString()}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-gray-500">
-                    No tips yet—start tipping!
+              ) : (
+                <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-6 text-center">
+                  <p className="text-lg font-semibold text-slate-800 mb-2">
+                    Upgrade to Premium for ₦500/month!
                   </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center">
-              <p className="text-lg text-gray-700 mb-4">
-                Upgrade to Premium for ₦500/month!
-              </p>
-              <ul className="text-sm text-gray-600 mb-4 text-left">
-                <li>Ad-free experience</li>
-                <li>Custom flair (e.g., “Oga at the Top”)</li>
-                <li>VIP Gist Lounge access</li>
+                  <p className="text-sm text-slate-600 mb-5">
+                    Activate monthly premium to remove ads and unlock identity perks.
+                  </p>
+                  <div className="flex justify-center">
+                    <button
+                      onClick={handleSubscribe}
+                      disabled={isLoading}
+                      className="inline-flex min-w-44 justify-center bg-green-700 text-white px-5 py-3 rounded-md hover:bg-green-800 disabled:bg-green-400"
+                    >
+                      {isLoading ? "Loading..." : "Subscribe Now"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {activeTab === "benefits" && (
+            <div className="mx-auto max-w-2xl">
+              <ul className="text-sm text-slate-700 mb-4 list-disc pl-5 space-y-2">
+                <li>Ad-free reading experience across core pages.</li>
+                <li>Custom flair identity (Verified G / Oga at the Top).</li>
+                <li>Ad creation and performance dashboard.</li>
+                <li>Premium-only billing and subscription visibility.</li>
               </ul>
-              <button
-                onClick={handleSubscribe}
-                disabled={isLoading}
-                className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
-              >
-                {isLoading ? "Loading..." : "Subscribe Now"}
-              </button>
             </div>
           )}
-          <Link
-            href="/threads"
-            className="block text-center text-blue-600 hover:underline text-sm mt-4"
-          >
-            Back to Threads
-          </Link>
+
+          {activeTab === "billing" && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                <div className="flex flex-wrap gap-2">
+                  {["all", "initiated", "processing", "completed", "failed"].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => {
+                        setBillingStatusFilter(status as any);
+                        setBillingPage(1);
+                      }}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${billingStatusFilter === status
+                          ? "border-green-600 bg-green-600 text-white"
+                          : "border-slate-300 bg-white text-slate-600 hover:border-green-400"
+                        }`}
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="p-3 font-semibold text-slate-700">Reference</th>
+                      <th className="p-3 font-semibold text-slate-700">Amount</th>
+                      <th className="p-3 font-semibold text-slate-700">Status</th>
+                      <th className="p-3 font-semibold text-slate-700">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {billingRows.length > 0 ? (
+                      billingRows.map((row) => (
+                        <tr key={row._id} className="hover:bg-slate-50">
+                          <td className="p-3 font-mono text-xs">{row.reference}</td>
+                          <td className="p-3">₦{(row.amount / 100).toLocaleString("en-NG")}</td>
+                          <td className="p-3">
+                            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${row.status === "completed" ? "bg-green-100 text-green-700" :
+                                row.status === "failed" ? "bg-red-100 text-red-700" :
+                                  "bg-yellow-100 text-yellow-700"
+                              }`}>
+                              {row.status}
+                            </span>
+                          </td>
+                          <td className="p-3 text-slate-500">{new Date(row.createdAt).toLocaleDateString("en-NG")}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="p-6 text-center text-slate-500">No billing history found.</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ad modal */}
       {isAdModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-80 md:w-96">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-green-800">Create New Ad</h3>
-              <button
-                onClick={() => setIsAdModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <span className="material-icons-outlined">close</span>
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl border border-slate-200 w-full max-w-lg overflow-hidden">
+            <div className="bg-green-800 text-white p-4">
+              <h3 className="text-xl font-bold">Create New Ad</h3>
             </div>
-            <form onSubmit={handleCreateAd}>
-              <input
-                type="text"
-                placeholder="Brand Name"
-                value={adBrand}
-                onChange={(e) => setAdBrand(e.target.value)}
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 text-sm"
-                required
-              />
-              <input
-                type="text"
-                placeholder="Ad Text"
-                value={adText}
-                onChange={(e) => setAdText(e.target.value)}
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 text-sm"
-                required
-              />
-              <input
-                type="url"
-                placeholder="Link (e.g., https://example.com)"
-                value={adLink}
-                onChange={(e) => setAdLink(e.target.value)}
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 text-sm"
-                required
-              />
-              <select
-                value={adType}
-                onChange={(e) =>
-                  setAdType(e.target.value as "sidebar" | "banner" | "popup")
-                }
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 bg-white text-sm"
-              >
-                <option value="sidebar">Sidebar (₦50/click)</option>
-                <option value="banner">Banner (₦75/click)</option>
-                <option value="popup">Popup (₦100/click)</option>
-              </select>
-              <input
-                type="number"
-                placeholder="Budget (₦)"
-                value={adBudget}
-                onChange={(e) => setAdBudget(e.target.value)}
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 text-sm"
-                min="100"
-                step="1"
-                required
-              />
-              <div className="text-sm text-gray-600 mb-2">
-                Minimum CPC: ₦
-                {adType === "sidebar" ? 50 : adType === "banner" ? 75 : 100}
+            <form onSubmit={handleCreateAd} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Brand Name</label>
+                <input
+                  type="text"
+                  value={adBrand}
+                  onChange={(e) => setAdBrand(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none text-gray-800"
+                  required
+                />
               </div>
-              <input
-                type="number"
-                placeholder="Cost Per Click (₦)"
-                value={adCpc}
-                onChange={(e) => setAdCpc(e.target.value)}
-                className="w-full p-2 mb-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800 text-sm"
-                min={adType === "sidebar" ? 50 : adType === "banner" ? 75 : 100}
-                step="1"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-green-600 text-white p-2 rounded-lg hover:bg-green-700 text-sm"
-              >
-                Submit Ad
-              </button>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Ad Gist (Text)</label>
+                <textarea
+                  value={adText}
+                  onChange={(e) => setAdText(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none h-20 text-gray-800"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Destination URL</label>
+                <input
+                  type="url"
+                  value={adLink}
+                  onChange={(e) => setAdLink(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none text-gray-800"
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-1">Ad Type</label>
+                  <select
+                    value={adType}
+                    onChange={(e) => setAdType(e.target.value as any)}
+                    className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none bg-white text-gray-800"
+                  >
+                    <option value="sidebar">Sidebar (₦50 CPC)</option>
+                    <option value="banner">Banner (₦75 CPC)</option>
+                    <option value="popup">Popup (₦100 CPC)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Budget (₦)</label>
+                  <input
+                    type="number"
+                    value={adBudget}
+                    onChange={(e) => setAdBudget(e.target.value)}
+                    className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none text-gray-800"
+                    placeholder="e.g. 5000"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">CPC (₦) — Min ₦50+</label>
+                <input
+                  type="number"
+                  value={adCpc}
+                  onChange={(e) => setAdCpc(e.target.value)}
+                  className="w-full p-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-green-600 outline-none text-gray-800"
+                  placeholder="e.g. 60"
+                  required
+                />
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAdModalOpen(false)}
+                  className="flex-1 bg-slate-200 text-slate-800 py-2 rounded-md hover:bg-slate-300 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-green-700 text-white py-2 rounded-md hover:bg-green-800 font-semibold"
+                >
+                  Sumbit for Review
+                </button>
+              </div>
             </form>
           </div>
         </div>
@@ -489,7 +667,7 @@ function PremiumPageContent() {
   );
 }
 
-export default function PremiumPage() {
+export default function Premium() {
   return (
     <Suspense fallback={<PremiumLoading />}>
       <PremiumPageContent />

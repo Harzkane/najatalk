@@ -37,27 +37,66 @@ const listingSchema = new mongoose.Schema({
     enum: ["active", "pending", "sold", "deleted"],
     default: "active",
   },
+  fulfillmentStatus: {
+    type: String,
+    enum: ["awaiting_seller", "shipped", "delivered", null],
+    default: null,
+  },
+  orderDetails: {
+    fullName: { type: String, default: null },
+    phone: { type: String, default: null },
+    addressLine1: { type: String, default: null },
+    addressLine2: { type: String, default: null },
+    city: { type: String, default: null },
+    state: { type: String, default: null },
+    postalCode: { type: String, default: null },
+    deliveryNote: { type: String, default: null },
+  },
+  buyerConfirmedAt: {
+    type: Date,
+    default: null,
+  },
+  shippedAt: {
+    type: Date,
+    default: null,
+  },
   category: {
     type: String,
     enum: ["Electronics", "Fashion", "Home", "Food", "Services", "Others"],
     default: "Others",
   },
+  imageUrls: {
+    type: [String],
+    default: [],
+  },
+  boostsPurchased: {
+    type: Number,
+    default: 0,
+  },
+  boostLevel: {
+    type: Number,
+    default: 0,
+  },
+  boostExpiresAt: {
+    type: Date,
+    default: null,
+  },
+  lastBoostedAt: {
+    type: Date,
+    default: null,
+  },
   createdAt: {
-    type: String,
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    type: Date,
+    default: Date.now,
   },
   updatedAt: {
-    type: String,
-    default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+    type: Date,
+    default: Date.now,
   },
 });
 
 listingSchema.pre("save", function (next) {
-  this.updatedAt = new Date().toLocaleString("en-US", {
-    timeZone: "Africa/Lagos",
-  });
+  this.updatedAt = Date.now();
   next();
 });
 

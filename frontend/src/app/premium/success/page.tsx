@@ -4,13 +4,13 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import api from "@/utils/api";
-import axios from "axios"; // Keep for isAxiosError check
+import api from "../../utils/api";
+import axios from "axios";
 
 function LoadingComponent() {
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           Processing Payment...
         </h1>
@@ -25,8 +25,6 @@ function LoadingComponent() {
 function PremiumSuccessContent() {
   const [isProcessing, setIsProcessing] = useState(true);
   const [error, setError] = useState("");
-  const [manualActivationAvailable, setManualActivationAvailable] =
-    useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -49,10 +47,7 @@ function PremiumSuccessContent() {
         if (res.data.message.includes("activated")) {
           router.push("/?premium=success");
         } else {
-          setError(
-            "Automatic verification failed. Please use manual activation."
-          );
-          setManualActivationAvailable(true);
+          setError("Automatic verification failed. Please retry verification.");
           setIsProcessing(false);
         }
       } catch (err) {
@@ -61,45 +56,13 @@ function PremiumSuccessContent() {
         } else {
           console.error("Verify Error:", err);
         }
-        setError("Verification failed. Please try manual activation.");
-        setManualActivationAvailable(true);
+        setError("Verification failed. Please retry from premium page.");
         setIsProcessing(false);
       }
     },
     [router]
   );
 
-  const completePayment = useCallback(async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No token found—abeg login!");
-        router.push("/login");
-        return;
-      }
-      setIsProcessing(true);
-      const res = await api.post(
-        "/premium/complete",
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      console.log("Manual Complete Response:", res.data);
-      if (res.data.success) {
-        router.push("/?premium=success");
-      } else {
-        setError("Manual activation failed. Please contact support.");
-        setIsProcessing(false);
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        console.error("Completion Error:", err.response?.data || err.message);
-      } else {
-        console.error("Completion Error:", err);
-      }
-      setError("Unknown error during manual activation. Please try again.");
-      setIsProcessing(false);
-    }
-  }, [router]);
 
   useEffect(() => {
     const reference = searchParams.get("reference");
@@ -109,15 +72,14 @@ function PremiumSuccessContent() {
       setTimeout(() => verifyPayment(reference), 3000); // Delay for Paystack
     } else {
       console.error("No reference found in search params");
-      setError("Payment failed or incomplete. Try manual activation.");
-      setManualActivationAvailable(true);
+      setError("Payment failed or incomplete. Please retry from premium page.");
       setIsProcessing(false);
     }
   }, [searchParams, verifyPayment]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 flex items-center justify-center">
-      <div className="bg-white rounded-lg shadow-md p-6 max-w-md w-full">
+    <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
+      <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 max-w-md w-full">
         <h1 className="text-3xl font-bold text-green-800 mb-4">
           {isProcessing ? "Processing Payment..." : "Payment Completed"}
         </h1>
@@ -128,14 +90,6 @@ function PremiumSuccessContent() {
         ) : error ? (
           <>
             <p className="text-center text-sm text-red-600 mb-4">{error}</p>
-            {manualActivationAvailable && (
-              <button
-                onClick={completePayment}
-                className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 mb-4"
-              >
-                Complete Premium Activation Manually
-              </button>
-            )}
             <div className="text-center mt-4">
               <Link
                 href="/premium"

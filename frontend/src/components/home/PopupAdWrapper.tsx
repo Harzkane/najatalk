@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import api from "@/utils/api";
-import axios from "axios"; // Keep just in case, but usually not needed for simple gets
+import { useState, useEffect, useCallback } from "react";
+import api from "../../utils/api";
+import axios from "axios";
 
 type Ad = {
   _id: string;
@@ -22,46 +22,22 @@ export default function PopupAdWrapper({
 }) {
   const [popupAd, setPopupAd] = useState<Ad | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const POPUP_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
-  useEffect(() => {
-    const checkPremiumAndPopup = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const res = await api.get("/users/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setIsPremium(res.data.isPremium);
-          console.log("User Premium Status:", res.data.isPremium);
-        } catch (err) {
-          console.error("Premium check error:", err);
-        }
-      }
-      if (!isPremium && !localStorage.getItem("hasSeenPopup")) {
-        console.log("Fetching popup ad...");
-        await fetchPopupAd();
-      } else {
-        console.log("Skipping popup: Premium or already seen.");
-      }
-    };
-    checkPremiumAndPopup();
-  }, []); // Empty dependency to run once on mount
-
-  const fetchPopupAd = async () => {
+  const fetchPopupAd = useCallback(async () => {
     try {
       const res = await api.get("/ads", {
         params: { status: "active", type: "popup" },
       });
       console.log("Popup Ads Fetched:", res.data.ads);
       const activePopups = res.data.ads.filter(
-        (ad: Ad) => ad.type === "popup" && ad.budget >= ad.cpc // Explicit type check
+        (ad: Ad) => ad.type === "popup" && ad.budget >= ad.cpc
       );
-      console.log("Filtered Active Popups:", activePopups);
+
       if (activePopups.length > 0) {
         setPopupAd(activePopups[0]);
         console.log("Tracking Popup Impression:", activePopups[0]._id);
         await api.get(`/ads/impression/${activePopups[0]._id}`);
-        localStorage.setItem("hasSeenPopup", "true");
       } else {
         console.log("No valid popup ads found.");
         setPopupAd(null);
@@ -70,7 +46,36 @@ export default function PopupAdWrapper({
       console.error("Popup fetch error:", err);
       setPopupAd(null);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkPremiumAndPopup = async () => {
+      let userIsPremium = false;
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await api.get("/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          userIsPremium = Boolean(res.data.isPremium);
+          setIsPremium(userIsPremium);
+          console.log("User Premium Status:", userIsPremium);
+        } catch (err) {
+          console.error("Premium check error:", err);
+        }
+      }
+      const lastSeen = Number(localStorage.getItem("popupLastSeenAt") || "0");
+      const withinCooldown = Date.now() - lastSeen < POPUP_COOLDOWN_MS;
+
+      if (!userIsPremium && !withinCooldown) {
+        console.log("Fetching popup ad...");
+        await fetchPopupAd();
+      } else {
+        console.log("Skipping popup: Premium or cooldown active.");
+      }
+    };
+    checkPremiumAndPopup();
+  }, [fetchPopupAd]);
 
   const trackPopupClick = async (adId: string) => {
     try {
@@ -84,6 +89,7 @@ export default function PopupAdWrapper({
 
   const closePopup = () => {
     setPopupAd(null);
+    localStorage.setItem("popupLastSeenAt", Date.now().toString());
     console.log("Popup closed.");
   };
 
@@ -91,22 +97,28 @@ export default function PopupAdWrapper({
     <>
       {children}
       {!isPremium && popupAd && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full text-center">
+        <div className="fixed bottom-4 right-4 z-50 w-[min(22rem,calc(100vw-2rem))]">
+          <div className="bg-white p-4 rounded-lg shadow-lg border border-slate-200">
+            <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
+              Sponsored
+            </p>
             <a
               href={popupAd.link}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => trackPopupClick(popupAd._id)}
-              className="text-blue-600 font-bold hover:underline text-lg"
+              className="text-slate-800 font-semibold hover:text-slate-900"
             >
-              {popupAd.brand}: {popupAd.text}
+              {popupAd.brand}
+              <span className="mt-1 block text-sm font-normal text-slate-600">
+                {popupAd.text}
+              </span>
             </a>
             <button
               onClick={closePopup}
-              className="mt-4 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700"
+              className="mt-3 rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100"
             >
-              Close
+              Dismiss
             </button>
           </div>
         </div>

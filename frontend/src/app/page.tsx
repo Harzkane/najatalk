@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import api from "@/utils/api";
 import axios from "axios"; // Keep for isAxiosError check
 import Link from "next/link";
-import SearchBar from "@/components/threads/SearchBar";
-import NewThreadButton from "@/components/threads/NewThreadButton";
-import Header from "@/components/Header"; // New import
-import formatDate from "@/utils/formatDate";
+import SearchBar from "../components/threads/SearchBar";
+import NewThreadButton from "../components/threads/NewThreadButton";
+import Header from "../components/Header";
+import formatDate from "../utils/formatDate";
+import SponsoredAdCard from "../components/ads/SponsoredAdCard";
 
 type Reply = {
   _id: string;
@@ -325,14 +326,15 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-200 p-6 pb-20">
-      <div className="max-w-7xl mx-auto mb-3">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
+      <div className="max-w-7xl mx-auto mb-4">
         <Header
           title="NaijaTalk Forum—Wetin Dey Happen?"
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
+          secondaryLink={{ href: "/premium", label: "Premium" }}
         />
-        <div className="bg-white p-4 rounded-b-lg shadow-md">
+        <div className="bg-white p-4 rounded-b-lg shadow-sm border border-slate-200 border-t-0">
           <SearchBar
             onSearch={handleSearch}
             recentSearches={recentSearches}
@@ -341,17 +343,19 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto flex gap-1">
-        <div className="w-[15%]">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-semibold text-green-800 mb-3">
+      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-5">
+        <div className="w-full lg:w-[15%]">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 lg:sticky lg:top-24">
+            <h2 className="text-xs font-semibold tracking-wide uppercase text-slate-500 mb-3">
               Categories
             </h2>
-            <ul className="space-y-1">
+            <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-blue-600 hover:underline text-sm ${!selectedCategory ? "font-bold text-blue-800" : ""
+                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${!selectedCategory
+                      ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                     }`}
                 >
                   All Categories
@@ -361,7 +365,9 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-blue-600 hover:underline text-sm ${selectedCategory === cat ? "font-bold text-blue-800" : ""
+                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${selectedCategory === cat
+                        ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                       }`}
                   >
                     {cat}
@@ -372,101 +378,102 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-[70%]">
+        <div className="w-full lg:w-[70%]">
           {!isPremium && bannerAd && (
-            <div className="bg-yellow-100 p-4 mb-1 rounded-lg shadow text-center">
-              <a
-                href={bannerAd.link}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => trackBannerClick(bannerAd._id)}
-                className="text-blue-600 font-bold hover:underline"
-              >
-                {bannerAd.brand}: {bannerAd.text}
-              </a>
-            </div>
+            <SponsoredAdCard ad={bannerAd} onClick={trackBannerClick} className="mb-2" />
           )}
 
           {message && (
-            <p className="text-center text-sm text-gray-600 mb-1 bg-white p-2 rounded-xs">
+            <p className="text-center text-sm text-slate-600 mb-2 bg-white border border-slate-200 p-2 rounded-lg">
               {message}
               {searchQuery ? `: "${searchQuery}"` : ""}
             </p>
           )}
 
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+              Latest Discussions
+            </h2>
+            <span className="text-xs text-slate-500">{threads.length} topics</span>
+          </div>
+
           {threads.length ? (
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="bg-gray-100 p-3 flex justify-between text-sm font-medium text-gray-600 border-b border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+              <div className="hidden md:flex bg-slate-50 p-3 justify-between text-xs font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200">
                 <span className="w-2/5">Thread</span>
                 <span className="w-1/5 text-center">Replies</span>
                 <span className="w-2/5 text-right">Last Post</span>
               </div>
-              {threads.map((thread) => (
-                <div
-                  key={thread._id}
-                  className="p-3 border-b border-gray-200 hover:bg-gray-50 flex justify-between items-center"
-                >
-                  <div className="w-2/5">
-                    <Link
-                      href={`/threads/${thread._id}`}
-                      className="text-green-800 font-medium hover:underline"
-                    >
-                      {thread.title}
-                    </Link>
-                    <p className="text-xs text-gray-600 mt-1">
-                      Started by{" "}
-                      <span className="font-medium">
-                        {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
+              {threads.map((thread, index) => (
+                <div key={thread._id}>
+                  <div className="p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-3 md:gap-0 md:justify-between md:items-center">
+                    <div className="w-full md:w-2/5">
+                      <Link
+                        href={`/threads/${thread._id}`}
+                        className="text-slate-900 font-semibold hover:text-green-800"
+                      >
+                        {thread.title}
+                      </Link>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Started by{" "}
+                        <span className="font-medium">
+                          {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
+                        </span>
+                        {thread.userId?.flair && (
+                          <span
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                              }`}
+                          >
+                            {thread.userId.flair}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="w-full md:w-1/5 text-left md:text-center">
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+                        {thread.replies?.length || 0}
                       </span>
-                      {thread.userId?.flair && (
-                        <span
-                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
-                            }`}
-                        >
-                          {thread.userId.flair}
+                    </div>
+                    <div className="w-full md:w-2/5 text-left md:text-right text-xs text-slate-500">
+                      {formatDate(getLatestActivity(thread).toString())}
+                      {thread.replies && thread.replies.length > 0 && (
+                        <span className="block text-slate-600 font-medium">
+                          by{" "}
+                          {thread.replies[
+                            thread.replies.length - 1
+                          ].userId?.email?.split("@")[0] || "Unknown"}
+                          {thread.replies[thread.replies.length - 1].userId
+                            ?.flair && (
+                              <span
+                                className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
+                                  ?.flair === "Oga at the Top"
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                                  }`}
+                              >
+                                {
+                                  thread.replies[thread.replies.length - 1].userId
+                                    ?.flair
+                                }
+                              </span>
+                            )}
                         </span>
                       )}
-                    </p>
+                    </div>
                   </div>
-                  <div className="w-1/5 text-center">
-                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
-                      {thread.replies?.length || 0}
-                    </span>
-                  </div>
-                  <div className="w-2/5 text-right text-xs text-gray-500">
-                    {formatDate(getLatestActivity(thread).toString())}
-                    {thread.replies && thread.replies.length > 0 && (
-                      <span className="block text-gray-600 font-medium">
-                        by{" "}
-                        {thread.replies[
-                          thread.replies.length - 1
-                        ].userId?.email?.split("@")[0] || "Unknown"}
-                        {thread.replies[thread.replies.length - 1].userId
-                          ?.flair && (
-                            <span
-                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
-                                ?.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                                }`}
-                            >
-                              {
-                                thread.replies[thread.replies.length - 1].userId
-                                  ?.flair
-                              }
-                            </span>
-                          )}
-                      </span>
-                    )}
-                  </div>
+                  {!isPremium && bannerAd && index > 0 && index % 7 === 0 && (
+                    <div className="border-b border-slate-200 p-4 bg-slate-50">
+                      <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow-md p-6 text-center">
-              <p className="text-gray-600 mb-4 text-lg">
+            <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 text-center">
+              <p className="text-slate-600 mb-4 text-lg">
                 No threads yet—na you go start di party!
               </p>
               {isLoggedIn ? (
@@ -504,54 +511,21 @@ export default function Home() {
           )}
         </div>
 
-        <div className="w-[15%]">
-          <div className="bg-white rounded-lg shadow-md p-4">
-            <h2 className="text-lg font-semibold text-green-800 mb-3">Ads</h2>
-            {!isPremium && (
-              <div>
-                {ads.length > 0 ? (
-                  ads.map((ad) => (
-                    <div
-                      key={ad._id}
-                      className="mb-4"
-                      ref={(el) => {
-                        if (el) {
-                          const observer = new IntersectionObserver(
-                            ([entry]) => {
-                              if (entry.isIntersecting) {
-                                trackImpression(ad._id);
-                                observer.disconnect(); // Track once per load
-                              }
-                            },
-                            { threshold: 0.5 } // 50% visible
-                          );
-                          observer.observe(el);
-                        }
-                      }}
-                    >
-                      <a
-                        href={ad.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline"
-                        onClick={async () => {
-                          try {
-                            await api.post(`/ads/click/${ad._id}`);
-                          } catch (err) {
-                            console.error("Click track failed:", err);
-                          }
-                        }}
-                      >
-                        <strong>{ad.brand}</strong>: {ad.text}
-                      </a>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-600 text-sm">
-                    Ads dey load—abeg wait small!
-                  </p>
-                )}
+        <div className="w-full lg:w-[15%]">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 lg:sticky lg:top-24">
+            {!isPremium && ads.length > 0 ? (
+              <div className="space-y-4">
+                {ads.map((ad) => (
+                  <SponsoredAdCard key={ad._id} ad={ad} onClick={() => trackBannerClick(ad._id)} compact />
+                ))}
               </div>
+            ) : (
+              !isPremium && (
+                <p className="text-slate-500 text-sm">
+                  Ads dey load—abeg wait small!
+                </p>
+              )
+            )}
             )}
           </div>
         </div>

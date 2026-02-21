@@ -4,9 +4,10 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
+    "build": "node -e \"console.log('No backend build step required')\"",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +22,7 @@
     "mongodb": "^6.13.1",
     "mongoose": "^8.10.1",
     "nodemailer": "^6.10.0",
+    "pdfkit": "^0.15.2",
     "uuid": "^11.1.0",
     "axios": "^1.7.9"
   },

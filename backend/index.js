@@ -28,8 +28,13 @@ app.use(
   })
 );
 
-app.use(express.json());
-connectDB(process.env.MONGO_URI);
+app.use(
+  express.json({
+    verify: (req, _res, buf) => {
+      req.rawBody = buf.toString();
+    },
+  })
+);
 app.use("/api/auth", authRoutes);
 app.use("/api/threads", threadRoutes);
 app.use("/api/ads", adsRoutes);
@@ -44,6 +49,11 @@ app.get("/", (req, res) => {
 
 app.use("/api/", dbRoutes); // Welcome route
 
-app.listen(PORT, () => {
-  console.log(`Server dey run for port ${PORT}`);
-});
+const startServer = async () => {
+  await connectDB(process.env.MONGO_URI);
+  app.listen(PORT, () => {
+    console.log(`Server dey run for port ${PORT}`);
+  });
+};
+
+startServer();

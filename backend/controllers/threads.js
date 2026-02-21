@@ -4,6 +4,11 @@ import Reply from "../models/reply.js";
 import Report from "../models/report.js";
 
 const isAdmin = (user) => user.role === "admin";
+const isStaff = (user) => user.role === "admin" || user.role === "mod";
+const canManageSolvedState = (user, thread) =>
+  isAdmin(user) ||
+  user.role === "mod" ||
+  thread.userId?.toString() === user._id.toString();
 
 const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
 
@@ -38,7 +43,9 @@ export const createThread = async (req, res) => {
 
 export const getThreads = async (req, res) => {
   try {
-    const threads = await Thread.find().populate("userId", "email flair");
+    const threads = await Thread.find()
+      .populate("userId", "email flair")
+      .sort({ isSticky: -1, createdAt: -1 });
     // console.log("Threads fetched:", threads); // Log threads
     if (!threads.length) {
       return res.json({ threads: [], message: "No gist yet—drop your own!" });
@@ -63,6 +70,22 @@ export const createReply = async (req, res) => {
     if (!body) return res.status(400).json({ message: "Reply body no dey!" });
     if (containsBannedContent(body))
       return res.status(400).json({ message: "Abeg, no spam gist!" });
+
+    const thread = await Thread.findById(id).select("isLocked");
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+    if (thread.isLocked && !isStaff(req.user)) {
+      return res.status(403).json({ message: "Thread locked—no new replies." });
+    }
+
+    if (parentReplyId) {
+      const parentReply = await Reply.findById(parentReplyId).select("threadId");
+      if (!parentReply) {
+        return res.status(400).json({ message: "Parent reply no dey!" });
+      }
+      if (parentReply.threadId.toString() !== id) {
+        return res.status(400).json({ message: "Parent reply no belong here!" });
+      }
+    }
 
     const reply = new Reply({
       body,
@@ -224,5 +247,153 @@ export const deleteThread = async (req, res) => {
   }
 };
 
-// Add text index (run once in MongoDB shell or setup script)
-Thread.collection.createIndex({ title: "text", body: "text" });
+export const toggleThreadLike = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const userId = req.user._id.toString();
+    const alreadyLiked = thread.likes.some((likeId) => likeId.toString() === userId);
+
+    if (alreadyLiked) {
+      thread.likes = thread.likes.filter((likeId) => likeId.toString() !== userId);
+    } else {
+      thread.likes.push(req.user._id);
+    }
+
+    await thread.save();
+    res.json({
+      message: alreadyLiked ? "Like removed." : "Thread liked.",
+      liked: !alreadyLiked,
+      likesCount: thread.likes.length,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Like scatter: " + err.message });
+  }
+};
+
+export const toggleThreadBookmark = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const userId = req.user._id.toString();
+    const alreadyBookmarked = thread.bookmarks.some(
+      (bookmarkId) => bookmarkId.toString() === userId
+    );
+
+    if (alreadyBookmarked) {
+      thread.bookmarks = thread.bookmarks.filter(
+        (bookmarkId) => bookmarkId.toString() !== userId
+      );
+    } else {
+      thread.bookmarks.push(req.user._id);
+    }
+
+    await thread.save();
+    res.json({
+      message: alreadyBookmarked ? "Bookmark removed." : "Thread bookmarked.",
+      bookmarked: !alreadyBookmarked,
+      bookmarksCount: thread.bookmarks.length,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Bookmark scatter: " + err.message });
+  }
+};
+
+export const toggleThreadSolved = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    if (!canManageSolvedState(req.user, thread)) {
+      return res
+        .status(403)
+        .json({ message: "Only owner/mod/admin fit mark as solved." });
+    }
+
+    if (thread.isSolved) {
+      thread.isSolved = false;
+      thread.solvedBy = null;
+      thread.solvedAt = null;
+    } else {
+      thread.isSolved = true;
+      thread.solvedBy = req.user._id;
+      thread.solvedAt = new Date();
+    }
+
+    await thread.save();
+    res.json({
+      message: thread.isSolved ? "Thread marked solved." : "Solved status removed.",
+      isSolved: thread.isSolved,
+      solvedAt: thread.solvedAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Solved toggle scatter: " + err.message });
+  }
+};
+
+export const toggleThreadSticky = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!isStaff(req.user)) {
+      return res.status(403).json({ message: "Mods/admins only." });
+    }
+
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    if (thread.isSticky) {
+      thread.isSticky = false;
+      thread.stickyBy = null;
+      thread.stickyAt = null;
+    } else {
+      thread.isSticky = true;
+      thread.stickyBy = req.user._id;
+      thread.stickyAt = new Date();
+    }
+
+    await thread.save();
+    res.json({
+      message: thread.isSticky ? "Thread pinned." : "Thread unpinned.",
+      isSticky: thread.isSticky,
+      stickyAt: thread.stickyAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Sticky toggle scatter: " + err.message });
+  }
+};
+
+export const toggleThreadLock = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!isStaff(req.user)) {
+      return res.status(403).json({ message: "Mods/admins only." });
+    }
+
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    if (thread.isLocked) {
+      thread.isLocked = false;
+      thread.lockedBy = null;
+      thread.lockedAt = null;
+    } else {
+      thread.isLocked = true;
+      thread.lockedBy = req.user._id;
+      thread.lockedAt = new Date();
+    }
+
+    await thread.save();
+    res.json({
+      message: thread.isLocked ? "Thread locked." : "Thread unlocked.",
+      isLocked: thread.isLocked,
+      lockedAt: thread.lockedAt,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Lock toggle scatter: " + err.message });
+  }
+};

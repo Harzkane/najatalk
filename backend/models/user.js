@@ -41,11 +41,91 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  premiumStatus: {
+    type: String,
+    enum: ["inactive", "active", "expired", "canceled", "legacy"],
+    default: "inactive",
+    index: true,
+  },
+  premiumPlan: {
+    type: String,
+    enum: ["monthly", null],
+    default: null,
+  },
+  premiumStartedAt: {
+    type: Date,
+    default: null,
+  },
+  premiumExpiresAt: {
+    type: Date,
+    default: null,
+  },
+  nextBillingAt: {
+    type: Date,
+    default: null,
+  },
+  cancelAtPeriodEnd: {
+    type: Boolean,
+    default: false,
+  },
+  premiumCanceledAt: {
+    type: Date,
+    default: null,
+  },
+  premiumLastPaymentRef: {
+    type: String,
+    default: null,
+  },
   flair: {
     type: String,
     enum: ["Verified G", "Oga at the Top", null],
     default: null,
   },
+  username: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    unique: true,
+    sparse: true,
+    minlength: 3,
+    maxlength: 24,
+  },
+  avatarUrl: {
+    type: String,
+    default: null,
+  },
+  bio: {
+    type: String,
+    trim: true,
+    default: "",
+    maxlength: 280,
+  },
+  location: {
+    type: String,
+    trim: true,
+    default: "",
+    maxlength: 80,
+  },
+  defaultDeliveryAddress: {
+    fullName: { type: String, default: "" },
+    phone: { type: String, default: "" },
+    addressLine1: { type: String, default: "" },
+    addressLine2: { type: String, default: "" },
+    city: { type: String, default: "" },
+    state: { type: String, default: "" },
+    postalCode: { type: String, default: "" },
+    deliveryNote: { type: String, default: "" },
+  },
+  profileCompleted: {
+    type: Boolean,
+    default: false,
+  },
+  savedListings: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Listing",
+    },
+  ],
 });
 
 userSchema.pre("save", async function (next) {

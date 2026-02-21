@@ -25,8 +25,61 @@ const threadSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: () =>
-      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }), // WAT
+      new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
+  },
+  likes: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  bookmarks: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+  ],
+  isSolved: {
+    type: Boolean,
+    default: false,
+  },
+  solvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  solvedAt: {
+    type: Date,
+    default: null,
+  },
+  isSticky: {
+    type: Boolean,
+    default: false,
+  },
+  stickyBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  stickyAt: {
+    type: Date,
+    default: null,
+  },
+  isLocked: {
+    type: Boolean,
+    default: false,
+  },
+  lockedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
+  },
+  lockedAt: {
+    type: Date,
+    default: null,
   },
 });
+
+threadSchema.index({ title: "text", body: "text" });
 
 export default mongoose.model("Thread", threadSchema);

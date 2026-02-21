@@ -2,7 +2,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import PopupAdWrapper from "@/components/home/PopupAdWrapper"; // New client component
+import PopupAdWrapper from "../components/home/PopupAdWrapper"; // New client component
+import ProfileCompletionGate from "../components/auth/ProfileCompletionGate";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +36,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <PopupAdWrapper>{children}</PopupAdWrapper>
+        <ProfileCompletionGate>
+          <PopupAdWrapper>{children}</PopupAdWrapper>
+        </ProfileCompletionGate>
       </body>
     </html>
   );
