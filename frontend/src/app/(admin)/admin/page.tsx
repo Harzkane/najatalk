@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import formatDate from "@/utils/formatDate";
@@ -1248,10 +1249,10 @@ export default function AdminDashboard() {
                       <td className="p-3">
                         <span
                           className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${item.severity === "high"
-                              ? "bg-red-100 text-red-700"
-                              : item.severity === "medium"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : "bg-slate-100 text-slate-700"
+                            ? "bg-red-100 text-red-700"
+                            : item.severity === "medium"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-slate-100 text-slate-700"
                             }`}
                         >
                           {item.severity}
