@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import axios from "axios";
-import { useRouter } from "next/navigation"; // Add this
+import api from "@/utils/api";
+import { useRouter } from "next/navigation";
 
 export default function Signup() {
   const [email, setEmail] = useState<string>("");
@@ -14,7 +14,7 @@ export default function Signup() {
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post<{ message: string }>("/api/auth/signup", {
+      const res = await api.post<{ message: string }>("/auth/signup", {
         email,
         password,
       });
@@ -22,8 +22,8 @@ export default function Signup() {
       setEmail(""); // Clear fields
       setPassword("");
       setTimeout(() => router.push("/login"), 1000); // Redirect to login
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Signup scatter o!");
       } else {
         setMessage("Signup scatter o!");

@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/utils/api";
 
 function LoadingComponent() {
   return (
@@ -37,8 +37,8 @@ function PremiumSuccessContent() {
           return;
         }
         console.log("Sending reference to verify:", reference);
-        const res = await axios.post(
-          "/api/premium/verify",
+        const res = await api.post(
+          "/premium/verify",
           { reference }, // Paystack uses "reference"
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -49,8 +49,8 @@ function PremiumSuccessContent() {
           setError("Automatic verification failed. Please retry verification.");
           setIsProcessing(false);
         }
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
+      } catch (err: any) {
+        if (err.isAxiosError) {
           console.error("Verify Error:", err.response?.data || err.message);
         } else {
           console.error("Verify Error:", err);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -105,13 +105,13 @@ export default function ListingDetailPage() {
 
     try {
       const [userRes, savedRes, policyRes] = await Promise.all([
-        axios.get("/api/users/me", {
+        api.get("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("/api/marketplace/favorites", {
+        api.get("/marketplace/favorites", {
           headers: { Authorization: `Bearer ${token}` },
         }),
-        axios.get("/api/marketplace/me/policy", {
+        api.get("/marketplace/me/policy", {
           headers: { Authorization: `Bearer ${token}` },
         }),
       ]);
@@ -132,7 +132,7 @@ export default function ListingDetailPage() {
   const fetchListing = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(`/api/marketplace/listings/${id}`, {
+      const res = await api.get(`/marketplace/listings/${id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
       setListing(res.data.listing);
@@ -148,7 +148,7 @@ export default function ListingDetailPage() {
     if (!token) return;
     try {
       setIsWalletLoading(true);
-      const res = await axios.get("/api/users/me/wallet-ledger", {
+      const res = await api.get("/users/me/wallet-ledger", {
         params: { limit: 12, includePending: true },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -203,16 +203,16 @@ export default function ListingDetailPage() {
     }
     try {
       setIsSubmittingBuyOrder(true);
-      const res = await axios.post(
-        `/api/marketplace/buy/${listing._id}`,
+      const res = await api.post(
+        `/marketplace/buy/${listing._id}`,
         { orderDetails },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (saveDeliveryAsDefault) {
         const normalizedAddress = normalizeDeliveryAddress(orderDetails);
         try {
-          await axios.patch(
-            "/api/users/me/profile",
+          await api.patch(
+            "/users/me/profile",
             { defaultDeliveryAddress: normalizedAddress },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -244,8 +244,8 @@ export default function ListingDetailPage() {
     }
 
     try {
-      const res = await axios.post(
-        `/api/marketplace/favorites/${listing._id}`,
+      const res = await api.post(
+        `/marketplace/favorites/${listing._id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -264,8 +264,8 @@ export default function ListingDetailPage() {
     }
 
     try {
-      const res = await axios.post(
-        `/api/marketplace/release/${listing._id}`,
+      const res = await api.post(
+        `/marketplace/release/${listing._id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -285,8 +285,8 @@ export default function ListingDetailPage() {
     }
 
     try {
-      const res = await axios.post(
-        `/api/marketplace/ship/${listing._id}`,
+      const res = await api.post(
+        `/marketplace/ship/${listing._id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -311,7 +311,7 @@ export default function ListingDetailPage() {
     }
 
     try {
-      const res = await axios.delete(`/api/marketplace/listings/${listing._id}`, {
+      const res = await api.delete(`/marketplace/listings/${listing._id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage(res.data.message);
@@ -343,8 +343,8 @@ export default function ListingDetailPage() {
 
     try {
       setIsWalletActionLoading(true);
-      const res = await axios.post(
-        `/api/marketplace/listings/${listing._id}/boost`,
+      const res = await api.post(
+        `/marketplace/listings/${listing._id}/boost`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -458,9 +458,8 @@ export default function ListingDetailPage() {
                   <button
                     key={`${img}-${idx}`}
                     onClick={() => setSelectedImage(idx)}
-                    className={`overflow-hidden rounded border ${
-                      selectedImage === idx ? "border-green-500" : "border-slate-200"
-                    }`}
+                    className={`overflow-hidden rounded border ${selectedImage === idx ? "border-green-500" : "border-slate-200"
+                      }`}
                   >
                     <img
                       src={getImageSrc(img)}
@@ -475,13 +474,12 @@ export default function ListingDetailPage() {
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-xl font-semibold text-slate-900">{listing.title}</h2>
               <span
-                className={`rounded-full px-2 py-1 text-xs font-semibold ${
-                  listing.status === "active"
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${listing.status === "active"
                     ? "bg-emerald-100 text-emerald-700"
                     : listing.status === "pending"
-                    ? "bg-amber-100 text-amber-700"
-                    : "bg-slate-200 text-slate-700"
-                }`}
+                      ? "bg-amber-100 text-amber-700"
+                      : "bg-slate-200 text-slate-700"
+                  }`}
               >
                 {listing.status[0].toUpperCase() + listing.status.slice(1)}
               </span>
@@ -583,11 +581,10 @@ export default function ListingDetailPage() {
             <div className="mt-4 space-y-2">
               <button
                 onClick={handleToggleFavorite}
-                className={`w-full rounded-md px-3 py-2 text-sm font-medium ${
-                  isSaved
+                className={`w-full rounded-md px-3 py-2 text-sm font-medium ${isSaved
                     ? "bg-slate-800 text-white hover:bg-slate-900"
                     : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {isSaved ? "Saved" : "Save Listing"}
               </button>

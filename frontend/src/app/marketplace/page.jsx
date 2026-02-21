@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import ListingCard from "@/components/marketplace/ListingCard";
@@ -158,7 +158,7 @@ export default function Marketplace() {
 
   const fetchCurrentUser = async (token) => {
     try {
-      const res = await axios.get("/api/users/me", {
+      const res = await api.get("/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(res.data._id);
@@ -182,7 +182,7 @@ export default function Marketplace() {
   const fetchListings = async () => {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const res = await axios.get("/api/marketplace/listings", {
+      const res = await api.get("/marketplace/listings", {
         params: { includeSold: true },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       });
@@ -195,7 +195,7 @@ export default function Marketplace() {
 
   const fetchFavorites = async (token) => {
     try {
-      const res = await axios.get("/api/marketplace/favorites", {
+      const res = await api.get("/marketplace/favorites", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setSavedListingIds((res.data.savedListingIds || []).map((id) => id.toString()));
@@ -207,7 +207,7 @@ export default function Marketplace() {
 
   const fetchMarketplacePolicy = async (token) => {
     try {
-      const res = await axios.get("/api/marketplace/me/policy", {
+      const res = await api.get("/marketplace/me/policy", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMarketplacePolicy(res.data || null);
@@ -220,7 +220,7 @@ export default function Marketplace() {
   const fetchWalletData = async (token) => {
     try {
       setIsWalletLoading(true);
-      const res = await axios.get("/api/users/me/wallet-ledger", {
+      const res = await api.get("/users/me/wallet-ledger", {
         params: { limit: 12, includePending: true },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -247,7 +247,7 @@ export default function Marketplace() {
 
   const fetchCategories = async () => {
     try {
-      const res = await axios.get("/api/marketplace/categories");
+      const res = await api.get("/marketplace/categories");
       setCategories(res.data.categories || []);
     } catch (err) {
       showMessage(err.response?.data?.message || "Categories load scatter o!", "error");
@@ -359,12 +359,12 @@ export default function Marketplace() {
   ).length;
   const listingUsagePercent = marketplacePolicy?.activeListingLimit
     ? Math.min(
-        100,
-        Math.round(
-          ((marketplacePolicy.activeListingCount || 0) / marketplacePolicy.activeListingLimit) *
-            100
-        )
+      100,
+      Math.round(
+        ((marketplacePolicy.activeListingCount || 0) / marketplacePolicy.activeListingLimit) *
+        100
       )
+    )
     : 0;
 
   const handleImageUpload = async (event) => {
@@ -423,7 +423,7 @@ export default function Marketplace() {
         : "/api/marketplace/listings";
       const method = editId ? "put" : "post";
 
-      const res = await axios({
+      const res = await api({
         method,
         url,
         data: { title, description, price: Number(price), category, imageUrls },
@@ -463,8 +463,8 @@ export default function Marketplace() {
     }
 
     try {
-      const res = await axios.post(
-        `/api/marketplace/favorites/${listingId}`,
+      const res = await api.post(
+        `/marketplace/favorites/${listingId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -514,7 +514,7 @@ export default function Marketplace() {
     }
 
     try {
-      const res = await axios.delete(`/api/marketplace/listings/${id}`, {
+      const res = await api.delete(`/marketplace/listings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       showMessage(res.data.message, "success");
@@ -556,16 +556,16 @@ export default function Marketplace() {
 
     try {
       setIsSubmittingBuyOrder(true);
-      const res = await axios.post(
-        `/api/marketplace/buy/${pendingBuyListingId}`,
+      const res = await api.post(
+        `/marketplace/buy/${pendingBuyListingId}`,
         { orderDetails },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (saveDeliveryAsDefault) {
         const normalizedAddress = normalizeDeliveryAddress(orderDetails);
         try {
-          await axios.patch(
-            "/api/users/me/profile",
+          await api.patch(
+            "/users/me/profile",
             { defaultDeliveryAddress: normalizedAddress },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -596,8 +596,8 @@ export default function Marketplace() {
       return;
     }
     try {
-      const res = await axios.post(
-        `/api/marketplace/ship/${id}`,
+      const res = await api.post(
+        `/marketplace/ship/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -617,8 +617,8 @@ export default function Marketplace() {
     }
 
     try {
-      const res = await axios.post(
-        `/api/marketplace/release/${id}`,
+      const res = await api.post(
+        `/marketplace/release/${id}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -657,8 +657,8 @@ export default function Marketplace() {
           showMessage("Select a listing to boost first.", "warning");
           return;
         }
-        const res = await axios.post(
-          `/api/marketplace/listings/${selectedBoostListingId}/boost`,
+        const res = await api.post(
+          `/marketplace/listings/${selectedBoostListingId}/boost`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -667,7 +667,7 @@ export default function Marketplace() {
         setShowBoostSuccessModal(true);
         setTimeout(() => setShowBoostSuccessModal(false), 1200);
       } else {
-        const res = await axios.post(
+        const res = await api.post(
           "/api/premium/subscribe-with-wallet",
           {},
           { headers: { Authorization: `Bearer ${token}` } }
@@ -736,10 +736,10 @@ export default function Marketplace() {
     messageTone === "error"
       ? "border-red-200 bg-red-50 text-red-700"
       : messageTone === "warning"
-      ? "border-amber-200 bg-amber-50 text-amber-800"
-      : messageTone === "success"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-      : "border-slate-200 bg-white text-slate-600";
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : messageTone === "success"
+          ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+          : "border-slate-200 bg-white text-slate-600";
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
@@ -814,19 +814,18 @@ export default function Marketplace() {
                     sellerPendingOrdersCount > 0
                       ? `${sellerPendingOrdersCount} waiting buyer confirmation`
                       : buyerPendingOrdersCount > 0
-                      ? `${buyerPendingOrdersCount} awaiting your delivery confirmation`
-                      : "Pending confirmations",
+                        ? `${buyerPendingOrdersCount} awaiting your delivery confirmation`
+                        : "Pending confirmations",
                 },
                 { key: "saved", label: "Saved", value: savedListingIds.length, sub: "Favorite items" },
               ].map((item) => (
                 <button
                   key={item.key}
                   onClick={() => setActiveView(item.key)}
-                  className={`rounded-lg border p-3 text-left ${
-                    activeView === item.key
+                  className={`rounded-lg border p-3 text-left ${activeView === item.key
                       ? "border-green-300 bg-green-50"
                       : "border-slate-200 bg-white"
-                  }`}
+                    }`}
                 >
                   <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
                   <p className="text-lg font-semibold text-slate-900">{item.value}</p>

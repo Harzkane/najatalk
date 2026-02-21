@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -40,8 +40,8 @@ function AppealContent() {
     const checkAppealStatus = async () => {
       if (email && password) {
         try {
-          const res = await axios.post<{ message: string }>(
-            "/api/users/appeal",
+          const res = await api.post<{ message: string }>(
+            "/users/appeal",
             { email, password, reason: "" }
           );
           setMessage(res.data.message);
@@ -53,8 +53,8 @@ function AppealContent() {
           } else if (res.data.message.includes("rejected")) {
             setAppealStatus("rejected");
           }
-        } catch (err: unknown) {
-          if (axios.isAxiosError(err)) {
+        } catch (err: any) {
+          if (err.isAxiosError) {
             setMessage(
               err.response?.data?.message || "Appeal check scatter o!"
             );
@@ -74,7 +74,7 @@ function AppealContent() {
     if (appealStatus === "pending") return;
     setIsSubmitting(true);
     try {
-      const res = await axios.post<{ message: string }>("/api/users/appeal", {
+      const res = await api.post<{ message: string }>("/users/appeal", {
         email,
         password,
         reason,
@@ -90,8 +90,8 @@ function AppealContent() {
         setReason("");
         setTimeout(() => router.push("/login"), 2000); // Redirect if already approved
       }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Appeal scatter o!");
         if (err.response?.data?.message.includes("approved")) {
           setAppealStatus("approved");

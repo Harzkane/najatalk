@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 
 export default function Login() {
@@ -16,11 +16,11 @@ export default function Login() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const res = await axios.post<{
+      const res = await api.post<{
         token: string;
         userId: string;
         message: string;
-      }>("/api/auth/login", { email, password });
+      }>("/auth/login", { email, password });
       setMessage(res.data.message);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("userId", res.data.userId); // Store userId
@@ -29,7 +29,7 @@ export default function Login() {
       setPassword("");
       let destination = "/marketplace";
       try {
-        const completenessRes = await axios.get("/api/users/me/profile-completeness", {
+        const completenessRes = await api.get("/users/me/profile-completeness", {
           headers: { Authorization: `Bearer ${res.data.token}` },
         });
         destination = completenessRes.data?.profileCompleted
@@ -39,8 +39,8 @@ export default function Login() {
         destination = "/marketplace";
       }
       setTimeout(() => router.push(destination), 800);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         const errorMsg = err.response?.data?.message || "Login wahala o!";
         setMessage(errorMsg);
         if (err.response?.status === 403 && errorMsg.includes("banned")) {

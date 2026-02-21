@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import api from "../utils/api";
 import Link from "next/link";
 import SearchBar from "../components/threads/SearchBar";
 import NewThreadButton from "../components/threads/NewThreadButton";
@@ -72,7 +72,7 @@ export default function Home() {
       const token = localStorage.getItem("token");
       if (token) {
         try {
-          const res = await axios.get("/api/users/me", {
+          const res = await api.get("/users/me", {
             headers: { Authorization: `Bearer ${token}` },
           });
           setIsPremium(res.data.isPremium);
@@ -100,7 +100,7 @@ export default function Home() {
 
   const fetchBannerAd = async () => {
     try {
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         params: { status: "active", type: "banner" },
       });
       const activeBanners = res.data.ads.filter((ad) => ad.budget >= ad.cpc);
@@ -108,7 +108,7 @@ export default function Home() {
         const randomIndex = Math.floor(Math.random() * activeBanners.length);
         const selectedBanner = activeBanners[randomIndex];
         setBannerAd(selectedBanner);
-        await axios.get(`/api/ads/impression/${selectedBanner._id}`);
+        await api.get(`/ads/impression/${selectedBanner._id}`);
       } else {
         setBannerAd(null);
       }
@@ -120,7 +120,7 @@ export default function Home() {
 
   const fetchSidebarAds = async () => {
     try {
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         params: { status: "active", type: "sidebar" },
       });
       const activeSidebars = res.data.ads.filter((ad) => ad.budget >= ad.cpc);
@@ -133,7 +133,7 @@ export default function Home() {
         setSidebarAds(selectedSidebars);
         await Promise.all(
           selectedSidebars.map((ad) =>
-            axios.get(`/api/ads/impression/${ad._id}`)
+            api.get(`/ads/impression/${ad._id}`)
           )
         );
       } else {
@@ -147,7 +147,7 @@ export default function Home() {
 
   const trackClick = async (adId: string) => {
     try {
-      await axios.post(`/api/ads/click/${adId}`);
+      await api.post(`/ads/click/${adId}`);
     } catch (err) {
       console.error("Click track error:", err);
     }
@@ -171,12 +171,12 @@ export default function Home() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get("/api/threads");
+      const res = await api.get("/threads");
       const threads = res.data.threads || [];
       const threadsWithReplies = await Promise.all(
         threads.map(async (thread: Thread) => {
           try {
-            const replyRes = await axios.get(`/api/threads/${thread._id}`);
+            const replyRes = await api.get(`/threads/${thread._id}`);
             return replyRes.data;
           } catch (err) {
             console.error(`Failed to fetch thread ${thread._id}:`, err);
@@ -187,8 +187,8 @@ export default function Home() {
       setAllThreads(threadsWithReplies);
       setThreads(threadsWithReplies);
       setMessage(res.data.message || "");
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
       } else {
         setMessage("No gist yet—drop your own!");
@@ -200,14 +200,14 @@ export default function Home() {
     setSearchQuery(query);
     setSelectedCategory(null);
     try {
-      const res = await axios.get<SearchResponse>(
-        `/api/threads/search?q=${query}`
+      const res = await api.get<SearchResponse>(
+        `/threads/search?q=${query}`
       );
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
-            const replyRes = await axios.get<Thread>(
-              `/api/threads/${thread._id}`
+            const replyRes = await api.get<Thread>(
+              `/threads/${thread._id}`
             );
             return replyRes.data;
           } catch (err: unknown) {
@@ -227,8 +227,8 @@ export default function Home() {
         setRecentSearches(updatedSearches);
         localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
       }
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Search scatter o!");
       } else {
         setMessage("No gist match—try another search!");
@@ -249,15 +249,15 @@ export default function Home() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; thread: Thread }>(
-        "/api/threads",
+      const res = await api.post<{ message: string; thread: Thread }>(
+        "/threads",
         { title, body, category },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       await fetchThreads();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
         setMessage(errorMsg);
         if (err.response?.status === 401) {
@@ -339,10 +339,9 @@ export default function Home() {
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
-                    !selectedCategory
-                      ? "bg-green-50 text-green-800 font-semibold border border-green-200"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
+                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${!selectedCategory
+                    ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                     }`}
                 >
                   All Categories
@@ -352,10 +351,9 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
-                      selectedCategory === cat
-                        ? "bg-green-50 text-green-800 font-semibold border border-green-200"
-                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
+                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${selectedCategory === cat
+                      ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                       }`}
                   >
                     {cat}
@@ -395,61 +393,61 @@ export default function Home() {
               {threads.map((thread, index) => (
                 <div key={thread._id}>
                   <div className="p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-3 md:gap-0 md:justify-between md:items-center">
-                  <div className="w-full md:w-2/5">
-                    <Link
-                      href={`/threads/${thread._id}`}
-                      className="text-slate-900 font-semibold hover:text-green-800"
-                    >
-                      {thread.title}
-                    </Link>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Started by{" "}
-                      <span className="font-medium">
-                        {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
+                    <div className="w-full md:w-2/5">
+                      <Link
+                        href={`/threads/${thread._id}`}
+                        className="text-slate-900 font-semibold hover:text-green-800"
+                      >
+                        {thread.title}
+                      </Link>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Started by{" "}
+                        <span className="font-medium">
+                          {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
+                        </span>
+                        {thread.userId?.flair && (
+                          <span
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
+                              }`}
+                          >
+                            {thread.userId.flair}
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="w-full md:w-1/5 text-left md:text-center">
+                      <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+                        {thread.replies?.length || 0}
                       </span>
-                      {thread.userId?.flair && (
-                        <span
-                          className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
-                            ? "bg-yellow-500"
-                            : "bg-green-500"
-                            }`}
-                        >
-                          {thread.userId.flair}
+                    </div>
+                    <div className="w-full md:w-2/5 text-left md:text-right text-xs text-slate-500">
+                      {formatDate(getLatestActivity(thread).toString())}
+                      {thread.replies && thread.replies.length > 0 && (
+                        <span className="block text-slate-600 font-medium">
+                          by{" "}
+                          {thread.replies[
+                            thread.replies.length - 1
+                          ].userId?.email?.split("@")[0] || "Unknown"}
+                          {thread.replies[thread.replies.length - 1].userId
+                            ?.flair && (
+                              <span
+                                className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
+                                  ?.flair === "Oga at the Top"
+                                  ? "bg-yellow-500"
+                                  : "bg-green-500"
+                                  }`}
+                              >
+                                {
+                                  thread.replies[thread.replies.length - 1].userId
+                                    ?.flair
+                                }
+                              </span>
+                            )}
                         </span>
                       )}
-                    </p>
-                  </div>
-                  <div className="w-full md:w-1/5 text-left md:text-center">
-                    <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
-                      {thread.replies?.length || 0}
-                    </span>
-                  </div>
-                  <div className="w-full md:w-2/5 text-left md:text-right text-xs text-slate-500">
-                    {formatDate(getLatestActivity(thread).toString())}
-                    {thread.replies && thread.replies.length > 0 && (
-                      <span className="block text-slate-600 font-medium">
-                        by{" "}
-                        {thread.replies[
-                          thread.replies.length - 1
-                        ].userId?.email?.split("@")[0] || "Unknown"}
-                        {thread.replies[thread.replies.length - 1].userId
-                          ?.flair && (
-                            <span
-                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
-                                ?.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                                }`}
-                            >
-                              {
-                                thread.replies[thread.replies.length - 1].userId
-                                  ?.flair
-                              }
-                            </span>
-                          )}
-                      </span>
-                    )}
-                  </div>
+                    </div>
                   </div>
                   {!isPremium && bannerAd && index > 0 && index % 7 === 0 && (
                     <div className="border-b border-slate-200 p-4 bg-slate-50">

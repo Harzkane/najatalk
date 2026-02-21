@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
-import axios from "axios";
+import api from "../../../../utils/api";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import ThreadCard from "../../../../components/threads/ThreadCard";
@@ -47,10 +47,10 @@ function ThreadDetailContent() {
 
   const fetchThread = useCallback(async () => {
     try {
-      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      const res = await api.get<Thread>(`/threads/${id}`);
       setThread(res.data);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Thread no dey!");
       } else {
         setMessage("Thread fetch scatter o!");
@@ -72,7 +72,7 @@ function ThreadDetailContent() {
 
     const loadUser = async () => {
       try {
-        const userRes = await axios.get("/api/users/me", {
+        const userRes = await api.get("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUserId(userRes.data._id || null);

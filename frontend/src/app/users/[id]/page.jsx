@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import ListingCard from "@/components/marketplace/ListingCard";
@@ -42,7 +42,7 @@ export default function UserProfile() {
   const fetchProfile = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`/api/users/${id}`);
+      const res = await api.get(`/users/${id}`);
       setUser(res.data.user);
       setSellerStats(res.data.sellerStats || null);
       setListings(res.data.listings || []);
@@ -187,7 +187,7 @@ export default function UserProfile() {
                 <p className="text-xs uppercase tracking-wide text-slate-500">Avg Response</p>
                 <p className="text-lg font-semibold text-slate-900">
                   {sellerStats?.avgResponseHours !== null &&
-                  sellerStats?.avgResponseHours !== undefined
+                    sellerStats?.avgResponseHours !== undefined
                     ? `${sellerStats.avgResponseHours}h`
                     : "--"}
                 </p>
@@ -216,11 +216,10 @@ export default function UserProfile() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`rounded-md border px-3 py-1.5 text-sm ${
-                  isActive
+                className={`rounded-md border px-3 py-1.5 text-sm ${isActive
                     ? "border-emerald-300 bg-emerald-50 text-emerald-700"
                     : "border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-                }`}
+                  }`}
               >
                 {label}
               </button>

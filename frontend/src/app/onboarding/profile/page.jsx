@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 
 export default function ProfileOnboardingPage() {
@@ -34,7 +34,7 @@ export default function ProfileOnboardingPage() {
 
     const load = async () => {
       try {
-        const res = await axios.get("/api/users/me/profile-completeness", {
+        const res = await api.get("/users/me/profile-completeness", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -60,7 +60,7 @@ export default function ProfileOnboardingPage() {
         setMissingFields(res.data?.missingFields || []);
         setProfileCompleteness(res.data?.profileCompleteness || 0);
       } catch (err) {
-        if (axios.isAxiosError(err)) {
+        if (err.isAxiosError) {
           setMessage(err.response?.data?.message || "Profile load scatter o!");
           if (err.response?.status === 401) {
             localStorage.removeItem("token");
@@ -99,8 +99,8 @@ export default function ProfileOnboardingPage() {
     setMessage("");
 
     try {
-      const res = await axios.patch(
-        "/api/users/me/profile",
+      const res = await api.patch(
+        "/users/me/profile",
         {
           username: username.trim().toLowerCase(),
           avatarUrl: avatarUrl.trim(),
@@ -128,7 +128,7 @@ export default function ProfileOnboardingPage() {
         router.replace("/marketplace");
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Profile update scatter o!");
       } else {
         setMessage("Profile update scatter o!");

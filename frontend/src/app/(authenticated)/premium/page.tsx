@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import axios from "axios";
+import api from "@/utils/api";
 import Link from "next/link";
 import Header from "../../../components/Header";
 
@@ -167,10 +167,10 @@ function PremiumPageContent() {
   const fetchUserAds = async () => {
     try {
       const token = localStorage.getItem("token");
-      const userRes = await axios.get<UserResponse>("/api/users/me", {
+      const userRes = await api.get<UserResponse>("/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      const adsRes = await axios.get<AdsResponse>("/api/ads", {
+      const adsRes = await api.get<AdsResponse>("/ads", {
         headers: { Authorization: `Bearer ${token}` },
         params: { userId: userRes.data._id },
       });
@@ -185,7 +185,7 @@ function PremiumPageContent() {
   const fetchBillingHistory = useCallback(async (status: string, page = 1) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<PremiumBillingResponse>("/api/premium/my-payments", {
+      const res = await api.get<PremiumBillingResponse>("/premium/my-payments", {
         headers: { Authorization: `Bearer ${token}` },
         params: { status, page, limit: 10 },
       });
@@ -222,17 +222,17 @@ function PremiumPageContent() {
         if (!token) throw new Error("No token—abeg login!");
 
         // Fetch user data first
-        const userRes = await axios.get<UserResponse>("/api/users/me", {
+        const userRes = await api.get<UserResponse>("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
         // Then fetch everything else with userId
         const [walletLedgerRes, adsRes] = await Promise.all([
-          axios.get<WalletLedgerResponse>("/api/users/me/wallet-ledger", {
+          api.get<WalletLedgerResponse>("/users/me/wallet-ledger", {
             headers: { Authorization: `Bearer ${token}` },
             params: { includePending: false, limit: 100 },
           }),
-          axios.get<AdsResponse>("/api/ads", {
+          api.get<AdsResponse>("/ads", {
             headers: { Authorization: `Bearer ${token}` },
             params: { userId: userRes.data._id },
           }),
@@ -285,16 +285,16 @@ function PremiumPageContent() {
     setIsLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ paymentLink: string }>(
-        "/api/premium/initiate",
+      const res = await api.post<{ paymentLink: string }>(
+        "/premium/initiate",
         {},
         {
           headers: { Authorization: `Bearer ${token}` },
         }
       );
       window.location.href = res.data.paymentLink;
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Payment scatter o!");
       } else {
         setMessage("Payment scatter o!");
@@ -306,8 +306,8 @@ function PremiumPageContent() {
   const verifyPayment = async (reference: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get(
-        `/api/premium/verify?reference=${reference}`,
+      const res = await api.get(
+        `/premium/verify?reference=${reference}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -319,8 +319,8 @@ function PremiumPageContent() {
         setFlair(res.data.user?.flair || null);
         setMessage("Premium activated—enjoy the VIP vibes!");
       }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Verification scatter o!");
       } else {
         setMessage("Verification scatter o!");
@@ -336,8 +336,8 @@ function PremiumPageContent() {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string }>(
-        "/api/users/flair",
+      const res = await api.post<{ message: string }>(
+        "/users/flair",
         { flair: normalized },
         {
           headers: { Authorization: `Bearer ${token}` },
@@ -345,8 +345,8 @@ function PremiumPageContent() {
       );
       setMessage(res.data.message);
       setFlair(normalized);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Flair update scatter o!");
       } else {
         setMessage("Flair update scatter o!");
@@ -377,8 +377,8 @@ function PremiumPageContent() {
         budget: budgetInKobo,
         cpc: cpcInKobo,
       });
-      const res = await axios.post<{ message: string; ad: Ad }>(
-        "/api/ads",
+      const res = await api.post<{ message: string; ad: Ad }>(
+        "/ads",
         {
           brand: adBrand,
           text: adText,
@@ -400,8 +400,8 @@ function PremiumPageContent() {
       setIsAdModalOpen(false);
       setWalletBalance(walletBalance - budgetInKobo);
       fetchUserAds();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         console.error("Ad creation error:", err.response?.data);
         setMessage(err.response?.data?.message || "Ad creation scatter o!");
       } else {
@@ -423,8 +423,8 @@ function PremiumPageContent() {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; ad: Ad }>(
-        "/api/ads",
+      const res = await api.post<{ message: string; ad: Ad }>(
+        "/ads",
         {
           brand: ad.brand,
           text: ad.text,
@@ -439,8 +439,8 @@ function PremiumPageContent() {
       setMessage("Ad duplicated—pending approval!");
       setWalletBalance(walletBalance - budgetInKobo);
       fetchUserAds();
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Duplication scatter o!");
       } else {
         setMessage("Duplication scatter o!");
@@ -604,31 +604,28 @@ function PremiumPageContent() {
           <div className="mb-4 flex flex-wrap gap-2">
             <button
               onClick={() => setActiveTab("subscription")}
-              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                activeTab === "subscription"
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "subscription"
                   ? "bg-green-700 text-white"
                   : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-              }`}
+                }`}
             >
               Subscription
             </button>
             <button
               onClick={() => setActiveTab("benefits")}
-              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                activeTab === "benefits"
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "benefits"
                   ? "bg-green-700 text-white"
                   : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-              }`}
+                }`}
             >
               Benefits
             </button>
             <button
               onClick={() => setActiveTab("billing")}
-              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
-                activeTab === "billing"
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${activeTab === "billing"
                   ? "bg-green-700 text-white"
                   : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-              }`}
+                }`}
             >
               Billing History
             </button>
@@ -746,13 +743,12 @@ function PremiumPageContent() {
                                 <td className="p-2 text-center">{ad.impressions}</td>
                                 <td className="p-2 text-center">
                                   <span
-                                    className={`inline-block px-2 py-1 rounded text-xs ${
-                                      ad.status === "active"
+                                    className={`inline-block px-2 py-1 rounded text-xs ${ad.status === "active"
                                         ? "bg-green-500 text-white"
                                         : ad.status === "pending"
-                                        ? "bg-yellow-500 text-white"
-                                        : "bg-red-500 text-white"
-                                    }`}
+                                          ? "bg-yellow-500 text-white"
+                                          : "bg-red-500 text-white"
+                                      }`}
                                   >
                                     {ad.status}
                                   </span>
@@ -803,11 +799,10 @@ function PremiumPageContent() {
                                 <tr key={`${event.direction}-${event.date}-${idx}`} className="border-t border-slate-200">
                                   <td className="p-2">
                                     <span
-                                      className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${
-                                        event.direction === "received"
+                                      className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${event.direction === "received"
                                           ? "bg-emerald-100 text-emerald-700"
                                           : "bg-slate-100 text-slate-700"
-                                      }`}
+                                        }`}
                                     >
                                       {event.direction === "received" ? "Received" : "Sent"}
                                     </span>

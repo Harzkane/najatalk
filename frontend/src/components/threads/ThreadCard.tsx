@@ -4,7 +4,7 @@
 import { FC, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/utils/api";
 
 type Reply = {
   _id: string;
@@ -93,8 +93,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const displayTitle = isReply
     ? `Re: ${originalTitle}`
     : isThread(thread)
-    ? thread.title
-    : "Reply";
+      ? thread.title
+      : "Reply";
   const threadReplies = isThread(thread) ? thread.replies || [] : allThreadReplies;
   const nestedReplies = threadReplies.filter((reply) =>
     isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId
@@ -111,18 +111,18 @@ const ThreadCard: FC<ThreadCardProps> = ({
     : threadLocked;
   const canToggleSolved = Boolean(
     isThread(thread) &&
-      currentUserId &&
-      (thread.userId?._id === currentUserId ||
-        currentUserRole === "mod" ||
-        currentUserRole === "admin")
+    currentUserId &&
+    (thread.userId?._id === currentUserId ||
+      currentUserRole === "mod" ||
+      currentUserRole === "admin")
   );
   const canModerateThread = Boolean(
     !isReply && (currentUserRole === "mod" || currentUserRole === "admin")
   );
   const canReplyToThread = Boolean(
     !isCurrentThreadLocked ||
-      currentUserRole === "mod" ||
-      currentUserRole === "admin"
+    currentUserRole === "mod" ||
+    currentUserRole === "admin"
   );
 
   const handleReplyClick = () => {
@@ -180,11 +180,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
       console.log(
         "Posting reply:",
-        `/api/threads/${targetId}/replies`,
+        `/threads/${targetId}/replies`,
         payload
       );
 
-      await axios.post(`/api/threads/${targetId}/replies`, payload, {
+      await api.post(`/threads/${targetId}/replies`, payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setReplyText("");
@@ -203,16 +203,15 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const token = localStorage.getItem("token");
       if (!token) return;
       try {
-        const tipPromise = axios.get<{ hasTipped: boolean }>(
-          `/api/users/hasTipped?${isReply ? "replyId" : "threadId"}=${
-            thread._id
+        const tipPromise = api.get<{ hasTipped: boolean }>(
+          `/users/hasTipped?${isReply ? "replyId" : "threadId"}=${thread._id
           }`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
         if (!isReply) {
-          const reportRes = await axios.get<{ hasReported: boolean; message: string }>(
-            `/api/threads/${thread._id}/hasReported`,
+          const reportRes = await api.get<{ hasReported: boolean; message: string }>(
+            `/threads/${thread._id}/hasReported`,
             { headers: { Authorization: `Bearer ${token}` } }
           );
           setIsReported(reportRes.data.hasReported);
@@ -260,8 +259,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsLikeLoading(true);
     try {
-      const res = await axios.post<{ liked: boolean; likesCount: number }>(
-        `/api/threads/${thread._id}/like`,
+      const res = await api.post<{ liked: boolean; likesCount: number }>(
+        `/threads/${thread._id}/like`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -288,8 +287,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsStickyLoading(true);
     try {
-      const res = await axios.post<{ isSticky: boolean }>(
-        `/api/threads/${thread._id}/sticky`,
+      const res = await api.post<{ isSticky: boolean }>(
+        `/threads/${thread._id}/sticky`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -315,8 +314,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsLockLoading(true);
     try {
-      const res = await axios.post<{ isLocked: boolean }>(
-        `/api/threads/${thread._id}/lock`,
+      const res = await api.post<{ isLocked: boolean }>(
+        `/threads/${thread._id}/lock`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -340,8 +339,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsBookmarkLoading(true);
     try {
-      const res = await axios.post<{ bookmarked: boolean; bookmarksCount: number }>(
-        `/api/threads/${thread._id}/bookmark`,
+      const res = await api.post<{ bookmarked: boolean; bookmarksCount: number }>(
+        `/threads/${thread._id}/bookmark`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -366,8 +365,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsSolvedLoading(true);
     try {
-      const res = await axios.post<{ isSolved: boolean }>(
-        `/api/threads/${thread._id}/solved`,
+      const res = await api.post<{ isSolved: boolean }>(
+        `/threads/${thread._id}/solved`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -401,8 +400,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post(
-        `/api/threads/${thread._id}/report`,
+      await api.post(
+        `/threads/${thread._id}/report`,
         { reason: reportReason },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -431,14 +430,14 @@ const ThreadCard: FC<ThreadCardProps> = ({
         amount: tipAmount,
         [isReply ? "replyId" : "threadId"]: thread._id, // Pass threadId or replyId
       };
-      const res = await axios.post("/api/users/tip", payload, {
+      const res = await api.post("/users/tip", payload, {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("Tip Response:", res.data);
       window.location.href = res.data.paymentLink;
-    } catch (err) {
+    } catch (err: any) {
       console.error("Tip Error:", err);
-      if (axios.isAxiosError(err) && err.response?.data?.message) {
+      if (err.isAxiosError && err.response?.data?.message) {
         setReplyError(err.response.data.message); // Show "You no fit tip yourself, bros!"
       } else {
         setReplyError("Tip scatter o!");
@@ -449,9 +448,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${
-        depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
-      }`}
+      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
+        }`}
     >
       <div className="p-3 bg-gray-200 pb-2">
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
@@ -460,9 +458,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
             onClick={(e) => {
               if (!titleHref) e.preventDefault();
             }}
-            className={`${
-              isReply ? "text-blue-900" : "text-green-800"
-            } font-bold text-base hover:underline`}
+            className={`${isReply ? "text-blue-900" : "text-green-800"
+              } font-bold text-base hover:underline`}
           >
             {displayTitle}
           </Link>
@@ -489,11 +486,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
               </span>
               {thread.userId?.flair && (
                 <span
-                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                    thread.userId.flair === "Oga at the Top"
+                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
                       ? "bg-yellow-500"
                       : "bg-green-500"
-                  }`}
+                    }`}
                 >
                   {thread.userId.flair}
                 </span>
@@ -526,9 +522,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
         <div className="mt-2 pt-1 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
           <button
             onClick={handleReplyClick}
-            className={`flex items-center gap-1 text-xs ${
-              canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
-            }`}
+            className={`flex items-center gap-1 text-xs ${canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
+              }`}
             disabled={!canReplyToThread}
           >
             <span
@@ -542,9 +537,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${
-                isSticky ? "text-amber-600" : "hover:text-amber-600"
-              }`}
+              className={`flex items-center gap-1 text-xs ${isSticky ? "text-amber-600" : "hover:text-amber-600"
+                }`}
               onClick={handleStickyToggle}
               disabled={isStickyLoading}
             >
@@ -560,9 +554,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${
-                isLocked ? "text-slate-600" : "hover:text-slate-700"
-              }`}
+              className={`flex items-center gap-1 text-xs ${isLocked ? "text-slate-600" : "hover:text-slate-700"
+                }`}
               onClick={handleLockToggle}
               disabled={isLockLoading}
             >
@@ -578,13 +571,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           <button
             onClick={handleReport}
-            className={`flex items-center gap-1 text-xs ${
-              isReply
+            className={`flex items-center gap-1 text-xs ${isReply
                 ? "text-gray-300 cursor-not-allowed"
                 : isReported
-                ? "text-gray-400"
-                : "hover:text-red-600"
-            }`}
+                  ? "text-gray-400"
+                  : "hover:text-red-600"
+              }`}
             disabled={isReported || isReply}
             title={isReply ? "Reply reporting not enabled yet" : "Report"}
           >
@@ -600,9 +592,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           <button
-            className={`flex items-center gap-1 text-xs ${
-              isLiked ? "text-green-600" : "hover:text-green-600"
-            }`}
+            className={`flex items-center gap-1 text-xs ${isLiked ? "text-green-600" : "hover:text-green-600"
+              }`}
             onClick={handleLikeToggle}
             disabled={isReply || isLikeLoading}
           >
@@ -617,9 +608,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {!isReply && (
             <button
-              className={`flex items-center gap-1 text-xs ${
-                isBookmarked ? "text-blue-600" : "hover:text-blue-600"
-              }`}
+              className={`flex items-center gap-1 text-xs ${isBookmarked ? "text-blue-600" : "hover:text-blue-600"
+                }`}
               onClick={handleBookmarkToggle}
               disabled={isBookmarkLoading}
             >
@@ -637,9 +627,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {!isReply && canToggleSolved && (
             <button
-              className={`flex items-center gap-1 text-xs ${
-                isSolved ? "text-emerald-600" : "hover:text-emerald-600"
-              }`}
+              className={`flex items-center gap-1 text-xs ${isSolved ? "text-emerald-600" : "hover:text-emerald-600"
+                }`}
               onClick={handleSolvedToggle}
               disabled={isSolvedLoading}
             >
@@ -654,9 +643,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
           )}
 
           <button
-            className={`flex items-center gap-1 text-xs ${
-              hasTipped ? "text-gray-400" : "hover:text-yellow-600"
-            }`}
+            className={`flex items-center gap-1 text-xs ${hasTipped ? "text-gray-400" : "hover:text-yellow-600"
+              }`}
             onClick={() => !hasTipped && setShowTipModal(true)}
             disabled={hasTipped}
           >
@@ -792,11 +780,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
                   <button
                     key={amt}
                     onClick={() => setTipAmount(amt)}
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      tipAmount === amt
+                    className={`px-3 py-1 rounded-md text-sm ${tipAmount === amt
                         ? "bg-green-600 text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                    }`}
+                      }`}
                   >
                     ₦{amt}
                   </button>

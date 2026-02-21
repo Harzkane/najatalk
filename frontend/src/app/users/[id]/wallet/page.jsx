@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/utils/api";
 import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import WalletBalanceCards from "../../../../components/wallet/WalletBalanceCards";
@@ -49,7 +49,7 @@ export default function SellerWallet() {
       setIsSelf(selfView);
 
       if (selfView) {
-        const res = await axios.get("/api/users/me/wallet-ledger", {
+        const res = await api.get("/users/me/wallet-ledger", {
           headers: { Authorization: `Bearer ${token}` },
           params: { includePending: true, limit: 100 },
         });
@@ -65,7 +65,7 @@ export default function SellerWallet() {
         return;
       }
 
-      const res = await axios.get(`/api/users/${id}/wallet`, {
+      const res = await api.get(`/users/${id}/wallet`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBalance(res.data.balance / 100);
@@ -93,8 +93,8 @@ export default function SellerWallet() {
     setIsSubmittingPayout(true);
     try {
       const parsedAmount = Number(String(payoutAmount || "").replace(/,/g, ""));
-      const res = await axios.post(
-        "/api/users/me/wallet/payouts/request",
+      const res = await api.post(
+        "/users/me/wallet/payouts/request",
         {
           amount: parsedAmount,
           payoutDetails: {
@@ -300,7 +300,7 @@ export default function SellerWallet() {
     }
     setIsDownloadingSignedPdf(true);
     try {
-      const res = await axios.get("/api/users/me/wallet-statement/pdf", {
+      const res = await api.get("/users/me/wallet-statement/pdf", {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           status: filterStatus,
@@ -322,9 +322,9 @@ export default function SellerWallet() {
       setMessage(
         signature
           ? `Signed PDF downloaded. Statement ID: ${statementId}. Signature: ${signature.slice(
-              0,
-              16
-            )}...`
+            0,
+            16
+          )}...`
           : `Signed PDF downloaded. Statement ID: ${statementId}.`
       );
     } catch (err) {

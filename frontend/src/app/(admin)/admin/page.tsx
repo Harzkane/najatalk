@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "../../../utils/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import formatDate from "../../../utils/formatDate";
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
   const fetchPendingAds = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{ ads: Ad[]; message: string }>("/api/ads", {
+      const res = await api.get<{ ads: Ad[]; message: string }>("/ads", {
         headers: { Authorization: `Bearer ${token}` },
         params: { status: "pending" }, // Ensure this is sent
       });
@@ -188,12 +188,12 @@ export default function AdminDashboard() {
   const fetchPendingPayouts = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         payouts: Payout[];
         summary: PayoutSummary;
         message: string;
       }>(
-        "/api/users/admin/payouts",
+        "/users/admin/payouts",
         {
           headers: { Authorization: `Bearer ${token}` },
           params: {
@@ -226,8 +226,8 @@ export default function AdminDashboard() {
   const fetchPayoutRollups = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{ buckets: RollupBucket[]; message: string }>(
-        "/api/users/admin/payouts/rollups",
+      const res = await api.get<{ buckets: RollupBucket[]; message: string }>(
+        "/users/admin/payouts/rollups",
         {
           headers: { Authorization: `Bearer ${token}` },
           params: {
@@ -248,7 +248,7 @@ export default function AdminDashboard() {
   const fetchWalletMismatches = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         summary: {
           totalUsersChecked: number;
           mismatchedUsers: number;
@@ -257,7 +257,7 @@ export default function AdminDashboard() {
           lowCount: number;
         };
         mismatches: WalletMismatch[];
-      }>("/api/users/admin/wallet-mismatches", {
+      }>("/users/admin/wallet-mismatches", {
         headers: { Authorization: `Bearer ${token}` },
         params: { limit: 50 },
       });
@@ -280,10 +280,10 @@ export default function AdminDashboard() {
   const fetchPremiumPaymentsAudit = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         summary: PremiumAuditSummary;
         rows: PremiumAuditRow[];
-      }>("/api/premium/admin/payments", {
+      }>("/premium/admin/payments", {
         headers: { Authorization: `Bearer ${token}` },
         params: {
           status: premiumStatusFilter,
@@ -320,8 +320,8 @@ export default function AdminDashboard() {
   const decidePayout = async (payoutId: string, approve: boolean) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/users/admin/payouts/${payoutId}/decide`,
+      const res = await api.put<{ message: string }>(
+        `/users/admin/payouts/${payoutId}/decide`,
         { approve },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -336,8 +336,8 @@ export default function AdminDashboard() {
   const approveAd = async (adId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/ads/${adId}`,
+      const res = await api.put<{ message: string }>(
+        `/ads/${adId}`,
         { status: "active", startDate: new Date() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -352,7 +352,7 @@ export default function AdminDashboard() {
   const rejectAd = async (adId: string) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(`/api/ads/${adId}`, {
+      const res = await api.delete<{ message: string }>(`/ads/${adId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setMessage(res.data.message);
@@ -366,14 +366,14 @@ export default function AdminDashboard() {
   const fetchReports = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{ reports: Report[]; message: string }>(
-        "/api/threads/reports",
+      const res = await api.get<{ reports: Report[]; message: string }>(
+        "/threads/reports",
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setReports(res.data.reports || []);
       setMessage(res.data.message);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
         if (err.response?.status === 401 || err.response?.status === 403) {
           localStorage.removeItem("token");
@@ -389,15 +389,15 @@ export default function AdminDashboard() {
   const fetchBannedUsers = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get<{
+      const res = await api.get<{
         bannedUsers: BannedUser[];
         message: string;
-      }>("/api/users/banned", {
+      }>("/users/banned", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setBannedUsers(res.data.bannedUsers || []);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(
           err.response?.data?.message || "Fetch banned users scatter o!"
         );
@@ -546,14 +546,14 @@ export default function AdminDashboard() {
     if (!confirm("Sure say you wan delete this thread?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(
-        `/api/threads/${threadId}`,
+      const res = await api.delete<{ message: string }>(
+        `/threads/${threadId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       setReports(reports.filter((r) => r.threadId._id !== threadId));
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Delete scatter o!");
       } else {
         setMessage("Delete scatter o!");
@@ -565,16 +565,16 @@ export default function AdminDashboard() {
     if (!confirm("Sure say you wan dismiss this report?")) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.delete<{ message: string }>(
-        `/api/threads/reports/${reportId}`,
+      const res = await api.delete<{ message: string }>(
+        `/threads/reports/${reportId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       const updatedReports = reports.filter((r) => r._id !== reportId);
       setReports(updatedReports);
       if (updatedReports.length === 0) fetchReports();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Dismiss scatter o!");
       } else {
         setMessage("Dismiss scatter o!");
@@ -587,16 +587,16 @@ export default function AdminDashboard() {
     if (!confirm(`Sure say you wan ban ${email}?`)) return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/users/${userId}/ban`,
+      const res = await api.put<{ message: string }>(
+        `/users/${userId}/ban`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       fetchReports();
       fetchBannedUsers();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Ban scatter o!");
       } else {
         setMessage("Ban scatter o!");
@@ -615,15 +615,15 @@ export default function AdminDashboard() {
       return;
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put<{ message: string }>(
-        `/api/users/${userId}/unban`,
+      const res = await api.put<{ message: string }>(
+        `/users/${userId}/unban`,
         { approve },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       fetchBannedUsers();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Unban scatter o!");
       } else {
         setMessage("Unban scatter o!");
@@ -707,8 +707,8 @@ export default function AdminDashboard() {
                         {report.userId.flair && (
                           <span
                             className={`ml-1 inline-block text-white px-1 rounded text-xs ${report.userId.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
                               }`}
                           >
                             {report.userId.flair}
@@ -745,8 +745,8 @@ export default function AdminDashboard() {
                           {report.reportedUserId.flair && (
                             <span
                               className={`inline-block text-white px-1 rounded text-xs ${report.reportedUserId.flair === "Oga at the Top"
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
                                 }`}
                             >
                               {report.reportedUserId.flair}
@@ -798,8 +798,8 @@ export default function AdminDashboard() {
                         {user.flair && (
                           <span
                             className={`ml-1 inline-block text-white px-1 rounded text-xs ${user.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
+                              ? "bg-yellow-500"
+                              : "bg-green-500"
                               }`}
                           >
                             {user.flair}
@@ -1247,13 +1247,12 @@ export default function AdminDashboard() {
                       </td>
                       <td className="p-3">
                         <span
-                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${
-                            item.severity === "high"
-                              ? "bg-red-100 text-red-700"
-                              : item.severity === "medium"
+                          className={`inline-block rounded px-2 py-0.5 text-xs font-semibold ${item.severity === "high"
+                            ? "bg-red-100 text-red-700"
+                            : item.severity === "medium"
                               ? "bg-yellow-100 text-yellow-700"
                               : "bg-slate-100 text-slate-700"
-                          }`}
+                            }`}
                         >
                           {item.severity}
                         </span>

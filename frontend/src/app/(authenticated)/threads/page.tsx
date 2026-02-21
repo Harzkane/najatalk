@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import axios from "axios";
+import api from "../../../utils/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Head from "next/head";
@@ -91,21 +91,21 @@ function ThreadsContent() {
         setIsVerifyingTip(true);
         const token = localStorage.getItem("token");
         if (!token) throw new Error("No token—abeg login!");
-        const res = await axios.post(
-          "/api/users/verifyTip",
+        const res = await api.post(
+          "/users/verifyTip",
           { reference, receiverId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setMessage(res.data.message || "Tip don land—gist too sweet!");
         if (!threadId) await fetchThreads();
-        const walletRes = await axios.get("/api/premium/wallet", {
+        const walletRes = await api.get("/premium/wallet", {
           headers: { Authorization: `Bearer ${token}` },
         });
         console.log("[verifyTip] Wallet after tip:", walletRes.data);
         router.push("/premium");
-      } catch (err: unknown) {
+      } catch (err: any) {
         let errMsg = "Tip scatter o—try again!";
-        if (axios.isAxiosError(err)) {
+        if (err.isAxiosError) {
           errMsg = err.response?.data?.message || errMsg;
         }
         setMessage(errMsg);
@@ -145,7 +145,7 @@ function ThreadsContent() {
     const checkPremiumAndAds = async () => {
       const token = localStorage.getItem("token");
       if (token) {
-        const userRes = await axios.get("/api/users/me", {
+        const userRes = await api.get("/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUserId(userRes.data._id || null);
@@ -167,7 +167,7 @@ function ThreadsContent() {
 
   const fetchBannerAd = async () => {
     try {
-      const res = await axios.get("/api/ads", {
+      const res = await api.get("/ads", {
         params: { status: "active", type: "banner" },
       });
       const activeBanners = res.data.ads.filter(
@@ -177,7 +177,7 @@ function ThreadsContent() {
         const randomBanner =
           activeBanners[Math.floor(Math.random() * activeBanners.length)];
         setBannerAd(randomBanner);
-        await axios.get(`/api/ads/impression/${randomBanner._id}`);
+        await api.get(`/ads/impression/${randomBanner._id}`);
       }
     } catch (err) {
       console.error("Banner fetch error:", err);
@@ -186,7 +186,7 @@ function ThreadsContent() {
 
   const fetchSidebarAd = async () => {
     try {
-      const res = await axios.get("/api/ads", {
+      const res = await api.get("/ads", {
         params: { status: "active", type: "sidebar" },
       });
       const activeSidebars = res.data.ads.filter(
@@ -196,7 +196,7 @@ function ThreadsContent() {
         const randomSidebar =
           activeSidebars[Math.floor(Math.random() * activeSidebars.length)];
         setSidebarAd(randomSidebar);
-        await axios.get(`/api/ads/impression/${randomSidebar._id}`);
+        await api.get(`/ads/impression/${randomSidebar._id}`);
       }
     } catch (err) {
       console.error("Sidebar fetch error:", err);
@@ -205,7 +205,7 @@ function ThreadsContent() {
 
   const trackClick = async (adId: string) => {
     try {
-      await axios.post(`/api/ads/click/${adId}`);
+      await api.post(`/ads/click/${adId}`);
     } catch (err) {
       console.error("Click track error:", err);
     }
@@ -213,11 +213,11 @@ function ThreadsContent() {
 
   const fetchSingleThread = async (id: string) => {
     try {
-      const res = await axios.get<Thread>(`/api/threads/${id}`);
+      const res = await api.get<Thread>(`/threads/${id}`);
       setSelectedThread(res.data);
       setThreads([]);
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Thread no dey!");
       } else {
         setMessage("Thread fetch scatter o!");
@@ -229,8 +229,8 @@ function ThreadsContent() {
     async (query: string) => {
       setSearchQuery(query);
       try {
-        const res = await axios.get<SearchResponse>(
-          `/api/threads/search?q=${query}`
+        const res = await api.get<SearchResponse>(
+          `/threads/search?q=${query}`
         );
         setThreads(res.data.threads);
         setMessage(res.data.message);
@@ -247,8 +247,8 @@ function ThreadsContent() {
             JSON.stringify(updatedSearches)
           );
         }
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
+      } catch (err: any) {
+        if (err.isAxiosError) {
           setMessage(err.response?.data?.message || "Search scatter o!");
         } else {
           setMessage("No gist match—try another search!");
@@ -260,14 +260,14 @@ function ThreadsContent() {
 
   const fetchThreads = async () => {
     try {
-      const res = await axios.get<{ threads: Thread[]; message: string }>(
-        "/api/threads"
+      const res = await api.get<{ threads: Thread[]; message: string }>(
+        "/threads"
       );
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
-            const replyRes = await axios.get<Thread>(
-              `/api/threads/${thread._id}`
+            const replyRes = await api.get<Thread>(
+              `/threads/${thread._id}`
             );
             return replyRes.data;
           } catch (err) {
@@ -279,8 +279,8 @@ function ThreadsContent() {
       setThreads(threadsWithReplies);
       setMessage(res.data.message || "");
       setSelectedThread(null);
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
       } else {
         setMessage("No gist yet—drop your own!");
@@ -301,15 +301,15 @@ function ThreadsContent() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; thread: Thread }>(
-        "/api/threads",
+      const res = await api.post<{ message: string; thread: Thread }>(
+        "/threads",
         { title, body, category },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessage(res.data.message);
       if (!selectedThread) await fetchThreads();
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
         setMessage(errorMsg);
         if (err.response?.status === 401) {
@@ -339,8 +339,8 @@ function ThreadsContent() {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post<{ message: string; reply: Reply }>(
-        `/api/threads/${selectedThread._id}/replies`,
+      const res = await api.post<{ message: string; reply: Reply }>(
+        `/threads/${selectedThread._id}/replies`,
         { body: replyBody },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -351,8 +351,8 @@ function ThreadsContent() {
           ? { ...prev, replies: [res.data.reply, ...(prev.replies || [])] }
           : null
       );
-    } catch (err: unknown) {
-      if (axios.isAxiosError(err)) {
+    } catch (err: any) {
+      if (err.isAxiosError) {
         setMessage(err.response?.data?.message || "Reply scatter o!");
         if (err.response?.status === 401) {
           setMessage("Token don expire—abeg login again!");
@@ -387,8 +387,8 @@ function ThreadsContent() {
   });
   const canReplySelectedThread = Boolean(
     !selectedThread?.isLocked ||
-      currentUserRole === "mod" ||
-      currentUserRole === "admin"
+    currentUserRole === "mod" ||
+    currentUserRole === "admin"
   );
 
   return (
@@ -466,17 +466,16 @@ function ThreadsContent() {
                   onClick={() =>
                     setActiveFilter(
                       filterOption.id as
-                        | "all"
-                        | "unanswered"
-                        | "solved"
-                        | "bookmarked"
+                      | "all"
+                      | "unanswered"
+                      | "solved"
+                      | "bookmarked"
                     )
                   }
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
-                    activeFilter === filterOption.id
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeFilter === filterOption.id
                       ? "border-green-600 bg-green-600 text-white"
                       : "border-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
-                  }`}
+                    }`}
                 >
                   {filterOption.label}
                 </button>
@@ -493,9 +492,8 @@ function ThreadsContent() {
 
           <div className="flex flex-col lg:flex-row gap-4">
             <div
-              className={`w-full ${
-                !isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
-              }`}
+              className={`w-full ${!isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
+                }`}
             >
               {selectedThread ? (
                 <div className="space-y-4">
@@ -535,7 +533,7 @@ function ThreadsContent() {
                   )}
 
                   {selectedThread.replies &&
-                  selectedThread.replies.length === 0 ? (
+                    selectedThread.replies.length === 0 ? (
                     <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
                       <p className="text-slate-600">
                         No replies yet—be the first!

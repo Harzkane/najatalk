@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import axios from "axios";
+import api from "@/utils/api";
 
 function LoadingComponent() {
   return (
@@ -37,16 +37,16 @@ function TipSuccessContent() {
           return;
         }
         console.log("Verifying tip:", { reference, receiverId });
-        const res = await axios.post(
-          "/api/users/verifyTip",
+        const res = await api.post(
+          "/users/verifyTip",
           { reference, receiverId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log("Verify Response:", res.data);
         setMessage(res.data.message || "Tip landed—gist too sweet!");
         setTimeout(() => router.push("/threads"), 3000);
-      } catch (err) {
-        if (axios.isAxiosError(err)) {
+      } catch (err: any) {
+        if (err.isAxiosError) {
           console.error("Verify Error:", err.response?.data || err.message);
           setMessage(err.response?.data?.message || "Tip scatter o—try again!");
         } else {
