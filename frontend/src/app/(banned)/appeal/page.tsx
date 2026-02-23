@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
+import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -53,12 +54,13 @@ function AppealContent() {
           } else if (res.data.message.includes("rejected")) {
             setAppealStatus("rejected");
           }
-        } catch (err: any) {
-          if (err.isAxiosError) {
+        } catch (err: unknown) {
+          if (isAxiosError<{ message?: string }>(err)) {
+            const errMessage = err.response?.data?.message || "";
             setMessage(
-              err.response?.data?.message || "Appeal check scatter o!"
+              errMessage || "Appeal check scatter o!"
             );
-            if (err.response?.data?.message.includes("approved")) {
+            if (errMessage.includes("approved")) {
               setAppealStatus("approved");
               setTimeout(() => router.push("/login"), 2000);
             }
@@ -90,10 +92,11 @@ function AppealContent() {
         setReason("");
         setTimeout(() => router.push("/login"), 2000); // Redirect if already approved
       }
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Appeal scatter o!");
-        if (err.response?.data?.message.includes("approved")) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
+        const errMessage = err.response?.data?.message || "";
+        setMessage(errMessage || "Appeal scatter o!");
+        if (errMessage.includes("approved")) {
           setAppealStatus("approved");
           setEmail(""); // Clear form
           setPassword("");

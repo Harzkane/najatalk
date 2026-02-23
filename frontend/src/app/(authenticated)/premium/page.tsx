@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/utils/api";
 import Link from "next/link";
 import Header from "../../../components/Header";
+import axios from "axios";
 
 // Define response types
 interface UserResponse {
@@ -98,6 +99,13 @@ type Tip = {
   to?: string;
 };
 
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (axios.isAxiosError(error)) {
+    return String(error.response?.data?.message || fallback);
+  }
+  return fallback;
+};
+
 function PremiumLoading() {
   return (
     <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">
@@ -112,7 +120,9 @@ function PremiumLoading() {
 }
 
 function PremiumPageContent() {
-  const [activeTab, setActiveTab] = useState<"subscription" | "benefits" | "billing">(
+  const [activeTab, setActiveTab] = useState<
+    "subscription" | "benefits" | "billing" | "manage"
+  >(
     "subscription"
   );
   const [isPremium, setIsPremium] = useState(false);
@@ -293,12 +303,8 @@ function PremiumPageContent() {
         }
       );
       window.location.href = res.data.paymentLink;
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Payment scatter o!");
-      } else {
-        setMessage("Payment scatter o!");
-      }
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Payment scatter o!"));
       setIsLoading(false);
     }
   };
@@ -319,12 +325,8 @@ function PremiumPageContent() {
         setFlair(res.data.user?.flair || null);
         setMessage("Premium activated—enjoy the VIP vibes!");
       }
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Verification scatter o!");
-      } else {
-        setMessage("Verification scatter o!");
-      }
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Verification scatter o!"));
     }
   };
 
@@ -345,12 +347,8 @@ function PremiumPageContent() {
       );
       setMessage(res.data.message);
       setFlair(normalized);
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Flair update scatter o!");
-      } else {
-        setMessage("Flair update scatter o!");
-      }
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Flair update scatter o!"));
     }
   };
 
@@ -400,13 +398,11 @@ function PremiumPageContent() {
       setIsAdModalOpen(false);
       setWalletBalance(walletBalance - budgetInKobo);
       fetchUserAds();
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
         console.error("Ad creation error:", err.response?.data);
-        setMessage(err.response?.data?.message || "Ad creation scatter o!");
-      } else {
-        setMessage("Ad creation scatter o!");
       }
+      setMessage(getErrorMessage(err, "Ad creation scatter o!"));
     }
   };
 
@@ -439,12 +435,8 @@ function PremiumPageContent() {
       setMessage("Ad duplicated—pending approval!");
       setWalletBalance(walletBalance - budgetInKobo);
       fetchUserAds();
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Duplication scatter o!");
-      } else {
-        setMessage("Duplication scatter o!");
-      }
+    } catch (err: unknown) {
+      setMessage(getErrorMessage(err, "Duplication scatter o!"));
     }
   };
 
@@ -629,6 +621,16 @@ function PremiumPageContent() {
             >
               Billing History
             </button>
+            <button
+              onClick={() => setActiveTab("manage")}
+              className={`rounded-md px-3 py-1.5 text-sm font-semibold ${
+                activeTab === "manage"
+                  ? "bg-green-700 text-white"
+                  : "border border-slate-300 text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              Manage
+            </button>
           </div>
 
           {activeTab === "subscription" && (
@@ -644,33 +646,16 @@ function PremiumPageContent() {
                       ? ` | Expires: ${new Date(premiumExpiresAt).toLocaleDateString("en-NG")}`
                       : ""}
                   </p>
-                  <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <label className="block text-slate-700 text-sm font-semibold mb-2">
-                      Pick Your Shine, Oga
-                    </label>
-                    <select
-                      value={flair || ""}
-                      onChange={(e) => handleFlairChange(e.target.value)}
-                      className="w-full max-w-md p-2 border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
-                    >
-                      <option value="">No Flair</option>
-                      <option value="Verified G">Verified G</option>
-                      <option value="Oga at the Top">Oga at the Top</option>
-                    </select>
-                  </div>
-                  <div className="mt-5 mx-auto max-w-md rounded-lg border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-sm font-semibold text-slate-700 text-center mb-3">
-                      Wallet Balance: ₦
-                      {(walletBalance / 100).toLocaleString("en-NG")}
+                  <div className="mx-auto max-w-md rounded-lg border border-slate-200 bg-slate-50 p-4 text-center">
+                    <p className="text-sm text-slate-700 mb-3">
+                      Premium is active on your account.
                     </p>
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => setIsAdModalOpen(true)}
-                        className="inline-flex min-w-40 justify-center bg-green-700 text-white px-4 py-2 rounded-md hover:bg-green-800 text-sm"
-                      >
-                        Create Ad
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setActiveTab("manage")}
+                      className="inline-flex min-w-40 justify-center rounded-md bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-800"
+                    >
+                      Go to Manage
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -703,150 +688,13 @@ function PremiumPageContent() {
                 <li>Ad creation and performance dashboard.</li>
                 <li>Premium-only billing and subscription visibility.</li>
               </ul>
-              {isPremium && (
-                <>
-                  <div className="mt-6">
-                    <h3 className="text-lg font-semibold text-green-800 mb-3">
-                      Your Ads
-                    </h3>
-                    {userAds.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm text-slate-700">
-                          <thead>
-                            <tr className="bg-slate-100">
-                              <th className="p-2 text-left">Brand</th>
-                              <th className="p-2 text-left">Type</th>
-                              <th className="p-2 text-right">Budget (₦)</th>
-                              <th className="p-2 text-right">CPC (₦)</th>
-                              <th className="p-2 text-center">Clicks</th>
-                              <th className="p-2 text-center">Impressions</th>
-                              <th className="p-2 text-center">Status</th>
-                              <th className="p-2 text-left">Created</th>
-                              <th className="p-2 text-center">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {userAds.map((ad) => (
-                              <tr
-                                key={ad._id}
-                                className="border-b border-slate-200 hover:bg-slate-50"
-                              >
-                                <td className="p-2">{ad.brand}</td>
-                                <td className="p-2 capitalize">{ad.type}</td>
-                                <td className="p-2 text-right">
-                                  {(ad.budget / 100).toLocaleString("en-NG")}
-                                </td>
-                                <td className="p-2 text-right">
-                                  {(ad.cpc / 100).toLocaleString("en-NG")}
-                                </td>
-                                <td className="p-2 text-center">{ad.clicks}</td>
-                                <td className="p-2 text-center">{ad.impressions}</td>
-                                <td className="p-2 text-center">
-                                  <span
-                                    className={`inline-block px-2 py-1 rounded text-xs ${ad.status === "active"
-                                        ? "bg-green-500 text-white"
-                                        : ad.status === "pending"
-                                          ? "bg-yellow-500 text-white"
-                                          : "bg-red-500 text-white"
-                                      }`}
-                                  >
-                                    {ad.status}
-                                  </span>
-                                </td>
-                                <td className="p-2">
-                                  {new Date(ad.createdAt).toLocaleDateString()}
-                                </td>
-                                <td className="p-2 text-center">
-                                  {ad.status === "expired" && (
-                                    <button
-                                      onClick={() => handleDuplicateAd(ad)}
-                                      className="bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 text-xs"
-                                    >
-                                      Duplicate
-                                    </button>
-                                  )}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-slate-500 text-center">
-                        No ads yet—create one to start!
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="mt-6">
-                    <p className="text-sm font-semibold text-slate-700 text-center mb-2">
-                      Tip History
-                    </p>
-                    {tipEvents.length > 0 ? (
-                      <>
-                        <div className="overflow-x-auto rounded-lg border border-slate-200">
-                          <table className="w-full text-sm text-slate-700">
-                            <thead className="bg-slate-100">
-                              <tr>
-                                <th className="p-2 text-left">Type</th>
-                                <th className="p-2 text-left">Counterparty</th>
-                                <th className="p-2 text-left">Amount</th>
-                                <th className="p-2 text-left">Date</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {pagedTipEvents.map((event, idx) => (
-                                <tr key={`${event.direction}-${event.date}-${idx}`} className="border-t border-slate-200">
-                                  <td className="p-2">
-                                    <span
-                                      className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${event.direction === "received"
-                                          ? "bg-emerald-100 text-emerald-700"
-                                          : "bg-slate-100 text-slate-700"
-                                        }`}
-                                    >
-                                      {event.direction === "received" ? "Received" : "Sent"}
-                                    </span>
-                                  </td>
-                                  <td className="p-2">{event.counterpart}</td>
-                                  <td className="p-2">₦{event.amount.toLocaleString("en-NG")}</td>
-                                  <td className="p-2">{new Date(event.date).toLocaleString("en-NG")}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
-                          <p>
-                            Page {safeTipPage} of {tipTotalPages} ({tipEvents.length} total)
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setTipPage((prev) => Math.max(prev - 1, 1))}
-                              disabled={safeTipPage <= 1}
-                              className="rounded-md border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
-                            >
-                              Prev
-                            </button>
-                            <button
-                              onClick={() =>
-                                setTipPage((prev) => Math.min(prev + 1, tipTotalPages))
-                              }
-                              disabled={safeTipPage >= tipTotalPages}
-                              className="rounded-md border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
-                            >
-                              Next
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <p className="text-xs text-slate-500 text-center">
-                        No tips yet—start tipping!
-                      </p>
-                    )}
-                  </div>
-                </>
-              )}
+              <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-sm text-slate-700">
+                  {isPremium
+                    ? "You already have premium. Use the Manage tab for flair, ads, and tip activity."
+                    : "Activate premium in the Subscription tab to unlock these benefits."}
+                </p>
+              </div>
             </div>
           )}
 
@@ -953,6 +801,180 @@ function PremiumPageContent() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+          {activeTab === "manage" && (
+            <div>
+              {isPremium ? (
+                <>
+                  <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-slate-50 p-4">
+                    <label className="mb-2 block text-sm font-semibold text-slate-700">
+                      Pick Your Shine, Oga
+                    </label>
+                    <select
+                      value={flair || ""}
+                      onChange={(e) => handleFlairChange(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white p-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-green-600"
+                    >
+                      <option value="">No Flair</option>
+                      <option value="Verified G">Verified G</option>
+                      <option value="Oga at the Top">Oga at the Top</option>
+                    </select>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <p className="text-sm font-semibold text-slate-700">
+                        Wallet Balance: ₦{(walletBalance / 100).toLocaleString("en-NG")}
+                      </p>
+                      <button
+                        onClick={() => setIsAdModalOpen(true)}
+                        className="inline-flex min-w-40 justify-center rounded-md bg-green-700 px-4 py-2 text-sm text-white hover:bg-green-800"
+                      >
+                        Create Ad
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-6">
+                    <h3 className="mb-3 text-lg font-semibold text-green-800">Your Ads</h3>
+                    {userAds.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-slate-700">
+                          <thead>
+                            <tr className="bg-slate-100">
+                              <th className="p-2 text-left">Brand</th>
+                              <th className="p-2 text-left">Type</th>
+                              <th className="p-2 text-right">Budget (₦)</th>
+                              <th className="p-2 text-right">CPC (₦)</th>
+                              <th className="p-2 text-center">Clicks</th>
+                              <th className="p-2 text-center">Impressions</th>
+                              <th className="p-2 text-center">Status</th>
+                              <th className="p-2 text-left">Created</th>
+                              <th className="p-2 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {userAds.map((ad) => (
+                              <tr key={ad._id} className="border-b border-slate-200 hover:bg-slate-50">
+                                <td className="p-2">{ad.brand}</td>
+                                <td className="p-2 capitalize">{ad.type}</td>
+                                <td className="p-2 text-right">
+                                  {(ad.budget / 100).toLocaleString("en-NG")}
+                                </td>
+                                <td className="p-2 text-right">{(ad.cpc / 100).toLocaleString("en-NG")}</td>
+                                <td className="p-2 text-center">{ad.clicks}</td>
+                                <td className="p-2 text-center">{ad.impressions}</td>
+                                <td className="p-2 text-center">
+                                  <span
+                                    className={`inline-block rounded px-2 py-1 text-xs ${
+                                      ad.status === "active"
+                                        ? "bg-green-500 text-white"
+                                        : ad.status === "pending"
+                                        ? "bg-yellow-500 text-white"
+                                        : "bg-red-500 text-white"
+                                    }`}
+                                  >
+                                    {ad.status}
+                                  </span>
+                                </td>
+                                <td className="p-2">{new Date(ad.createdAt).toLocaleDateString()}</td>
+                                <td className="p-2 text-center">
+                                  {ad.status === "expired" && (
+                                    <button
+                                      onClick={() => handleDuplicateAd(ad)}
+                                      className="rounded bg-blue-600 px-2 py-1 text-xs text-white hover:bg-blue-700"
+                                    >
+                                      Duplicate
+                                    </button>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <p className="text-center text-sm text-slate-500">
+                        No ads yet. Create one to start.
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-6">
+                    <p className="mb-2 text-center text-sm font-semibold text-slate-700">Tip History</p>
+                    {tipEvents.length > 0 ? (
+                      <>
+                        <div className="overflow-x-auto rounded-lg border border-slate-200">
+                          <table className="w-full text-sm text-slate-700">
+                            <thead className="bg-slate-100">
+                              <tr>
+                                <th className="p-2 text-left">Type</th>
+                                <th className="p-2 text-left">Counterparty</th>
+                                <th className="p-2 text-left">Amount</th>
+                                <th className="p-2 text-left">Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {pagedTipEvents.map((event, idx) => (
+                                <tr key={`${event.direction}-${event.date}-${idx}`} className="border-t border-slate-200">
+                                  <td className="p-2">
+                                    <span
+                                      className={`inline-flex rounded px-2 py-0.5 text-xs font-semibold ${
+                                        event.direction === "received"
+                                          ? "bg-emerald-100 text-emerald-700"
+                                          : "bg-slate-100 text-slate-700"
+                                      }`}
+                                    >
+                                      {event.direction === "received" ? "Received" : "Sent"}
+                                    </span>
+                                  </td>
+                                  <td className="p-2">{event.counterpart}</td>
+                                  <td className="p-2">₦{event.amount.toLocaleString("en-NG")}</td>
+                                  <td className="p-2">{new Date(event.date).toLocaleString("en-NG")}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        <div className="mt-2 flex items-center justify-between text-xs text-slate-600">
+                          <p>
+                            Page {safeTipPage} of {tipTotalPages} ({tipEvents.length} total)
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setTipPage((prev) => Math.max(prev - 1, 1))}
+                              disabled={safeTipPage <= 1}
+                              className="rounded-md border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
+                            >
+                              Prev
+                            </button>
+                            <button
+                              onClick={() => setTipPage((prev) => Math.min(prev + 1, tipTotalPages))}
+                              disabled={safeTipPage >= tipTotalPages}
+                              className="rounded-md border border-slate-300 bg-white px-2 py-1 disabled:opacity-50"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-center text-xs text-slate-500">No tips yet.</p>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <div className="mx-auto max-w-2xl rounded-lg border border-slate-200 bg-white p-6 text-center">
+                  <p className="mb-2 text-lg font-semibold text-slate-800">Manage unlocks after Premium activation</p>
+                  <p className="mb-5 text-sm text-slate-600">
+                    Subscribe first, then come back here to manage flair, ads, and premium activity.
+                  </p>
+                  <button
+                    onClick={() => setActiveTab("subscription")}
+                    className="inline-flex min-w-44 justify-center rounded-md bg-green-700 px-5 py-3 text-white hover:bg-green-800"
+                  >
+                    Go to Subscription
+                  </button>
+                </div>
+              )}
             </div>
           )}
           <Link

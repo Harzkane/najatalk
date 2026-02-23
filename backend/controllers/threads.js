@@ -2,12 +2,15 @@
 import Thread from "../models/thread.js";
 import Reply from "../models/reply.js";
 import Report from "../models/report.js";
+import mongoose from "mongoose";
+import { hasAnyPermission, hasPermission } from "../utils/permissions.js";
 
-const isAdmin = (user) => user.role === "admin";
-const isStaff = (user) => user.role === "admin" || user.role === "mod";
+const isAdmin = (user) => hasPermission(user, "platform.admin");
+const isStaff = (user) =>
+  hasAnyPermission(user, ["platform.admin", "threads.moderate"]);
 const canManageSolvedState = (user, thread) =>
   isAdmin(user) ||
-  user.role === "mod" ||
+  hasPermission(user, "threads.moderate") ||
   thread.userId?.toString() === user._id.toString();
 
 const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
@@ -43,16 +46,48 @@ export const createThread = async (req, res) => {
 
 export const getThreads = async (req, res) => {
   try {
-    const threads = await Thread.find()
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "20"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 100)
+      : 20;
+    const skip = (page - 1) * pageSize;
+
+    const [threads, total] = await Promise.all([
+      Thread.find()
       .populate("userId", "email flair")
-      .sort({ isSticky: -1, createdAt: -1 });
+      .sort({ isSticky: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize),
+      Thread.countDocuments(),
+    ]);
     // console.log("Threads fetched:", threads); // Log threads
     if (!threads.length) {
-      return res.json({ threads: [], message: "No gist yet—drop your own!" });
+      return res.json({
+        threads: [],
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(Math.ceil(total / pageSize), 1),
+          hasNext: false,
+          hasPrev: page > 1,
+        },
+        message: "No gist yet—drop your own!",
+      });
     }
     const isPremium = req.user && req.user.isPremium;
     res.json({
       threads,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + threads.length < total,
+        hasPrev: page > 1,
+      },
       message: isPremium
         ? "Premium threads—no ads!"
         : "Threads dey here—check am!",
@@ -168,6 +203,246 @@ export const searchThreads = async (req, res) => {
   }
 };
 
+export const listThreadsForAdmin = async (req, res) => {
+  try {
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const status = String(req.query.status || "all").trim();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+
+    const query = {};
+    if (q) {
+      query.$or = [
+        { title: { $regex: q, $options: "i" } },
+        { body: { $regex: q, $options: "i" } },
+      ];
+    }
+    if (status === "locked") query.isLocked = true;
+    if (status === "sticky") query.isSticky = true;
+    if (status === "solved") query.isSolved = true;
+
+    const [threads, total, summaryAgg] = await Promise.all([
+      Thread.find(query)
+        .populate("userId", "email flair role")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .lean(),
+      Thread.countDocuments(query),
+      Thread.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: "reports",
+            localField: "_id",
+            foreignField: "threadId",
+            as: "reports",
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            locked: { $sum: { $cond: [{ $eq: ["$isLocked", true] }, 1, 0] } },
+            sticky: { $sum: { $cond: [{ $eq: ["$isSticky", true] }, 1, 0] } },
+            solved: { $sum: { $cond: [{ $eq: ["$isSolved", true] }, 1, 0] } },
+            reported: { $sum: { $cond: [{ $gt: [{ $size: "$reports" }, 0] }, 1, 0] } },
+          },
+        },
+      ]),
+    ]);
+
+    const threadIds = threads.map((t) => t._id);
+    const [replyCounts, reportCounts] = await Promise.all([
+      Reply.aggregate([
+        { $match: { threadId: { $in: threadIds } } },
+        { $group: { _id: "$threadId", count: { $sum: 1 } } },
+      ]),
+      Report.aggregate([
+        { $match: { threadId: { $in: threadIds } } },
+        { $group: { _id: "$threadId", count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const repliesMap = new Map(replyCounts.map((r) => [String(r._id), r.count]));
+    const reportsMap = new Map(reportCounts.map((r) => [String(r._id), r.count]));
+
+    const rows = threads.map((thread) => ({
+      ...thread,
+      replyCount: Number(repliesMap.get(String(thread._id)) || 0),
+      reportCount: Number(reportsMap.get(String(thread._id)) || 0),
+    }));
+
+    const stats = summaryAgg[0] || {
+      total: 0,
+      locked: 0,
+      sticky: 0,
+      solved: 0,
+      reported: 0,
+    };
+    const summary = {
+      total: Number(stats.total || total || 0),
+      locked: Number(stats.locked || 0),
+      sticky: Number(stats.sticky || 0),
+      solved: Number(stats.solved || 0),
+      reported: Number(stats.reported || 0),
+    };
+
+    return res.json({
+      threads: rows,
+      summary,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + rows.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Admin threads list loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Threads list scatter: " + err.message });
+  }
+};
+
+export const getAdminThreadDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid thread id." });
+    }
+
+    const thread = await Thread.findById(id)
+      .populate("userId", "_id email username role flair")
+      .populate("solvedBy", "_id email role")
+      .populate("stickyBy", "_id email role")
+      .populate("lockedBy", "_id email role")
+      .lean();
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const [replyCount, reportCount, recentReplies, recentReports] = await Promise.all([
+      Reply.countDocuments({ threadId: id }),
+      Report.countDocuments({ threadId: id }),
+      Reply.find({ threadId: id })
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .populate("userId", "_id email flair role")
+        .select("_id body createdAt userId parentReplyId")
+        .lean(),
+      Report.find({ threadId: id })
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .populate("userId", "_id email flair role")
+        .populate("reportedUserId", "_id email flair role")
+        .select("_id reason createdAt userId reportedUserId")
+        .lean(),
+    ]);
+
+    return res.json({
+      thread: {
+        _id: thread._id,
+        title: thread.title,
+        body: thread.body,
+        category: thread.category || "General",
+        createdAt: thread.createdAt,
+        isLocked: Boolean(thread.isLocked),
+        isSticky: Boolean(thread.isSticky),
+        isSolved: Boolean(thread.isSolved),
+        lockedAt: thread.lockedAt || null,
+        stickyAt: thread.stickyAt || null,
+        solvedAt: thread.solvedAt || null,
+        likesCount: Array.isArray(thread.likes) ? thread.likes.length : 0,
+        bookmarksCount: Array.isArray(thread.bookmarks) ? thread.bookmarks.length : 0,
+        author: thread.userId
+          ? {
+              _id: thread.userId._id,
+              email: thread.userId.email,
+              username: thread.userId.username || null,
+              role: thread.userId.role || "user",
+              flair: thread.userId.flair || null,
+            }
+          : null,
+        solvedBy: thread.solvedBy
+          ? {
+              _id: thread.solvedBy._id,
+              email: thread.solvedBy.email,
+              role: thread.solvedBy.role || "user",
+            }
+          : null,
+        stickyBy: thread.stickyBy
+          ? {
+              _id: thread.stickyBy._id,
+              email: thread.stickyBy.email,
+              role: thread.stickyBy.role || "user",
+            }
+          : null,
+        lockedBy: thread.lockedBy
+          ? {
+              _id: thread.lockedBy._id,
+              email: thread.lockedBy.email,
+              role: thread.lockedBy.role || "user",
+            }
+          : null,
+      },
+      stats: {
+        replies: replyCount,
+        reports: reportCount,
+      },
+      recentReplies: recentReplies.map((row) => ({
+        _id: row._id,
+        body: row.body,
+        createdAt: row.createdAt,
+        parentReplyId: row.parentReplyId || null,
+        author: row.userId
+          ? {
+              _id: row.userId._id,
+              email: row.userId.email,
+              flair: row.userId.flair || null,
+              role: row.userId.role || "user",
+            }
+          : null,
+      })),
+      recentReports: recentReports.map((row) => ({
+        _id: row._id,
+        reason: row.reason,
+        createdAt: row.createdAt,
+        reporter: row.userId
+          ? {
+              _id: row.userId._id,
+              email: row.userId.email,
+              flair: row.userId.flair || null,
+              role: row.userId.role || "user",
+            }
+          : null,
+        reportedUser: row.reportedUserId
+          ? {
+              _id: row.reportedUserId._id,
+              email: row.reportedUserId.email,
+              flair: row.reportedUserId.flair || null,
+              role: row.reportedUserId.role || "user",
+            }
+          : null,
+      })),
+      message: "Admin thread details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Thread details scatter: " + err.message });
+  }
+};
+
 export const reportThread = async (req, res) => {
   const { id } = req.params; // threadId
   const { reason } = req.body;
@@ -197,14 +472,66 @@ export const getReports = async (req, res) => {
     if (!isAdmin(req.user)) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
-    const reports = await Report.find()
-      .populate("threadId", "title")
-      .populate("userId", "email flair") // Reporter
-      .populate("reportedUserId", "email flair") // Reported user
-      .sort({ createdAt: -1 });
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+    const query = {};
+
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
+
+    const [reports, total] = await Promise.all([
+      Report.find(query)
+        .populate("threadId", "title")
+        .populate("userId", "email flair") // Reporter
+        .populate("reportedUserId", "email flair") // Reported user
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize),
+      Report.countDocuments(query),
+    ]);
     if (!reports.length)
-      return res.json({ message: "No reports yet—clean slate!" });
-    res.json({ reports, message: "Reports dey here—check am!" });
+      return res.json({
+        reports: [],
+        pagination: {
+          page,
+          pageSize,
+          total,
+          totalPages: Math.max(Math.ceil(total / pageSize), 1),
+          hasNext: false,
+          hasPrev: page > 1,
+        },
+        message: "No reports yet—clean slate!",
+      });
+    res.json({
+      reports,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + reports.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Reports dey here—check am!",
+    });
   } catch (err) {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }

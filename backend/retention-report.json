@@ -1,0 +1,66 @@
+{
+  "ts": "2026-02-23T01:34:37.584Z",
+  "dbName": "najatalk",
+  "rows": [
+    {
+      "collection": "adminactionlogs",
+      "archiveCollection": "adminactionlogs_archive",
+      "retentionDays": 365,
+      "exists": true,
+      "total": 9,
+      "eligibleForArchive": 0,
+      "oldest": "2026-02-21T19:24:01.051Z",
+      "newest": "2026-02-23T01:04:47.498Z"
+    },
+    {
+      "collection": "walletledgers",
+      "archiveCollection": "walletledgers_archive",
+      "retentionDays": 3650,
+      "exists": true,
+      "total": 67,
+      "eligibleForArchive": 0,
+      "oldest": "2026-02-20T18:01:04.332Z",
+      "newest": "2026-02-22T13:13:49.128Z"
+    },
+    {
+      "collection": "transactions",
+      "archiveCollection": "transactions_archive",
+      "retentionDays": 3650,
+      "exists": true,
+      "total": 97,
+      "eligibleForArchive": 0,
+      "oldest": "2025-03-21T18:26:34.000Z",
+      "newest": "2026-02-21T19:57:34.357Z"
+    },
+    {
+      "collection": "premiumpayments",
+      "archiveCollection": "premiumpayments_archive",
+      "retentionDays": 1825,
+      "exists": true,
+      "total": 3,
+      "eligibleForArchive": 0,
+      "oldest": "2026-02-20T07:29:15.118Z",
+      "newest": "2026-02-20T21:31:47.669Z"
+    },
+    {
+      "collection": "reports",
+      "archiveCollection": "reports_archive",
+      "retentionDays": 730,
+      "exists": true,
+      "total": 1,
+      "eligibleForArchive": 0,
+      "oldest": "2026-02-21T18:17:33.000Z",
+      "newest": "2026-02-21T18:17:33.000Z"
+    },
+    {
+      "collection": "contestsubmissions",
+      "archiveCollection": "contestsubmissions_archive",
+      "retentionDays": 730,
+      "exists": true,
+      "total": 7,
+      "eligibleForArchive": 0,
+      "oldest": "2026-02-21T23:12:43.110Z",
+      "newest": "2026-02-22T01:56:28.127Z"
+    }
+  ]
+}

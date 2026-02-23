@@ -10,7 +10,7 @@ export const authMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select(
-      "_id email role isVerified isBanned appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
+      "_id email role permissions deniedPermissions isVerified isBanned suspendedUntil suspensionReason suspendedBy appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
     );
     if (!user) return res.status(404).json({ message: "User no dey!" });
 
@@ -27,6 +27,11 @@ export const authMiddleware = async (req, res, next) => {
       return res
         .status(403)
         .json({ message: "You don dey banned—abeg comot!" });
+    if (user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now()) {
+      return res.status(403).json({
+        message: `Account suspended until ${new Date(user.suspendedUntil).toISOString()}.`,
+      });
+    }
 
     req.user = user;
     // console.log("Auth user:", req.user); // Log user
@@ -47,10 +52,17 @@ export const optionalAuthMiddleware = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id).select(
-      "_id email role isVerified isBanned appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
+      "_id email role permissions deniedPermissions isVerified isBanned suspendedUntil suspensionReason suspendedBy appealStatus isPremium profileCompleted premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumCanceledAt premiumLastPaymentRef"
     );
 
-    if (!user || !user.isVerified || (user.isBanned && user.appealStatus !== "approved")) {
+    const isSuspended =
+      user?.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now();
+    if (
+      !user ||
+      !user.isVerified ||
+      (user.isBanned && user.appealStatus !== "approved") ||
+      isSuspended
+    ) {
       req.user = null;
       return next();
     }

@@ -14,6 +14,12 @@
     "build": "npm run build --prefix frontend && npm run build --prefix backend",
     "lint": "npm run lint --prefix frontend",
     "test": "npm test --prefix backend",
+    "ci:backend": "npm test --prefix backend",
+    "ci:frontend": "npm run lint --prefix frontend && npm run typecheck --prefix frontend && npm run build --prefix frontend",
+    "ci:p0": "npm run ci:backend && npm run ci:frontend",
+    "ops:synthetic": "node scripts/synthetic_monitor.mjs",
+    "ops:e2e:smoke": "node scripts/e2e_smoke.mjs",
+    "ops:retention:report": "npm run retention:report --prefix backend",
     "dev:proxy": "node vercel-dev.js",
     "start": "concurrently \"npm start --prefix frontend\" \"npm start --prefix backend\"",
     "vercel-build": "npm run build"

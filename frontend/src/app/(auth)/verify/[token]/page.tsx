@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
+import { isAxiosError } from "axios";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/utils/api";
 
@@ -29,9 +30,13 @@ function VerifyContent() {
       api
         .get<{ message: string }>(`/auth/verify/${token}`)
         .then((res) => setMessage(res.data.message))
-        .catch((err: any) =>
-          setMessage(err.response?.data?.message || "Verification scatter o!")
-        );
+        .catch((err: unknown) => {
+          setMessage(
+            isAxiosError<{ message?: string }>(err)
+              ? err.response?.data?.message || "Verification scatter o!"
+              : "Verification scatter o!"
+          );
+        });
     }
   }, [token]);
 

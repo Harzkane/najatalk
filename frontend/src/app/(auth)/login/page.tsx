@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 
@@ -39,8 +40,8 @@ export default function Login() {
         destination = "/marketplace";
       }
       setTimeout(() => router.push(destination), 800);
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         const errorMsg = err.response?.data?.message || "Login wahala o!";
         setMessage(errorMsg);
         if (err.response?.status === 403 && errorMsg.includes("banned")) {

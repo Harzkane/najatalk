@@ -1,8 +1,9 @@
 // frontend/src/app/page.tsx
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { isAxiosError } from "axios";
 import api from "../utils/api";
 import Link from "next/link";
 import SearchBar from "../components/threads/SearchBar";
@@ -58,6 +59,10 @@ export default function Home() {
 
   const router = useRouter();
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
+  const getAxiosMessage = (err: unknown, fallback: string) =>
+    isAxiosError<{ message?: string }>(err)
+      ? err.response?.data?.message || fallback
+      : fallback;
 
   const trendingTopics = [
     "Suya joints",
@@ -66,37 +71,6 @@ export default function Home() {
     "Best jollof",
   ];
   const categories = ["General", "Gist", "Politics", "Romance"];
-
-  useEffect(() => {
-    const checkPremiumAndAds = async () => {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const res = await api.get("/users/me", {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          setIsPremium(res.data.isPremium);
-          setIsLoggedIn(true);
-          if (!res.data.isPremium) {
-            await fetchBannerAd();
-            await fetchSidebarAds();
-          }
-        } catch (err) {
-          console.error("User check error:", err);
-          localStorage.removeItem("token");
-          setIsLoggedIn(false);
-          setMessage("Token scatter—abeg login again!");
-          setTimeout(() => router.push("/login"), 1000);
-          return;
-        }
-      } else {
-        await fetchBannerAd();
-        await fetchSidebarAds();
-      }
-      fetchThreads();
-    };
-    checkPremiumAndAds();
-  }, [router]);
 
   const fetchBannerAd = async () => {
     try {
@@ -128,13 +102,11 @@ export default function Home() {
         const shuffled = activeSidebars.sort(() => 0.5 - Math.random());
         const selectedSidebars = shuffled.slice(
           0,
-          Math.min(4, shuffled.length)
+          Math.min(4, shuffled.length),
         );
         setSidebarAds(selectedSidebars);
         await Promise.all(
-          selectedSidebars.map((ad) =>
-            api.get(`/ads/impression/${ad._id}`)
-          )
+          selectedSidebars.map((ad) => api.get(`/ads/impression/${ad._id}`)),
         );
       } else {
         setSidebarAds([]);
@@ -169,7 +141,7 @@ export default function Home() {
     if (savedSearches) setRecentSearches(JSON.parse(savedSearches));
   }, []);
 
-  const fetchThreads = async () => {
+  const fetchThreads = useCallback(async () => {
     try {
       const res = await api.get("/threads");
       const threads = res.data.threads || [];
@@ -182,39 +154,66 @@ export default function Home() {
             console.error(`Failed to fetch thread ${thread._id}:`, err);
             return { ...thread, replies: [] };
           }
-        })
+        }),
       );
       setAllThreads(threadsWithReplies);
       setThreads(threadsWithReplies);
       setMessage(res.data.message || "");
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Fetch scatter o!");
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        setMessage(getAxiosMessage(err, "Fetch scatter o!"));
       } else {
         setMessage("No gist yet—drop your own!");
       }
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkPremiumAndAds = async () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        try {
+          const res = await api.get("/users/me", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setIsPremium(res.data.isPremium);
+          setIsLoggedIn(true);
+          if (!res.data.isPremium) {
+            await fetchBannerAd();
+            await fetchSidebarAds();
+          }
+        } catch (err) {
+          console.error("User check error:", err);
+          localStorage.removeItem("token");
+          setIsLoggedIn(false);
+          setMessage("Token scatter—abeg login again!");
+          setTimeout(() => router.push("/login"), 1000);
+          return;
+        }
+      } else {
+        await fetchBannerAd();
+        await fetchSidebarAds();
+      }
+      fetchThreads();
+    };
+    checkPremiumAndAds();
+  }, [router, fetchThreads]);
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     setSelectedCategory(null);
     try {
-      const res = await api.get<SearchResponse>(
-        `/threads/search?q=${query}`
-      );
+      const res = await api.get<SearchResponse>(`/threads/search?q=${query}`);
       const threadsWithReplies = await Promise.all(
         res.data.threads.map(async (thread) => {
           try {
-            const replyRes = await api.get<Thread>(
-              `/threads/${thread._id}`
-            );
+            const replyRes = await api.get<Thread>(`/threads/${thread._id}`);
             return replyRes.data;
           } catch (err: unknown) {
             console.error(`Failed to fetch thread ${thread._id}:`, err);
             return { ...thread, replies: [] };
           }
-        })
+        }),
       );
       setThreads(threadsWithReplies);
       setMessage(res.data.message);
@@ -227,9 +226,9 @@ export default function Home() {
         setRecentSearches(updatedSearches);
         localStorage.setItem("recentSearches", JSON.stringify(updatedSearches));
       }
-    } catch (err: any) {
-      if (err.isAxiosError) {
-        setMessage(err.response?.data?.message || "Search scatter o!");
+    } catch (err: unknown) {
+      if (isAxiosError(err)) {
+        setMessage(getAxiosMessage(err, "Search scatter o!"));
       } else {
         setMessage("No gist match—try another search!");
       }
@@ -239,7 +238,7 @@ export default function Home() {
   const handleSubmitThread = async (
     title: string,
     body: string,
-    category: string
+    category: string,
   ) => {
     if (!isLoggedIn) {
       setMessage("Abeg login first!");
@@ -252,12 +251,12 @@ export default function Home() {
       const res = await api.post<{ message: string; thread: Thread }>(
         "/threads",
         { title, body, category },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setMessage(res.data.message);
       await fetchThreads();
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
         setMessage(errorMsg);
         if (err.response?.status === 401) {
@@ -266,7 +265,7 @@ export default function Home() {
           setTimeout(() => router.push("/login"), 1000);
         } else if (
           err.response?.status === 403 &&
-          err.response.data.message.includes("banned")
+          (err.response?.data?.message || "").toLowerCase().includes("banned")
         ) {
           setMessage("You don dey banned—appeal now!");
           setTimeout(() => router.push("/appeal"), 1000);
@@ -291,14 +290,15 @@ export default function Home() {
       setMessage("");
     } else {
       const filtered = allThreads.filter(
-        (thread) => thread.category.toLowerCase() === category.toLowerCase()
+        (thread) => thread.category.toLowerCase() === category.toLowerCase(),
       );
       setThreads(filtered);
       setMessage(
         filtered.length
-          ? `${filtered.length} thread${filtered.length > 1 ? "s" : ""
-          } in ${category}`
-          : `No threads in ${category} yet—start one!`
+          ? `${filtered.length} thread${
+              filtered.length > 1 ? "s" : ""
+            } in ${category}`
+          : `No threads in ${category} yet—start one!`,
       );
     }
   };
@@ -315,7 +315,7 @@ export default function Home() {
     <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
       <div className="max-w-7xl mx-auto mb-4">
         <Header
-          title="NaijaTalk Forum—Wetin Dey Happen?"
+          title="NaijaTalk Forum"
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
           secondaryLink={{ href: "/premium", label: "Premium" }}
@@ -339,10 +339,11 @@ export default function Home() {
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${!selectedCategory
-                    ? "bg-green-50 text-green-800 font-semibold border border-green-200"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
-                    }`}
+                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
+                    !selectedCategory
+                      ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
+                  }`}
                 >
                   All Categories
                 </button>
@@ -351,10 +352,11 @@ export default function Home() {
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${selectedCategory === cat
-                      ? "bg-green-50 text-green-800 font-semibold border border-green-200"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
-                      }`}
+                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
+                      selectedCategory === cat
+                        ? "bg-green-50 text-green-800 font-semibold border border-green-200"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
+                    }`}
                   >
                     {cat}
                   </button>
@@ -366,7 +368,11 @@ export default function Home() {
 
         <div className="w-full lg:w-[70%]">
           {!isPremium && bannerAd && (
-            <SponsoredAdCard ad={bannerAd} onClick={trackClick} className="mb-2" />
+            <SponsoredAdCard
+              ad={bannerAd}
+              onClick={trackClick}
+              className="mb-2"
+            />
           )}
 
           {message && (
@@ -380,7 +386,9 @@ export default function Home() {
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
               Latest Discussions
             </h2>
-            <span className="text-xs text-slate-500">{threads.length} topics</span>
+            <span className="text-xs text-slate-500">
+              {threads.length} topics
+            </span>
           </div>
 
           {threads.length ? (
@@ -407,10 +415,11 @@ export default function Home() {
                         </span>
                         {thread.userId?.flair && (
                           <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
-                              ? "bg-yellow-500"
-                              : "bg-green-500"
-                              }`}
+                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                              thread.userId.flair === "Oga at the Top"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                            }`}
                           >
                             {thread.userId.flair}
                           </span>
@@ -432,26 +441,31 @@ export default function Home() {
                           ].userId?.email?.split("@")[0] || "Unknown"}
                           {thread.replies[thread.replies.length - 1].userId
                             ?.flair && (
-                              <span
-                                className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.replies[thread.replies.length - 1].userId
+                            <span
+                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                                thread.replies[thread.replies.length - 1].userId
                                   ?.flair === "Oga at the Top"
                                   ? "bg-yellow-500"
                                   : "bg-green-500"
-                                  }`}
-                              >
-                                {
-                                  thread.replies[thread.replies.length - 1].userId
-                                    ?.flair
-                                }
-                              </span>
-                            )}
+                              }`}
+                            >
+                              {
+                                thread.replies[thread.replies.length - 1].userId
+                                  ?.flair
+                              }
+                            </span>
+                          )}
                         </span>
                       )}
                     </div>
                   </div>
                   {!isPremium && bannerAd && index > 0 && index % 7 === 0 && (
                     <div className="border-b border-slate-200 p-4 bg-slate-50">
-                      <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
+                      <SponsoredAdCard
+                        ad={bannerAd}
+                        onClick={trackClick}
+                        compact
+                      />
                     </div>
                   )}
                 </div>
@@ -502,7 +516,12 @@ export default function Home() {
             {!isPremium && sidebarAds.length > 0 ? (
               <div className="space-y-4">
                 {sidebarAds.map((ad) => (
-                  <SponsoredAdCard key={ad._id} ad={ad} onClick={trackClick} compact />
+                  <SponsoredAdCard
+                    key={ad._id}
+                    ad={ad}
+                    onClick={trackClick}
+                    compact
+                  />
                 ))}
               </div>
             ) : (

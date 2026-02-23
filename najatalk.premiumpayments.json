@@ -1,0 +1,71 @@
+[{
+  "_id": {
+    "$oid": "69980d4be7a031bdab248c54"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "email": "harzjunior1993@gmail.com",
+  "reference": "naijatalk_premium_67c17a5273ac45a1e34fc364_1771572555116",
+  "amount": 50000,
+  "status": "initiated",
+  "verifiedAt": null,
+  "gatewayResponse": null,
+  "createdAt": {
+    "$date": "2026-02-20T07:29:15.118Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T07:29:15.118Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998c10abe641d87e133ecb6"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "email": "harzjunior1993@gmail.com",
+  "reference": "naijatalk_premium_67c17a5273ac45a1e34fc364_1771618570250",
+  "amount": 50000,
+  "status": "initiated",
+  "verifiedAt": null,
+  "gatewayResponse": null,
+  "createdAt": {
+    "$date": "2026-02-20T20:16:10.252Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T20:16:10.252Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998d2c363ab05fd71bf908e"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "email": "harzjunior1993@gmail.com",
+  "reference": "naijatalk_premium_67c17a5273ac45a1e34fc364_1771623107667",
+  "amount": 50000,
+  "status": "initiated",
+  "currency": "NGN",
+  "channel": null,
+  "gatewayTransactionId": null,
+  "paidAt": null,
+  "verifiedAt": null,
+  "verificationSource": null,
+  "lastVerificationAttemptAt": null,
+  "verifyAttempts": 0,
+  "failureReason": null,
+  "gatewayResponse": null,
+  "createdAt": {
+    "$date": "2026-02-20T21:31:47.669Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T21:31:47.669Z"
+  },
+  "__v": 0
+}]

@@ -21,12 +21,33 @@ const userSchema = new mongoose.Schema({
   verificationToken: String,
   role: {
     type: String,
-    enum: ["user", "mod", "admin"],
+    enum: ["user", "mod", "admin", "super_admin"],
     default: "user",
+  },
+  permissions: {
+    type: [String],
+    default: [],
+  },
+  deniedPermissions: {
+    type: [String],
+    default: [],
   },
   isBanned: {
     type: Boolean,
     default: false,
+  },
+  suspendedUntil: {
+    type: Date,
+    default: null,
+  },
+  suspensionReason: {
+    type: String,
+    default: null,
+  },
+  suspendedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    default: null,
   },
   appealReason: {
     type: String,

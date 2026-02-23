@@ -1,0 +1,346 @@
+[{
+  "_id": {
+    "$oid": "67be4184f373a7352b0c3556"
+  },
+  "title": "Best Suya Joint in Lagos",
+  "body": "Abeg, where I fit chop suya wey no go scatter my belle?",
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-25T22:17:40.000Z"
+  },
+  "__v": 2,
+  "bookmarks": [
+    {
+      "$oid": "67be32bef373a7352b0c354c"
+    }
+  ],
+  "isSolved": false,
+  "likes": [
+    {
+      "$oid": "67be32bef373a7352b0c354c"
+    }
+  ],
+  "solvedAt": null,
+  "solvedBy": null
+},
+{
+  "_id": {
+    "$oid": "67be4637dba2e4bf408e9e00"
+  },
+  "title": "Best Shisha Joint for Lagos",
+  "body": "Omo, wetin be your fave Shisha spot? Mine na Abuja!",
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-25T22:37:43.000Z"
+  },
+  "__v": 1,
+  "bookmarks": [],
+  "isSolved": false,
+  "likes": [],
+  "solvedAt": null,
+  "solvedBy": null
+},
+{
+  "_id": {
+    "$oid": "67be4b0e797c0af66060ba4a"
+  },
+  "title": "The Crazy Dance Trends",
+  "body": "Who else noticed the dance trends that has been going on",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-25T22:58:22.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be51c2797c0af66060bb9b"
+  },
+  "title": "The culture",
+  "body": "the culture we value  . . .",
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-25T23:26:58.000Z"
+  },
+  "__v": 2,
+  "bookmarks": [],
+  "isLocked": false,
+  "isSolved": false,
+  "isSticky": false,
+  "likes": [
+    {
+      "$oid": "67bdd7393417dff455b2c0bc"
+    }
+  ],
+  "stickyAt": null,
+  "stickyBy": null,
+  "lockedAt": null,
+  "lockedBy": null,
+  "solvedAt": null,
+  "solvedBy": null
+},
+{
+  "_id": {
+    "$oid": "67be51df797c0af66060bb9e"
+  },
+  "title": "The best",
+  "body": "the Best news station . .",
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-25T23:27:27.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be5fa8d6d9f3ae4faf310a"
+  },
+  "title": "lovely fests",
+  "body": "loving the fests",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-26T00:26:16.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be6a7bd6d9f3ae4faf31e5"
+  },
+  "title": "Tinubu vs Obi",
+  "body": "Who go win?",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-26T01:12:27.000Z"
+  },
+  "__v": 2,
+  "bookmarks": [
+    {
+      "$oid": "67be32bef373a7352b0c354c"
+    }
+  ],
+  "isSolved": false,
+  "likes": [
+    {
+      "$oid": "67be32bef373a7352b0c354c"
+    }
+  ]
+},
+{
+  "_id": {
+    "$oid": "67be6aaed6d9f3ae4faf3204"
+  },
+  "title": "Tinubu vs Obi",
+  "body": "Who go win?",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-26T01:13:18.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be6d71c5c970ca484ef88d"
+  },
+  "title": "Tinubu vs Obi",
+  "body": "Who go win?",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "Politics",
+  "createdAt": {
+    "$date": "2025-02-26T01:25:05.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be7200c5c970ca484efa29"
+  },
+  "title": "culture",
+  "body": "the culture we value . . .",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "Romance",
+  "createdAt": {
+    "$date": "2025-02-26T01:44:32.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67be73d1c5c970ca484efa9c"
+  },
+  "title": "Hike In Internet Data Subscription Prices: Which Data Plan Are You Currently On?",
+  "body": "Around this period last year, this topic was brought up and trended here due to economic hardship.\n\nUnfortunately, this year... It's not just economic hardship that's brought this up again. It's the fact that ALL TELCOs have reviewed prices of their plans upwardly with some even removing some plans off completely.\n\nAs there is very little we can do other can cope, please share with us the internet data subscription you currently use and your experience with it, how well would you rate it as regards depletion and how long does it last.\n\nWill be following in the comments below.",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-26T01:52:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67bf0de3aded6252fe22b7e3"
+  },
+  "title": "Best place to buy sugar for small business",
+  "body": "Abeg, I just start small bakery for Ikeja and I need reliable supplier for sugar wey no go cost arm and leg. Where una dey buy sugar for bulk? I need like 50kg every week. Any recommendations for good price and quality? I don try Ojuelegba market but their price dey vary too much.",
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-26T12:49:39.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67bf8869df01f21d789977d9"
+  },
+  "title": "The Crazy Dance Trends",
+  "body": "Who else noticed the dance trends that has been going on.",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "Gist",
+  "createdAt": {
+    "$date": "2025-02-26T21:32:25.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67bfa9519d802580708c9dff"
+  },
+  "title": "Clean Gist",
+  "body": "No wahala here",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "Politics",
+  "createdAt": {
+    "$date": "2025-02-26T23:52:49.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c18c22f819f84f21538f25"
+  },
+  "title": "Benefit of Sucrose",
+  "body": "Benefit of Sucrose to the body is so vast",
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-28T10:12:50.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c1bc37dff6e27839ede98a"
+  },
+  "title": "How To Place Targeted Ads On Nairaland",
+  "body": "I placed my ad on a section of Nairaland but the placement has been 'pending;'for a very long time. Why?\nThere are six advertising slots in every section of Nairaland. This means that only six advertisers can place their ads on any section of Nairaland at the same time. Once the six slots are full, any attempt to place ads on the same section by other advertisers will result in a pending placement. However, once a slot is vacated by an advertiser for one of 2 reasons - manual removal or running out of ad credit - the slot will be handed over to the advertiser with the earliest pending placement. That is, \"1st come, 1st served!\"\n\nHow long will I have to wait for an ad slot to be vacated so my placements can be activated?\nIt's impossible to say when an ad slot will be vacated since it depends entirely on what current advertisers choose to do. However, we have observed that some advertisers like to pause their ads at night, while others like to do so during the weekends, especially on Sundays.\n\nWhat can I do while I'm waiting for my desired ad slot to be vacated by its current occupants?\nWhile you're waiting for your ad placement to become active, you should consider: (1) Placing your ad on very similar sections that have free slots and don't have a price premium, especially those that are being discounted. (2) Creating new ads to target sections that are less similar. Please resist the temptation to remove and then resubmit pending placements. If you do that, you will be placed at the very end of the queue.\n\nWhy is this issue more pronounced in the section where I want to place my ads, and what are you doing about it?\nWe have just launched a smart algorithm that will gradually balance the demand for and supply of ad slots in the various sections of the forum.",
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-28T13:37:59.000Z"
+  },
+  "__v": 2,
+  "bookmarks": [],
+  "isLocked": false,
+  "isSolved": false,
+  "isSticky": false,
+  "likes": [
+    {
+      "$oid": "67be32bef373a7352b0c354c"
+    },
+    {
+      "$oid": "67c17a5273ac45a1e34fc364"
+    }
+  ],
+  "stickyAt": null,
+  "stickyBy": null
+},
+{
+  "_id": {
+    "$oid": "67c226efdd4413344b53f6f1"
+  },
+  "title": "Best Suya Joint",
+  "body": "Where una dey chop suya?",
+  "userId": "67bdd7393417dff455b2c0bc",
+  "category": "Gist",
+  "createdAt": {
+    "$date": "2025-02-28T21:13:19.637Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67c226efdd4413344b53f6f2"
+  },
+  "title": "Lagos Traffic Wahala",
+  "body": "This traffic go kill person!",
+  "userId": "67be32bef373a7352b0c354c",
+  "category": "General",
+  "createdAt": {
+    "$date": "2025-02-28T21:13:19.637Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e33c3262392c8223c84f4a"
+  },
+  "title": "Quick interface tweak",
+  "body": "Baddo, this is a quick interface tweak—we’re almost there! Drop your thoughts, and we’ll clear these warnings! 🚀",
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "category": "Gist",
+  "createdAt": {
+    "$date": "2025-03-25T23:28:50.000Z"
+  },
+  "__v": 1,
+  "bookmarks": [],
+  "isLocked": false,
+  "isSolved": false,
+  "isSticky": false,
+  "likes": [
+    {
+      "$oid": "67bdd7393417dff455b2c0bc"
+    }
+  ]
+}]

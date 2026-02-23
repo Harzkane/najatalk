@@ -1,0 +1,432 @@
+[{
+  "_id": {
+    "$oid": "67e0b8e5e18e585bd5e92002"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "https://jumia.com.ng",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 5000,
+  "status": "expired",
+  "clicks": 9,
+  "impressions": 68,
+  "createdAt": {
+    "$date": "2025-03-24T01:44:05.922Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T13:31:52.749Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T01:59:00.468Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e0bc04931c72ad930ff560"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "https://jumia.com.ng",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 5000,
+  "status": "expired",
+  "clicks": 7,
+  "impressions": 115,
+  "createdAt": {
+    "$date": "2025-03-24T01:57:24.944Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T17:32:57.610Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T02:39:24.580Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e0c6f924db7741fe10ad3d"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "http://jumia.com.ng",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 5000,
+  "status": "expired",
+  "clicks": 4,
+  "impressions": 92,
+  "createdAt": {
+    "$date": "2025-03-24T02:44:09.517Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T17:33:07.603Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T10:47:26.723Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e14b451a05608e4095ea42"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Zenith Bank",
+  "text": "Zenith way is the way",
+  "link": "https://www.zenithbank.com",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 5000,
+  "status": "expired",
+  "clicks": 5,
+  "impressions": 106,
+  "createdAt": {
+    "$date": "2025-03-24T12:08:37.958Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:29:53.028Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T12:09:34.685Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e14c71176e69fe721efe1a"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Zenithbank",
+  "text": "Bank the zenith way!",
+  "link": "https://www.zenithbank.com",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 5000,
+  "status": "expired",
+  "clicks": 3,
+  "impressions": 101,
+  "createdAt": {
+    "$date": "2025-03-24T12:13:37.615Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:30:27.275Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T15:31:04.832Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e18eefd57786ad8e43010b"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Gtbank",
+  "text": "Banking the right way!",
+  "link": "https://www.gtbank.com",
+  "type": "popup",
+  "budget": 0,
+  "cpc": 10000,
+  "status": "expired",
+  "clicks": 2,
+  "impressions": 5,
+  "createdAt": {
+    "$date": "2025-03-24T16:57:19.837Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:33:51.264Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T17:00:21.461Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e18f96d57786ad8e430114"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Gtbank",
+  "text": "Banking the right way!",
+  "link": "https://www.gtbank.com",
+  "type": "banner",
+  "budget": 0,
+  "cpc": 7500,
+  "status": "expired",
+  "clicks": 4,
+  "impressions": 7,
+  "createdAt": {
+    "$date": "2025-03-24T17:00:06.320Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:45:01.606Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T17:00:22.014Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e19a05ccbd99890e77d251"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "harz",
+  "text": "harz way",
+  "link": "http://localhost:3000/premium",
+  "type": "popup",
+  "budget": 0,
+  "cpc": 1000,
+  "status": "expired",
+  "clicks": 2,
+  "impressions": 1,
+  "createdAt": {
+    "$date": "2025-03-24T17:44:37.026Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:45:54.695Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T17:44:44.444Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e1a726ccbd99890e77de5d"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "https://jumia.com.ng",
+  "type": "banner",
+  "budget": 0,
+  "cpc": 10000,
+  "status": "expired",
+  "clicks": 1,
+  "impressions": 1,
+  "createdAt": {
+    "$date": "2025-03-24T18:40:38.065Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:46:08.064Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T18:40:45.714Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e1a76cccbd99890e77de74"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "https://jumia.com.ng",
+  "type": "popup",
+  "budget": 0,
+  "cpc": 20000,
+  "status": "expired",
+  "clicks": 1,
+  "impressions": 1,
+  "createdAt": {
+    "$date": "2025-03-24T18:41:48.648Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:46:20.896Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T18:41:56.564Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e1a904ccbd99890e77e2f8"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Jumia Sidebar",
+  "text": "Shop now",
+  "link": "https://jumia.com.ng",
+  "type": "sidebar",
+  "budget": 0,
+  "cpc": 10000,
+  "status": "expired",
+  "clicks": 1,
+  "impressions": 5,
+  "createdAt": {
+    "$date": "2025-03-24T18:48:36.634Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T18:50:38.530Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-24T18:48:44.937Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "67e2ec9ca816ed81bd973436"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "brand": "Zenith Bank",
+  "text": "Zenith Banking!",
+  "link": "http://zenith.com.ng",
+  "type": "sidebar",
+  "budget": 4500,
+  "cpc": 5000,
+  "status": "active",
+  "clicks": 0,
+  "impressions": 21,
+  "createdAt": {
+    "$date": "2025-03-25T17:49:16.446Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T20:14:43.274Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2025-03-25T17:49:21.920Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998a31c7ca196747636504b"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Jumia",
+  "text": "Shop now!",
+  "link": "https://jumia.com.ng",
+  "type": "sidebar",
+  "budget": 68000,
+  "cpc": 5000,
+  "status": "active",
+  "clicks": 2,
+  "impressions": 44,
+  "createdAt": {
+    "$date": "2026-02-20T18:08:28.731Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T01:24:36.868Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2026-02-20T18:14:15.305Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998a55d7ca19674763653c8"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Gtbank",
+  "text": "Banking the right way!",
+  "link": "https://www.gtbank.com",
+  "type": "banner",
+  "budget": 80500,
+  "cpc": 7500,
+  "status": "active",
+  "clicks": 1,
+  "impressions": 24,
+  "createdAt": {
+    "$date": "2026-02-20T18:18:05.709Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T01:24:36.833Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2026-02-20T18:18:21.527Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998a5657ca19674763653d3"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Gtbank",
+  "text": "Banking the right way!",
+  "link": "https://www.gtbank.com",
+  "type": "popup",
+  "budget": 97000,
+  "cpc": 10000,
+  "status": "active",
+  "clicks": 0,
+  "impressions": 6,
+  "createdAt": {
+    "$date": "2026-02-20T18:18:13.573Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T01:24:21.480Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2026-02-20T18:18:22.290Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998c384845a69e46c2dfece"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "brand": "Gtbank",
+  "text": "Banking the right way!",
+  "link": "https://www.gtbank.com",
+  "type": "banner",
+  "budget": 94000,
+  "cpc": 7500,
+  "status": "active",
+  "clicks": 0,
+  "impressions": 12,
+  "createdAt": {
+    "$date": "2026-02-20T20:26:44.484Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T01:24:36.830Z"
+  },
+  "__v": 0,
+  "startDate": {
+    "$date": "2026-02-20T20:26:51.174Z"
+  }
+}]

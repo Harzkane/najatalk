@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
+import { isAxiosError } from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/api";
@@ -49,8 +50,8 @@ function PremiumSuccessContent() {
           setError("Automatic verification failed. Please retry verification.");
           setIsProcessing(false);
         }
-      } catch (err: any) {
-        if (err.isAxiosError) {
+      } catch (err: unknown) {
+        if (isAxiosError(err)) {
           console.error("Verify Error:", err.response?.data || err.message);
         } else {
           console.error("Verify Error:", err);

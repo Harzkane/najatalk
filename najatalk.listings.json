@@ -1,0 +1,671 @@
+[{
+  "_id": {
+    "$oid": "67dd91cce11ac2fc57c2399b"
+  },
+  "title": "Jollof Pot Pro",
+  "description": "Barely used, still dey shine!",
+  "price": 650000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "status": "sold",
+  "category": "Food",
+  "createdAt": {
+    "$date": "2025-03-21T16:20:28.000Z"
+  },
+  "updatedAt": "3/21/2025, 11:37:41 PM",
+  "__v": 0,
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67ddb3a2e04bde9b84c37388"
+  }
+},
+{
+  "_id": {
+    "$oid": "67dd92c5e11ac2fc57c239a5"
+  },
+  "title": "Jollof Pot 2",
+  "description": "Barely used, still dey shine!",
+  "price": 5400000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "status": "deleted",
+  "category": "Home",
+  "createdAt": {
+    "$date": "2025-03-21T16:24:37.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-21T16:25:53.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd95832b6fd9e57314de5b"
+  },
+  "title": "Jollof Pot 2",
+  "description": "Barely used, still dey shine!",
+  "price": 240000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "status": "deleted",
+  "category": "Food",
+  "createdAt": "3/21/2025, 5:36:19 PM",
+  "updatedAt": "3/21/2025, 5:36:25 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd961a2b6fd9e57314df87"
+  },
+  "title": "Jollof Pot 2",
+  "description": "Barely used, still dey shine!",
+  "price": 5400000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "status": "deleted",
+  "category": "Home",
+  "createdAt": "3/21/2025, 5:38:50 PM",
+  "updatedAt": "3/21/2025, 5:51:47 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd98bc2b6fd9e57314df8c"
+  },
+  "title": "Jollof Pot Pro",
+  "description": "Barely used, still dey shine!",
+  "price": 650000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "status": "deleted",
+  "category": "Others",
+  "createdAt": "3/21/2025, 5:50:04 PM",
+  "updatedAt": "3/21/2025, 5:51:46 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd98fad819c8d40bfd38e8"
+  },
+  "title": "Jollof Pot",
+  "description": "Barely used, still dey shine",
+  "price": 600000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "status": "sold",
+  "category": "Food",
+  "createdAt": {
+    "$date": "2025-03-21T16:51:06.000Z"
+  },
+  "updatedAt": "3/21/2025, 11:37:30 PM",
+  "__v": 0,
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67ddb3a7e04bde9b84c37391"
+  }
+},
+{
+  "_id": {
+    "$oid": "67dd9fd8ffe47f1cc3922824"
+  },
+  "title": "Jollof Pot Pro 2",
+  "description": "Barely used, still dey shine",
+  "price": 700000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67ddaf5a697395b8b6494157"
+  },
+  "status": "sold",
+  "category": "Food",
+  "createdAt": "3/21/2025, 6:20:24 PM",
+  "updatedAt": "3/22/2025, 12:52:22 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddafad697395b8b6494165"
+  },
+  "title": "Jollof Pot 2",
+  "description": "Barely used, still dey shine",
+  "price": 200000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67ddb398e04bde9b84c3737f"
+  },
+  "status": "sold",
+  "category": "Home",
+  "createdAt": "3/21/2025, 7:27:57 PM",
+  "updatedAt": "3/22/2025, 12:40:43 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb49f63e474bbc5e9c22c"
+  },
+  "title": "Jollof Pot",
+  "description": "Barely used, still dey shine",
+  "price": 200000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67ddb4fb0da8078e0ab86b02"
+  },
+  "status": "sold",
+  "category": "Others",
+  "createdAt": "3/21/2025, 7:49:03 PM",
+  "updatedAt": "3/21/2025, 10:11:05 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb9c48ff915dc028fe002"
+  },
+  "title": "Jollof Pot 3",
+  "description": "Brand new, dey shine pass sun!",
+  "price": 300000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "buyerId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "transactionId": {
+    "$oid": "67ddfe8a9cb2595b487e90a5"
+  },
+  "status": "sold",
+  "category": "Home",
+  "createdAt": "3/21/2025, 8:11:00 PM",
+  "updatedAt": "3/22/2025, 2:45:16 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddd09db265f10ee58ed4ac"
+  },
+  "title": "Jollof Pot 4",
+  "description": "Brand new, dey shine pass sun!",
+  "price": 100000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "buyerId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "transactionId": {
+    "$oid": "67ddf92c9cb2595b487e9074"
+  },
+  "status": "sold",
+  "category": "Home",
+  "createdAt": "3/21/2025, 9:48:29 PM",
+  "updatedAt": "3/22/2025, 1:04:42 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddfe869cb2595b487e909d"
+  },
+  "title": "Jollof Pot",
+  "description": "Brand new, dey shine pass sun!",
+  "price": 138900,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67de168baaf6a884d2e0aec8"
+  },
+  "status": "sold",
+  "category": "Services",
+  "createdAt": "3/22/2025, 1:04:22 AM",
+  "updatedAt": "3/22/2025, 2:59:21 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de1549aaf6a884d2e0adf2"
+  },
+  "title": "Jollof Pot",
+  "description": "Barely used, still dey shine",
+  "price": 100000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67de15f1aaf6a884d2e0ae30"
+  },
+  "status": "sold",
+  "category": "Fashion",
+  "createdAt": "3/22/2025, 2:41:29 AM",
+  "updatedAt": "3/22/2025, 2:59:21 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de157caaf6a884d2e0adfd"
+  },
+  "title": "Jollof Pot",
+  "description": "Barely used, still dey shine",
+  "price": 120000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "transactionId": {
+    "$oid": "67de15c5aaf6a884d2e0ae0f"
+  },
+  "status": "sold",
+  "category": "Others",
+  "createdAt": "3/22/2025, 2:42:20 AM",
+  "updatedAt": "3/22/2025, 2:44:33 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de15aaaaf6a884d2e0ae04"
+  },
+  "title": "Jollof Pot",
+  "description": "Barely used, still dey shine",
+  "price": 120000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "transactionId": {
+    "$oid": "67de2be944f0c6480740d266"
+  },
+  "status": "sold",
+  "category": "Others",
+  "createdAt": "3/22/2025, 2:43:06 AM",
+  "updatedAt": "3/22/2025, 12:45:56 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de1974aaf6a884d2e0aed3"
+  },
+  "title": "Iron Pot",
+  "description": "Barely used, still dey shine",
+  "price": 210000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67df24a2392060f1c47f28e7"
+  },
+  "status": "sold",
+  "category": "Home",
+  "createdAt": "3/22/2025, 2:59:16 AM",
+  "updatedAt": "3/22/2025, 9:59:46 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e012ce02747e98b62e4852"
+  },
+  "title": "Jollof Iron Pot",
+  "description": "Barely used, still dey shine",
+  "price": 320000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "transactionId": {
+    "$oid": "67e012de02747e98b62e4860"
+  },
+  "status": "deleted",
+  "category": "Home",
+  "createdAt": "3/23/2025, 2:55:26 PM",
+  "updatedAt": {
+    "$date": "2026-02-20T15:06:57.946Z"
+  },
+  "__v": 1,
+  "imageUrls": []
+},
+{
+  "_id": {
+    "$oid": "67e15b887ee06fbd259c4cf0"
+  },
+  "title": "Jollof Iron Pot",
+  "description": "Barely used, still dey shine",
+  "price": 1000000,
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "67e15b9a7ee06fbd259c4cfe"
+  },
+  "status": "deleted",
+  "category": "Food",
+  "createdAt": "3/24/2025, 2:18:00 PM",
+  "updatedAt": {
+    "$date": "2026-02-20T15:00:13.541Z"
+  },
+  "__v": 1,
+  "imageUrls": []
+},
+{
+  "_id": {
+    "$oid": "6998118ae7a031bdab24941a"
+  },
+  "title": "Jollof Pot Pro 22",
+  "description": "Brand new, dey shine pass sun!",
+  "price": 1500000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": null,
+  "transactionId": null,
+  "status": "deleted",
+  "category": "Food",
+  "createdAt": {
+    "$date": "2026-02-20T07:47:22.135Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T14:58:36.038Z"
+  },
+  "__v": 2,
+  "imageUrls": [
+    "https://www.seriouseats.com/thmb/KfBHEW0A45rsGfZhTQ0uxTfIv-k=/750x0/filters:no_upscale():max_bytes(150000):strip_icc()/20220908-nigerian-jollof-rice-maureen-celestine-hero-no-spoon-29f44ba966324fff8149c05d0ecca7b7.JPG"
+  ]
+},
+{
+  "_id": {
+    "$oid": "69987ae0d3534e30972a3632"
+  },
+  "title": "Jollof Pot",
+  "description": "Jollof Pot",
+  "price": 245000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "buyerId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "transactionId": {
+    "$oid": "6998a1777ca1967476364d97"
+  },
+  "status": "sold",
+  "category": "Food",
+  "imageUrls": [
+    "https://s30386.pcdn.co/wp-content/uploads/2021/08/utra-processed.png"
+  ],
+  "createdAt": {
+    "$date": "2026-02-20T15:16:48.921Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:01:31.705Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "title": "item1",
+  "description": "item1",
+  "price": 60000,
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "buyerId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "transactionId": {
+    "$oid": "6998fc68f99a97edf06aa8e0"
+  },
+  "status": "sold",
+  "category": "Others",
+  "imageUrls": [],
+  "boostsPurchased": 15,
+  "boostLevel": 15,
+  "boostExpiresAt": {
+    "$date": "2026-04-06T22:21:04.382Z"
+  },
+  "lastBoostedAt": {
+    "$date": "2026-02-20T23:50:23.064Z"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:17:22.523Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:34:12.712Z"
+  },
+  "__v": 0,
+  "buyerConfirmedAt": {
+    "$date": "2026-02-21T00:34:12.712Z"
+  },
+  "fulfillmentStatus": "delivered",
+  "orderDetails": {
+    "fullName": "Harun Jibs",
+    "phone": "09059764843",
+    "addressLine1": "Aminu Kano Wuse 2",
+    "addressLine2": "",
+    "city": "Abuja",
+    "state": "FCT",
+    "postalCode": "910101",
+    "deliveryNote": "Be careful with my product please"
+  },
+  "shippedAt": {
+    "$date": "2026-02-21T00:34:09.992Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "title": "item1",
+  "description": "item1",
+  "price": 55000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "6998f8bff7ea0ec342b820ec"
+  },
+  "status": "sold",
+  "category": "Food",
+  "imageUrls": [],
+  "boostsPurchased": 18,
+  "boostLevel": 18,
+  "boostExpiresAt": {
+    "$date": "2026-04-15T22:21:57.776Z"
+  },
+  "lastBoostedAt": {
+    "$date": "2026-02-20T23:45:52.537Z"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:17:57.246Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:14:51.961Z"
+  },
+  "__v": 0,
+  "buyerConfirmedAt": {
+    "$date": "2026-02-21T00:14:51.961Z"
+  },
+  "fulfillmentStatus": "delivered",
+  "orderDetails": {
+    "fullName": "Harz Kane",
+    "phone": "08107060160",
+    "addressLine1": "Aminu Kao Wuse 2",
+    "addressLine2": "",
+    "city": "Abuja",
+    "state": "FCT",
+    "postalCode": "910101",
+    "deliveryNote": "Please be careful"
+  },
+  "shippedAt": {
+    "$date": "2026-02-21T00:14:33.852Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "title": "item2",
+  "description": "item2",
+  "price": 75000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "6998f5eab7f835ce675d23b4"
+  },
+  "status": "sold",
+  "category": "Fashion",
+  "imageUrls": [],
+  "boostsPurchased": 1,
+  "boostLevel": 1,
+  "boostExpiresAt": {
+    "$date": "2026-02-23T22:22:04.917Z"
+  },
+  "lastBoostedAt": {
+    "$date": "2026-02-20T22:22:04.917Z"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:19:16.132Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:02:17.888Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fddaf99a97edf06aaa67"
+  },
+  "title": "product1",
+  "description": "product1",
+  "price": 29000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "transactionId": {
+    "$oid": "6998fe15f99a97edf06aaa8c"
+  },
+  "status": "sold",
+  "fulfillmentStatus": "delivered",
+  "orderDetails": {
+    "fullName": "Harz Kane",
+    "phone": "08107060160",
+    "addressLine1": "Aminu Kano Wuse 2",
+    "addressLine2": "",
+    "city": "Abuja",
+    "state": "FT",
+    "postalCode": "910101",
+    "deliveryNote": "careul"
+  },
+  "buyerConfirmedAt": {
+    "$date": "2026-02-21T00:37:43.580Z"
+  },
+  "shippedAt": {
+    "$date": "2026-02-21T00:36:58.171Z"
+  },
+  "category": "Others",
+  "imageUrls": [],
+  "boostsPurchased": 0,
+  "boostLevel": 0,
+  "boostExpiresAt": null,
+  "lastBoostedAt": null,
+  "createdAt": {
+    "$date": "2026-02-21T00:35:38.502Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:37:43.580Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fe26f99a97edf06aaa9c"
+  },
+  "title": "product1",
+  "description": "product1",
+  "price": 45000,
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "buyerId": null,
+  "transactionId": null,
+  "status": "active",
+  "fulfillmentStatus": null,
+  "orderDetails": {
+    "fullName": null,
+    "phone": null,
+    "addressLine1": null,
+    "addressLine2": null,
+    "city": null,
+    "state": null,
+    "postalCode": null,
+    "deliveryNote": null
+  },
+  "buyerConfirmedAt": null,
+  "shippedAt": null,
+  "category": "Others",
+  "imageUrls": [],
+  "boostsPurchased": 4,
+  "boostLevel": 4,
+  "boostExpiresAt": {
+    "$date": "2026-03-05T01:25:01.016Z"
+  },
+  "lastBoostedAt": {
+    "$date": "2026-02-21T01:31:59.552Z"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:36:54.676Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T01:31:59.557Z"
+  },
+  "__v": 0
+}]

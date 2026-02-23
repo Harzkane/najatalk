@@ -3,6 +3,28 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import { sendVerificationEmail } from "../utils/email.js";
+import { ASSIGNABLE_ROLES } from "../utils/permissions.js";
+
+const normalizeEmail = (value = "") => String(value || "").trim().toLowerCase();
+
+const getBootstrapRole = (email = "") => {
+  const normalized = normalizeEmail(email);
+  const configured = String(process.env.SUPER_ADMIN_EMAILS || "")
+    .split(",")
+    .map((entry) => normalizeEmail(entry))
+    .filter(Boolean);
+  if (configured.includes(normalized)) return "super_admin";
+  return "user";
+};
+
+const applyBootstrapRoleIfNeeded = async (user) => {
+  if (!user) return;
+  const bootstrapRole = getBootstrapRole(user.email);
+  if (bootstrapRole === "super_admin" && user.role !== "super_admin") {
+    user.role = "super_admin";
+    await user.save();
+  }
+};
 
 export const signup = async (req, res) => {
   const { email, password } = req.body;
@@ -18,10 +40,12 @@ export const signup = async (req, res) => {
       expiresIn: "1d",
     });
 
+    const role = getBootstrapRole(email);
     const user = new User({
       email,
       password, // Raw password—hook will hash
       verificationToken,
+      role: ASSIGNABLE_ROLES.includes(role) ? role : "user",
     });
     await user.save();
 
@@ -46,10 +70,17 @@ export const login = async (req, res) => {
     if (!user)
       return res.status(404).json({ message: "User no dey—abeg signup!" });
 
+    await applyBootstrapRoleIfNeeded(user);
+
     if (user.isBanned)
       return res
         .status(403)
         .json({ message: "You don dey banned—abeg comot!" });
+    if (user.suspendedUntil && new Date(user.suspendedUntil).getTime() > Date.now()) {
+      return res.status(403).json({
+        message: `Account suspended until ${new Date(user.suspendedUntil).toISOString()}.`,
+      });
+    }
 
     if (!user.isVerified)
       return res

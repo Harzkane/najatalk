@@ -7,20 +7,29 @@ import {
   subscribePremiumWithWallet,
   handlePaystackWebhook,
   listPremiumPaymentsForAdmin,
+  getPremiumPaymentDetailsForAdmin,
   listMyPremiumPayments,
   getWallet,
   getTipHistory,
 } from "../controllers/premium.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { moneyActionLimiter } from "../middleware/rateLimit.js";
+import { logger } from "../utils/logger.js";
 
 const router = express.Router();
 
 // Core routes for Paystack
-router.post("/initiate", authMiddleware, initiatePremium);
-router.post("/verify", authMiddleware, verifyPremium);
-router.get("/verify", authMiddleware, verifyPremium);
-router.post("/subscribe-with-wallet", authMiddleware, subscribePremiumWithWallet);
+router.post("/initiate", authMiddleware, moneyActionLimiter, initiatePremium);
+router.post("/verify", authMiddleware, moneyActionLimiter, verifyPremium);
+router.get("/verify", authMiddleware, moneyActionLimiter, verifyPremium);
+router.post(
+  "/subscribe-with-wallet",
+  authMiddleware,
+  moneyActionLimiter,
+  subscribePremiumWithWallet
+);
 router.get("/admin/payments", authMiddleware, listPremiumPaymentsForAdmin);
+router.get("/admin/payments/:paymentId", authMiddleware, getPremiumPaymentDetailsForAdmin);
 router.get("/my-payments", authMiddleware, listMyPremiumPayments);
 router.get("/wallet", authMiddleware, getWallet);
 router.get("/tip-history", authMiddleware, getTipHistory);
@@ -46,7 +55,11 @@ router.post("/webhook", async (req, res, next) => {
     crypto.timingSafeEqual(providedBuffer, expectedBuffer);
 
   if (!signature || !signaturesMatch) {
-    console.log("Unauthorized webhook attempt");
+    logger.warn("premium.webhook.unauthorized_signature", {
+      hasSignature: Boolean(signature),
+      path: req.originalUrl,
+      ip: req.ip,
+    });
     return res.status(403).send("Unauthorized");
   }
 

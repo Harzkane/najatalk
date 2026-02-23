@@ -6,6 +6,8 @@ import {
   getThreadById,
   createReply,
   searchThreads,
+  listThreadsForAdmin,
+  getAdminThreadDetails,
   reportThread,
   getReports,
   dismissReport,
@@ -18,21 +20,24 @@ import {
   toggleThreadLock,
 } from "../controllers/threads.js";
 import { authMiddleware } from "../middleware/auth.js";
+import { reportActionLimiter, writeActionLimiter } from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
-router.post("/", authMiddleware, createThread);
+router.post("/", authMiddleware, writeActionLimiter, createThread);
 router.get("/", getThreads);
 router.get("/search", searchThreads);
 router.get("/reports", authMiddleware, getReports);
+router.get("/admin/all", authMiddleware, listThreadsForAdmin);
+router.get("/admin/:id", authMiddleware, getAdminThreadDetails);
 
 router.delete("/reports/:id", authMiddleware, dismissReport);
 
 router.get("/:id", getThreadById);
 router.delete("/:id", authMiddleware, deleteThread);
 
-router.post("/:id/replies", authMiddleware, createReply);
-router.post("/:id/report", authMiddleware, reportThread);
+router.post("/:id/replies", authMiddleware, writeActionLimiter, createReply);
+router.post("/:id/report", authMiddleware, reportActionLimiter, reportThread);
 router.get("/:id/hasReported", authMiddleware, hasUserReportedThread);
 router.post("/:id/like", authMiddleware, toggleThreadLike);
 router.post("/:id/bookmark", authMiddleware, toggleThreadBookmark);

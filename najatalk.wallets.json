@@ -1,0 +1,70 @@
+[{
+  "_id": {
+    "$oid": "67c238d85dc27b0913b023e7"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "balance": 129723000,
+  "createdAt": {
+    "$date": "2025-02-28T22:29:44.000Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:10:34.561Z"
+  },
+  "__v": 0,
+  "availableBalance": 129723000,
+  "heldBalance": 0
+},
+{
+  "_id": {
+    "$oid": "67c238d85dc27b0913b023ea"
+  },
+  "userId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "balance": 0,
+  "createdAt": {
+    "$date": "2025-02-28T22:29:44.000Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T20:47:59.882Z"
+  },
+  "__v": 0,
+  "availableBalance": 0,
+  "heldBalance": 0
+},
+{
+  "_id": {
+    "$oid": "67c239885dc27b0913b0250a"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "balance": 1073263100,
+  "createdAt": {
+    "$date": "2025-02-28T22:32:40.000Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:00:02.918Z"
+  },
+  "__v": 0,
+  "availableBalance": 973263100,
+  "heldBalance": 100000000
+},
+{
+  "_id": {
+    "$oid": "67c247f85dc27b0913b02eac"
+  },
+  "userId": {
+    "$oid": "67c247a45dc27b0913b02d3d"
+  },
+  "balance": 99985000,
+  "createdAt": {
+    "$date": "2025-02-28T23:34:16.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-02-28T23:34:16.000Z"
+  },
+  "__v": 0
+}]

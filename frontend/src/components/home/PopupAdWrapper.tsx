@@ -14,6 +14,8 @@ type Ad = {
   status: "pending" | "active" | "expired";
 };
 
+const POPUP_COOLDOWN_MS = 6 * 60 * 60 * 1000;
+
 export default function PopupAdWrapper({
   children,
 }: {
@@ -21,7 +23,6 @@ export default function PopupAdWrapper({
 }) {
   const [popupAd, setPopupAd] = useState<Ad | null>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const POPUP_COOLDOWN_MS = 6 * 60 * 60 * 1000;
 
   const fetchPopupAd = useCallback(async () => {
     try {

@@ -12,7 +12,17 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import Listing from "../models/listing.js";
 import Thread from "../models/thread.js";
+import Report from "../models/report.js";
+import AdminActionLog from "../models/adminActionLog.js";
+import Contest from "../models/contests.js";
+import ContestSubmission from "../models/contestSubmission.js";
+import PremiumPayment from "../models/premiumPayment.js";
 import { syncPremiumAccessState } from "../utils/premiumAccess.js";
+import { ASSIGNABLE_ROLES, hasPermission } from "../utils/permissions.js";
+import { canCreatePendingPayout, validatePayoutAmount } from "../utils/payoutRules.js";
+import { computeUserRiskSignal } from "../utils/riskSignals.js";
+import { sendEmail } from "../utils/email.js";
+import { logger } from "../utils/logger.js";
 
 const maskEmail = (email = "") => {
   const [local = "", domain = ""] = email.split("@");
@@ -91,6 +101,44 @@ const toObjectIdString = (value) => {
   return value.toString();
 };
 
+const buildCreatedAtDateRangeFilter = (dateFromRaw = "", dateToRaw = "") => {
+  const createdAt = {};
+  const dateFrom = String(dateFromRaw || "").trim();
+  const dateTo = String(dateToRaw || "").trim();
+
+  if (dateFrom) {
+    const parsedFrom = new Date(dateFrom);
+    if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+  }
+
+  if (dateTo) {
+    const parsedTo = new Date(dateTo);
+    if (!Number.isNaN(parsedTo.getTime())) {
+      parsedTo.setHours(23, 59, 59, 999);
+      createdAt.$lte = parsedTo;
+    }
+  }
+
+  return Object.keys(createdAt).length > 0 ? createdAt : null;
+};
+
+const getDateBucket = (date, period = "daily", timezone = "Africa/Lagos") => {
+  const safeDate = new Date(date);
+  if (Number.isNaN(safeDate.getTime())) return "invalid";
+  const dayFmt = new Intl.DateTimeFormat("en-CA", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const parts = dayFmt.formatToParts(safeDate);
+  const year = parts.find((p) => p.type === "year")?.value || "0000";
+  const month = parts.find((p) => p.type === "month")?.value || "00";
+  const day = parts.find((p) => p.type === "day")?.value || "00";
+  if (period === "monthly") return `${year}-${month}`;
+  return `${year}-${month}-${day}`;
+};
+
 const formatPayoutRecipient = (details = {}) => {
   const accountName = String(details.accountName || "").trim();
   const accountNumber = String(details.accountNumber || "").trim();
@@ -132,9 +180,10 @@ const createLedgerEntry = async ({
   metadata = {},
   transactionId = null,
   listingId = null,
+  session = null,
 }) => {
   const snapshot = getWalletSnapshot(wallet);
-  await WalletLedger.create({
+  const payload = {
     userId,
     entryKind,
     amount,
@@ -150,11 +199,19 @@ const createLedgerEntry = async ({
     metadata,
     transactionId,
     listingId,
-  });
+  };
+  if (session) {
+    await WalletLedger.create([payload], { session });
+    return;
+  }
+  await WalletLedger.create(payload);
 };
 
-const ensureWalletBalanceFields = async (userId) => {
-  const wallet = await Wallet.findOne({ userId });
+const ensureWalletBalanceFields = async (userId, options = {}) => {
+  const { session = null } = options;
+  let query = Wallet.findOne({ userId });
+  if (session) query = query.session(session);
+  const wallet = await query;
   if (!wallet) return null;
 
   let changed = false;
@@ -175,7 +232,11 @@ const ensureWalletBalanceFields = async (userId) => {
     changed = true;
   }
   if (changed) {
-    await wallet.save();
+    if (session) {
+      await wallet.save({ session });
+    } else {
+      await wallet.save();
+    }
   }
   return wallet;
 };
@@ -294,18 +355,353 @@ const buildSellerStats = async (userId) => {
   };
 };
 
+const isSuperAdmin = (user) => user?.role === "super_admin";
+const canManagePrivilegedRoles = (actor, targetRole) =>
+  !["admin", "super_admin"].includes(targetRole) || isSuperAdmin(actor);
+
+const logAdminAction = async ({
+  actorId,
+  targetUserId = null,
+  action,
+  reason = null,
+  metadata = {},
+  session = null,
+}) => {
+  try {
+    if (!actorId || !action) return;
+    const payload = {
+      actorId,
+      targetUserId,
+      action,
+      reason: reason || null,
+      metadata,
+    };
+    if (session) {
+      await AdminActionLog.create([payload], { session });
+      return;
+    }
+    await AdminActionLog.create(payload);
+  } catch (err) {
+    console.error("Admin action log error:", err.message);
+  }
+};
+
+const parseDurationHours = (value) => {
+  const parsed = Number.parseInt(String(value || ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return Math.min(parsed, 24 * 90);
+};
+
+const SLA_ALERT_THRESHOLDS = {
+  pendingPayoutCount: Number.parseInt(process.env.SLA_PENDING_PAYOUT_THRESHOLD || "20", 10),
+  failedPayoutCount: Number.parseInt(process.env.SLA_FAILED_PAYOUT_THRESHOLD || "10", 10),
+  premiumInFlightCount: Number.parseInt(process.env.SLA_PREMIUM_INFLIGHT_THRESHOLD || "20", 10),
+  premiumFailedCount: Number.parseInt(process.env.SLA_PREMIUM_FAILED_THRESHOLD || "8", 10),
+  mismatchedUsersCount: Number.parseInt(process.env.SLA_MISMATCHED_USERS_THRESHOLD || "6", 10),
+  highSeverityMismatchCount: Number.parseInt(
+    process.env.SLA_HIGH_SEVERITY_MISMATCH_THRESHOLD || "2",
+    10
+  ),
+  oldestPendingPayoutHours: Number.parseInt(
+    process.env.SLA_OLDEST_PENDING_PAYOUT_HOURS_THRESHOLD || "24",
+    10
+  ),
+  oldestPremiumInFlightHours: Number.parseInt(
+    process.env.SLA_OLDEST_PREMIUM_INFLIGHT_HOURS_THRESHOLD || "2",
+    10
+  ),
+};
+
+const SLA_ALERT_WINDOW_DAYS = Number.parseInt(process.env.SLA_ALERT_WINDOW_DAYS || "7", 10);
+const SLA_ALERT_COOLDOWN_MINUTES = Number.parseInt(
+  process.env.SLA_ALERT_COOLDOWN_MINUTES || "60",
+  10
+);
+const slaAlertLastSentAtByKey = new Map();
+
+const getSlaAlertRecipients = () => {
+  const raw = process.env.SLA_ALERT_EMAIL_TO || process.env.EMAIL_USER || "";
+  return String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const computeWalletMismatchSummaryForAlerts = async ({ createdAt }) => {
+  const [transactions, ledgers] = await Promise.all([
+    Transaction.find({
+      type: { $in: ["escrow", "tip", "refund", "payout"] },
+      status: { $in: ["pending", "completed", "failed"] },
+      ...(createdAt ? { createdAt } : {}),
+    })
+      .select("senderId receiverId type status amount platformCut")
+      .lean(),
+    WalletLedger.find({
+      transactionId: { $ne: null },
+      ...(createdAt ? { createdAt } : {}),
+    })
+      .select("userId walletEffect")
+      .lean(),
+  ]);
+
+  const addToMap = (map, userId, amount, txCount = 0) => {
+    if (!userId) return;
+    const key = userId.toString();
+    const current = map.get(key) || { expectedEffect: 0, txCount: 0 };
+    current.expectedEffect += Number(amount || 0);
+    current.txCount += txCount;
+    map.set(key, current);
+  };
+
+  const expectedByUser = new Map();
+  for (const tx of transactions) {
+    const senderId = toObjectIdString(tx.senderId);
+    const receiverId = toObjectIdString(tx.receiverId);
+    const platformCut = Number(tx.platformCut || 0);
+    const amount = Number(tx.amount || 0);
+
+    if (tx.type === "escrow") {
+      if (senderId) addToMap(expectedByUser, senderId, -amount, 1);
+      if (receiverId && tx.status === "completed") {
+        addToMap(expectedByUser, receiverId, amount - platformCut, 1);
+      }
+    } else if (tx.type === "tip") {
+      if (receiverId && tx.status === "completed") {
+        addToMap(expectedByUser, receiverId, amount - platformCut, 1);
+      }
+    } else if (tx.type === "refund" && tx.status === "completed") {
+      if (receiverId) addToMap(expectedByUser, receiverId, amount, 1);
+      if (senderId) addToMap(expectedByUser, senderId, -amount, 1);
+    } else if (tx.type === "payout") {
+      if (senderId) {
+        if (tx.status === "failed") addToMap(expectedByUser, senderId, amount, 1);
+        if (tx.status === "pending" || tx.status === "completed") {
+          addToMap(expectedByUser, senderId, -amount, 1);
+        }
+      }
+    }
+  }
+
+  const ledgerByUser = new Map();
+  for (const entry of ledgers) {
+    const userKey = toObjectIdString(entry.userId);
+    if (!userKey) continue;
+    const current = ledgerByUser.get(userKey) || { ledgerEffect: 0, ledgerCount: 0 };
+    current.ledgerEffect += Number(entry.walletEffect || 0);
+    current.ledgerCount += 1;
+    ledgerByUser.set(userKey, current);
+  }
+
+  const allUserIds = new Set([...expectedByUser.keys(), ...ledgerByUser.keys()]);
+  let mismatchedUsers = 0;
+  let highCount = 0;
+  let mediumCount = 0;
+  let lowCount = 0;
+
+  for (const userId of allUserIds) {
+    const expected = expectedByUser.get(userId) || { expectedEffect: 0, txCount: 0 };
+    const ledger = ledgerByUser.get(userId) || { ledgerEffect: 0, ledgerCount: 0 };
+    const delta = expected.expectedEffect - ledger.ledgerEffect;
+    const hasMismatch = delta !== 0 || expected.txCount !== ledger.ledgerCount;
+    if (!hasMismatch) continue;
+
+    mismatchedUsers += 1;
+    const absDelta = Math.abs(delta);
+    if (absDelta >= 10000) highCount += 1;
+    else if (absDelta >= 1000) mediumCount += 1;
+    else lowCount += 1;
+  }
+
+  return {
+    totalUsersChecked: allUserIds.size,
+    mismatchedUsers,
+    highCount,
+    mediumCount,
+    lowCount,
+  };
+};
+
+const buildSlaAlertSnapshot = async () => {
+  const windowDays = Number.isFinite(SLA_ALERT_WINDOW_DAYS) ? Math.max(SLA_ALERT_WINDOW_DAYS, 1) : 7;
+  const since = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+  const createdAtWindow = { $gte: since };
+
+  const [
+    pendingPayoutCount,
+    failedPayoutCount,
+    payoutTotalCount,
+    oldestPendingPayout,
+    premiumInitiatedCount,
+    premiumProcessingCount,
+    premiumFailedCount,
+    premiumTotalCount,
+    oldestPremiumInFlight,
+    mismatchSummary,
+  ] = await Promise.all([
+    Transaction.countDocuments({
+      type: "payout",
+      status: "pending",
+    }),
+    Transaction.countDocuments({
+      type: "payout",
+      status: "failed",
+      createdAt: createdAtWindow,
+    }),
+    Transaction.countDocuments({
+      type: "payout",
+      createdAt: createdAtWindow,
+    }),
+    Transaction.findOne({ type: "payout", status: "pending" })
+      .sort({ createdAt: 1 })
+      .select("createdAt")
+      .lean(),
+    PremiumPayment.countDocuments({ status: "initiated" }),
+    PremiumPayment.countDocuments({ status: "processing" }),
+    PremiumPayment.countDocuments({ status: "failed", createdAt: createdAtWindow }),
+    PremiumPayment.countDocuments({ createdAt: createdAtWindow }),
+    PremiumPayment.findOne({ status: { $in: ["initiated", "processing"] } })
+      .sort({ createdAt: 1 })
+      .select("createdAt")
+      .lean(),
+    computeWalletMismatchSummaryForAlerts({ createdAt: createdAtWindow }),
+  ]);
+
+  const premiumInFlightCount = premiumInitiatedCount + premiumProcessingCount;
+  const payoutFailureRatePct =
+    payoutTotalCount > 0 ? Number(((failedPayoutCount / payoutTotalCount) * 100).toFixed(1)) : 0;
+  const premiumFailureRatePct =
+    premiumTotalCount > 0 ? Number(((premiumFailedCount / premiumTotalCount) * 100).toFixed(1)) : 0;
+  const oldestPendingPayoutHours = oldestPendingPayout?.createdAt
+    ? Number(((Date.now() - new Date(oldestPendingPayout.createdAt).getTime()) / 3600000).toFixed(1))
+    : 0;
+  const oldestPremiumInFlightHours = oldestPremiumInFlight?.createdAt
+    ? Number(((Date.now() - new Date(oldestPremiumInFlight.createdAt).getTime()) / 3600000).toFixed(1))
+    : 0;
+
+  return {
+    windowDays,
+    metrics: {
+      pendingPayoutCount,
+      failedPayoutCount,
+      premiumInFlightCount,
+      premiumFailedCount,
+      payoutFailureRatePct,
+      premiumFailureRatePct,
+      oldestPendingPayoutHours,
+      oldestPremiumInFlightHours,
+      mismatchedUsersCount: mismatchSummary.mismatchedUsers,
+      highSeverityMismatchCount: mismatchSummary.highCount,
+    },
+    mismatchSummary,
+  };
+};
+
+const evaluateSlaAlerts = (metrics) => {
+  const findings = [];
+  if (metrics.pendingPayoutCount >= SLA_ALERT_THRESHOLDS.pendingPayoutCount) {
+    findings.push({
+      key: "pending_payout_queue",
+      section: "payouts",
+      label: "Pending payout queue above threshold",
+      value: `${metrics.pendingPayoutCount} pending`,
+    });
+  }
+  if (metrics.failedPayoutCount >= SLA_ALERT_THRESHOLDS.failedPayoutCount) {
+    findings.push({
+      key: "failed_payout_count",
+      section: "payouts",
+      label: "Payout failures above threshold",
+      value: `${metrics.failedPayoutCount} failed`,
+    });
+  }
+  if (metrics.premiumInFlightCount >= SLA_ALERT_THRESHOLDS.premiumInFlightCount) {
+    findings.push({
+      key: "premium_inflight_queue",
+      section: "premium",
+      label: "Premium in-flight queue above threshold",
+      value: `${metrics.premiumInFlightCount} in flight`,
+    });
+  }
+  if (metrics.premiumFailedCount >= SLA_ALERT_THRESHOLDS.premiumFailedCount) {
+    findings.push({
+      key: "premium_failed_count",
+      section: "premium",
+      label: "Premium failures above threshold",
+      value: `${metrics.premiumFailedCount} failed`,
+    });
+  }
+  if (metrics.mismatchedUsersCount >= SLA_ALERT_THRESHOLDS.mismatchedUsersCount) {
+    findings.push({
+      key: "wallet_mismatch_queue",
+      section: "mismatches",
+      label: "Wallet mismatches above threshold",
+      value: `${metrics.mismatchedUsersCount} mismatched users`,
+    });
+  }
+  if (metrics.highSeverityMismatchCount >= SLA_ALERT_THRESHOLDS.highSeverityMismatchCount) {
+    findings.push({
+      key: "wallet_mismatch_high_severity",
+      section: "mismatches",
+      label: "High-severity wallet mismatches detected",
+      value: `${metrics.highSeverityMismatchCount} high severity`,
+    });
+  }
+  if (metrics.oldestPendingPayoutHours >= SLA_ALERT_THRESHOLDS.oldestPendingPayoutHours) {
+    findings.push({
+      key: "oldest_pending_payout_age",
+      section: "payouts",
+      label: "Oldest pending payout is aging out",
+      value: `${metrics.oldestPendingPayoutHours}h old`,
+    });
+  }
+  if (metrics.oldestPremiumInFlightHours >= SLA_ALERT_THRESHOLDS.oldestPremiumInFlightHours) {
+    findings.push({
+      key: "oldest_premium_inflight_age",
+      section: "premium",
+      label: "Oldest premium verification is aging",
+      value: `${metrics.oldestPremiumInFlightHours}h old`,
+    });
+  }
+  return findings;
+};
+
+const filterSlaAlertCooldown = (findings = []) => {
+  const cooldownMs = Math.max(SLA_ALERT_COOLDOWN_MINUTES, 5) * 60 * 1000;
+  const now = Date.now();
+  const sendNow = [];
+  const suppressed = [];
+
+  for (const finding of findings) {
+    const lastSentAt = Number(slaAlertLastSentAtByKey.get(finding.key) || 0);
+    if (!lastSentAt || now - lastSentAt >= cooldownMs) {
+      sendNow.push(finding);
+      continue;
+    }
+    suppressed.push({
+      ...finding,
+      nextAllowedAt: new Date(lastSentAt + cooldownMs).toISOString(),
+    });
+  }
+
+  return { sendNow, suppressed };
+};
+
 export const banUser = async (req, res) => {
   const { userId } = req.params;
+  const reason = String(req.body?.reason || "").trim();
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
-    const user = await User.findByIdAndUpdate(
-      userId,
-      { isBanned: true },
-      { new: true }
-    );
+    const user = await User.findByIdAndUpdate(userId, { isBanned: true }, { new: true });
     if (!user) return res.status(404).json({ message: "User no dey!" });
+    await logAdminAction({
+      actorId: req.user._id,
+      targetUserId: user._id,
+      action: "user.ban",
+      reason: reason || null,
+      metadata: { targetEmail: user.email },
+    });
     res.json({ message: "User don dey banned—e don finish!" });
   } catch (err) {
     res.status(500).json({ message: "Ban scatter: " + err.message });
@@ -314,13 +710,113 @@ export const banUser = async (req, res) => {
 
 export const getBannedUsers = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
-    const bannedUsers = await User.find({ isBanned: true }).select(
-      "email appealReason appealStatus"
-    );
-    res.json({ bannedUsers, message: "Banned users dey here—check am!" });
+
+    const q = String(req.query.q || "").trim();
+    const appealStatus = String(req.query.appealStatus || "all").trim().toLowerCase();
+    const suspendedOnly = String(req.query.suspendedOnly || "false") === "true";
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+
+    const query = { isBanned: true };
+    if (q) {
+      query.$or = [
+        { email: { $regex: q, $options: "i" } },
+        { username: { $regex: q, $options: "i" } },
+      ];
+    }
+    if (appealStatus !== "all") {
+      if (appealStatus === "none") query.appealStatus = { $in: [null, ""] };
+      if (["pending", "approved", "rejected"].includes(appealStatus)) {
+        query.appealStatus = appealStatus;
+      }
+    }
+    if (suspendedOnly) {
+      query.suspendedUntil = { $gt: new Date() };
+    }
+    const updatedAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) updatedAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        updatedAt.$lte = parsedTo;
+      }
+    }
+    if (Object.keys(updatedAt).length > 0) query.updatedAt = updatedAt;
+
+    const [rows, total, summaryAgg] = await Promise.all([
+      User.find(query)
+        .sort({ updatedAt: -1, _id: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .select(
+          "_id email username role flair appealReason appealStatus suspendedUntil suspensionReason updatedAt"
+        )
+        .lean(),
+      User.countDocuments(query),
+      User.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: null,
+            pendingAppeals: {
+              $sum: { $cond: [{ $eq: ["$appealStatus", "pending"] }, 1, 0] },
+            },
+            approvedAppeals: {
+              $sum: { $cond: [{ $eq: ["$appealStatus", "approved"] }, 1, 0] },
+            },
+            rejectedAppeals: {
+              $sum: { $cond: [{ $eq: ["$appealStatus", "rejected"] }, 1, 0] },
+            },
+            suspended: {
+              $sum: {
+                $cond: [{ $gt: ["$suspendedUntil", new Date()] }, 1, 0],
+              },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const stats = summaryAgg[0] || {
+      pendingAppeals: 0,
+      approvedAppeals: 0,
+      rejectedAppeals: 0,
+      suspended: 0,
+    };
+
+    res.json({
+      bannedUsers: rows,
+      summary: {
+        total,
+        pendingAppeals: Number(stats.pendingAppeals || 0),
+        approvedAppeals: Number(stats.approvedAppeals || 0),
+        rejectedAppeals: Number(stats.rejectedAppeals || 0),
+        suspended: Number(stats.suspended || 0),
+      },
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + rows.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Banned users dey here—check am!",
+    });
   } catch (err) {
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }
@@ -366,8 +862,9 @@ export const appealBan = async (req, res) => {
 export const unbanUser = async (req, res) => {
   const { userId } = req.params;
   const { approve } = req.body;
+  const reason = String(req.body?.reason || "").trim();
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
     const user = await User.findById(userId);
@@ -378,9 +875,23 @@ export const unbanUser = async (req, res) => {
         .json({ message: "User no dey banned—no need to unban!" });
 
     const update = approve
-      ? { isBanned: false, appealStatus: "approved", appealReason: null }
+      ? {
+          isBanned: false,
+          appealStatus: "approved",
+          appealReason: null,
+          suspendedUntil: null,
+          suspensionReason: null,
+          suspendedBy: null,
+        }
       : { appealStatus: "rejected" };
-    await User.findByIdAndUpdate(userId, update, { new: true });
+    const updatedUser = await User.findByIdAndUpdate(userId, update, { new: true });
+    await logAdminAction({
+      actorId: req.user._id,
+      targetUserId: updatedUser?._id || userId,
+      action: approve ? "user.unban" : "user.appeal_reject",
+      reason: reason || null,
+      metadata: { targetEmail: updatedUser?.email || user.email },
+    });
     res.json({
       message: approve
         ? "User don dey unbanned—welcome back!"
@@ -388,6 +899,424 @@ export const unbanUser = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Unban scatter: " + err.message });
+  }
+};
+
+export const updateUserRole = async (req, res) => {
+  const { userId } = req.params;
+  const requestedRole = String(req.body?.role || "").trim();
+  const reason = String(req.body?.reason || "").trim();
+
+  try {
+    if (!hasPermission(req.user, "users.role.manage")) {
+      return res.status(403).json({ message: "You no get permission for role management." });
+    }
+    if (!ASSIGNABLE_ROLES.includes(requestedRole)) {
+      return res.status(400).json({
+        message: `Invalid role. Allowed roles: ${ASSIGNABLE_ROLES.join(", ")}`,
+      });
+    }
+
+    const target = await User.findById(userId).select("_id email role");
+    if (!target) return res.status(404).json({ message: "User no dey!" });
+    if (!canManagePrivilegedRoles(req.user, requestedRole)) {
+      return res.status(403).json({
+        message: "Only super_admin fit assign admin or super_admin role.",
+      });
+    }
+    if (["admin", "super_admin"].includes(target.role) && !isSuperAdmin(req.user)) {
+      return res.status(403).json({
+        message: "Only super_admin fit change admin or super_admin users.",
+      });
+    }
+
+    if (target.role === requestedRole) {
+      return res.json({
+        message: "Role already set.",
+        user: { _id: target._id, email: target.email, role: target.role },
+      });
+    }
+
+    if (target.role === "super_admin" && requestedRole !== "super_admin") {
+      const superAdminCount = await User.countDocuments({ role: "super_admin" });
+      if (superAdminCount <= 1) {
+        return res.status(400).json({
+          message: "Cannot remove the last super_admin.",
+        });
+      }
+    }
+
+    const previousRole = target.role;
+    target.role = requestedRole;
+    await target.save();
+    await logAdminAction({
+      actorId: req.user._id,
+      targetUserId: target._id,
+      action: "user.role_update",
+      reason: reason || null,
+      metadata: { previousRole, nextRole: requestedRole, targetEmail: target.email },
+    });
+
+    return res.json({
+      message: `Role updated to ${requestedRole}.`,
+      user: { _id: target._id, email: target.email, role: target.role },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Role update scatter: " + err.message });
+  }
+};
+
+export const listUsersForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const role = String(req.query.role || "all").trim();
+    const bannedOnly = req.query.bannedOnly === "true";
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+
+    const query = {};
+    if (q) {
+      query.$or = [
+        { email: { $regex: q, $options: "i" } },
+        { username: { $regex: q, $options: "i" } },
+      ];
+    }
+    if (role !== "all") query.role = role;
+    if (bannedOnly) query.isBanned = true;
+
+    const [users, total, summaryAgg] = await Promise.all([
+      User.find(query)
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .select(
+          "_id email username role isBanned suspendedUntil suspensionReason appealStatus flair isPremium premiumStatus createdAt updatedAt"
+        ),
+      User.countDocuments(query),
+      User.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: null,
+            banned: {
+              $sum: { $cond: [{ $eq: ["$isBanned", true] }, 1, 0] },
+            },
+            admins: {
+              $sum: {
+                $cond: [
+                  { $in: ["$role", ["admin", "super_admin"]] },
+                  1,
+                  0,
+                ],
+              },
+            },
+            mods: {
+              $sum: { $cond: [{ $eq: ["$role", "mod"] }, 1, 0] },
+            },
+            premium: {
+              $sum: { $cond: [{ $eq: ["$isPremium", true] }, 1, 0] },
+            },
+          },
+        },
+      ]),
+    ]);
+
+    const stats = summaryAgg[0] || { banned: 0, admins: 0, mods: 0, premium: 0 };
+    const summary = {
+      total,
+      banned: Number(stats.banned || 0),
+      admins: Number(stats.admins || 0),
+      mods: Number(stats.mods || 0),
+      premium: Number(stats.premium || 0),
+    };
+
+    return res.json({
+      users,
+      summary,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + users.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Admin users list loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Users list scatter: " + err.message });
+  }
+};
+
+export const listAdminActions = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const action = String(req.query.action || "all").trim();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+
+    const query = {};
+    if (action !== "all") query.action = action;
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
+
+    if (q) {
+      const userMatches = await User.find(
+        { email: { $regex: q, $options: "i" } },
+        { _id: 1 }
+      )
+        .limit(500)
+        .lean();
+      const userIds = userMatches.map((user) => user._id);
+      query.$or = [
+        { action: { $regex: q, $options: "i" } },
+        { reason: { $regex: q, $options: "i" } },
+      ];
+      if (userIds.length > 0) {
+        query.$or.push({ actorId: { $in: userIds } });
+        query.$or.push({ targetUserId: { $in: userIds } });
+      }
+    }
+
+    const [rows, total] = await Promise.all([
+      AdminActionLog.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .populate("actorId", "_id email role")
+        .populate("targetUserId", "_id email role")
+        .lean(),
+      AdminActionLog.countDocuments(query),
+    ]);
+
+    return res.json({
+      actions: rows.map((row) => ({
+        _id: row._id,
+        action: row.action,
+        reason: row.reason || null,
+        metadata: row.metadata || {},
+        createdAt: row.createdAt,
+        actor: row.actorId
+          ? {
+              _id: row.actorId._id,
+              email: row.actorId.email,
+              role: row.actorId.role,
+            }
+          : null,
+        targetUser: row.targetUserId
+          ? {
+              _id: row.targetUserId._id,
+              email: row.targetUserId.email,
+              role: row.targetUserId.role,
+            }
+          : null,
+      })),
+      summary: {
+        total,
+      },
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + rows.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Admin action logs loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Admin actions scatter: " + err.message });
+  }
+};
+
+export const getAdminUserDetails = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user id." });
+    }
+
+    const user = await User.findById(userId).select(
+      "_id email username role isVerified isBanned suspendedUntil suspensionReason appealStatus flair isPremium premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd createdAt updatedAt"
+    );
+    if (!user) return res.status(404).json({ message: "User no dey!" });
+
+    const [threadCount, listingCount, soldListingCount, payoutCount, payoutPendingCount, totalTipsSent, totalTipsReceived, receivedReportsCount, reportedByUserCount, recentActions] =
+      await Promise.all([
+        Thread.countDocuments({ userId }),
+        Listing.countDocuments({ userId, status: { $ne: "deleted" } }),
+        Listing.countDocuments({ userId, status: "sold" }),
+        Transaction.countDocuments({ senderId: userId, type: "payout" }),
+        Transaction.countDocuments({ senderId: userId, type: "payout", status: "pending" }),
+        Transaction.aggregate([
+          { $match: { senderId: new mongoose.Types.ObjectId(userId), type: "tip", status: "completed" } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]),
+        Transaction.aggregate([
+          { $match: { receiverId: new mongoose.Types.ObjectId(userId), type: "tip", status: "completed" } },
+          { $group: { _id: null, total: { $sum: "$amount" } } },
+        ]),
+        Report.countDocuments({ reportedUserId: userId }),
+        Report.countDocuments({ userId }),
+        AdminActionLog.find({ targetUserId: userId })
+          .sort({ createdAt: -1 })
+          .limit(12)
+          .populate("actorId", "email role")
+          .lean(),
+      ]);
+
+    return res.json({
+      user,
+      stats: {
+        threads: threadCount,
+        listings: listingCount,
+        soldListings: soldListingCount,
+        payouts: payoutCount,
+        pendingPayouts: payoutPendingCount,
+        tipsSentKobo: Number(totalTipsSent[0]?.total || 0),
+        tipsReceivedKobo: Number(totalTipsReceived[0]?.total || 0),
+        reportsAgainst: receivedReportsCount,
+        reportsFiled: reportedByUserCount,
+      },
+      recentActions: recentActions.map((row) => ({
+        _id: row._id,
+        action: row.action,
+        reason: row.reason || null,
+        metadata: row.metadata || {},
+        createdAt: row.createdAt,
+        actor: row.actorId
+          ? {
+              _id: row.actorId._id,
+              email: row.actorId.email,
+              role: row.actorId.role,
+            }
+          : null,
+      })),
+      message: "Admin user details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "User details scatter: " + err.message });
+  }
+};
+
+export const suspendUserByAdmin = async (req, res) => {
+  const { userId } = req.params;
+  const durationHours = parseDurationHours(req.body?.durationHours);
+  const reason = String(req.body?.reason || "").trim();
+
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+    if (!durationHours) {
+      return res.status(400).json({ message: "durationHours must be between 1 and 2160." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user id." });
+    }
+    if (req.user._id.toString() === userId) {
+      return res.status(400).json({ message: "You no fit suspend yourself." });
+    }
+
+    const target = await User.findById(userId).select("_id email role suspendedUntil");
+    if (!target) return res.status(404).json({ message: "User no dey!" });
+    if ((target.role === "admin" || target.role === "super_admin") && !isSuperAdmin(req.user)) {
+      return res.status(403).json({ message: "Only super_admin fit suspend admin accounts." });
+    }
+
+    const suspendedUntil = new Date(Date.now() + durationHours * 60 * 60 * 1000);
+    target.suspendedUntil = suspendedUntil;
+    target.suspensionReason = reason || null;
+    target.suspendedBy = req.user._id;
+    await target.save();
+
+    await logAdminAction({
+      actorId: req.user._id,
+      targetUserId: target._id,
+      action: "user.suspend",
+      reason: reason || null,
+      metadata: { durationHours, suspendedUntil, targetEmail: target.email },
+    });
+
+    return res.json({
+      message: `User suspended for ${durationHours} hour(s).`,
+      suspension: {
+        suspendedUntil,
+        reason: reason || null,
+      },
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Suspend scatter: " + err.message });
+  }
+};
+
+export const unsuspendUserByAdmin = async (req, res) => {
+  const { userId } = req.params;
+  const reason = String(req.body?.reason || "").trim();
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user id." });
+    }
+
+    const target = await User.findById(userId).select("_id email role suspendedUntil");
+    if (!target) return res.status(404).json({ message: "User no dey!" });
+    if ((target.role === "admin" || target.role === "super_admin") && !isSuperAdmin(req.user)) {
+      return res.status(403).json({ message: "Only super_admin fit unsuspend admin accounts." });
+    }
+
+    target.suspendedUntil = null;
+    target.suspensionReason = null;
+    target.suspendedBy = null;
+    await target.save();
+
+    await logAdminAction({
+      actorId: req.user._id,
+      targetUserId: target._id,
+      action: "user.unsuspend",
+      reason: reason || null,
+      metadata: { targetEmail: target.email },
+    });
+
+    return res.json({ message: "User suspension removed." });
+  } catch (err) {
+    return res.status(500).json({ message: "Unsuspend scatter: " + err.message });
   }
 };
 
@@ -644,7 +1573,7 @@ export const getSellerWallet = async (req, res) => {
         .status(400)
         .json({ message: "Invalid user ID—check am well!" });
     }
-    if (req.user._id.toString() !== userId && req.user.role !== "admin") {
+    if (req.user._id.toString() !== userId && !hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "No be your wallet—abeg comot!" });
     }
 
@@ -1125,97 +2054,130 @@ export const downloadMyWalletStatementPdf = async (req, res) => {
 };
 
 export const requestPayout = async (req, res) => {
+  const session = await mongoose.startSession();
   try {
-    const amount = Number(req.body?.amount);
-    const amountKobo = Math.round(amount * 100);
-
-    if (!Number.isFinite(amount) || amount <= 0) {
-      return res.status(400).json({ message: "Payout amount must be valid." });
+    const payoutAmount = validatePayoutAmount(req.body?.amount);
+    if (!payoutAmount.ok) {
+      return res.status(400).json({ message: payoutAmount.message });
     }
-    if (!Number.isInteger(amountKobo) || amountKobo < 50000) {
-      return res.status(400).json({ message: "Minimum payout is ₦500." });
-    }
+    const amountKobo = payoutAmount.amountKobo;
 
     const payoutRecipient = formatPayoutRecipient(req.body?.payoutDetails || {});
-    await ensureWalletBalanceFields(req.user._id);
-    const pendingCount = await Transaction.countDocuments({
-      senderId: req.user._id,
-      type: "payout",
-      status: "pending",
-    });
-    if (pendingCount >= 3) {
-      return res
-        .status(400)
-        .json({ message: "Too many pending payouts. Wait for admin review." });
-    }
+    let responsePayload = null;
+    await session.withTransaction(async () => {
+      await ensureWalletBalanceFields(req.user._id, { session });
+      const pendingCount = await Transaction.countDocuments({
+        senderId: req.user._id,
+        type: "payout",
+        status: "pending",
+      }).session(session);
+      if (!canCreatePendingPayout(pendingCount)) {
+        const error = new Error("Too many pending payouts. Wait for admin review.");
+        error.status = 400;
+        throw error;
+      }
 
-    const wallet = await Wallet.findOneAndUpdate(
-      { userId: req.user._id, availableBalance: { $gte: amountKobo } },
-      { $inc: { availableBalance: -amountKobo, balance: -amountKobo } },
-      { new: true }
-    );
-    if (!wallet) {
-      return res
-        .status(400)
-        .json({ message: "Insufficient wallet balance for payout." });
-    }
+      const wallet = await Wallet.findOneAndUpdate(
+        { userId: req.user._id, availableBalance: { $gte: amountKobo } },
+        { $inc: { availableBalance: -amountKobo, balance: -amountKobo } },
+        { new: true, session }
+      );
+      if (!wallet) {
+        const error = new Error("Insufficient wallet balance for payout.");
+        error.status = 400;
+        throw error;
+      }
 
-    const newPayout = await Transaction.create({
-      senderId: req.user._id,
-      receiverId: req.user._id,
-      amount: amountKobo,
-      type: "payout",
-      status: "pending",
-      reference: `naijatalk_payout_${Date.now()}_${req.user._id}`,
-      recipientId: payoutRecipient,
-    });
+      const [newPayout] = await Transaction.create(
+        [
+          {
+            senderId: req.user._id,
+            receiverId: req.user._id,
+            amount: amountKobo,
+            type: "payout",
+            status: "pending",
+            reference: `naijatalk_payout_${Date.now()}_${req.user._id}`,
+            recipientId: payoutRecipient,
+          },
+        ],
+        { session }
+      );
 
-    await createLedgerEntry({
-      userId: req.user._id,
-      entryKind: "payout_pending",
-      amount: amountKobo,
-      walletEffect: -amountKobo,
-      status: "pending",
-      reference: newPayout.reference,
-      recipientId: newPayout.recipientId,
-      wallet,
-      transactionId: newPayout._id,
+      await createLedgerEntry({
+        userId: req.user._id,
+        entryKind: "payout_pending",
+        amount: amountKobo,
+        walletEffect: -amountKobo,
+        status: "pending",
+        reference: newPayout.reference,
+        recipientId: newPayout.recipientId,
+        wallet,
+        transactionId: newPayout._id,
+        session,
+      });
+
+      responsePayload = {
+        payout: newPayout,
+        balance: wallet.balance,
+        availableBalance: wallet.availableBalance,
+        heldBalance: wallet.heldBalance || 0,
+      };
     });
 
     return res.status(201).json({
-      payout: newPayout,
-      balance: wallet.balance,
-      availableBalance: wallet.availableBalance,
-      heldBalance: wallet.heldBalance || 0,
+      ...responsePayload,
       message: "Payout request submitted. Admin go review am soon.",
     });
   } catch (err) {
     const msg = err.message || "Payout request scatter.";
-    const isUserError =
-      msg.includes("Insufficient") ||
-      msg.includes("Minimum payout") ||
-      msg.includes("Wallet no dey") ||
-      msg.includes("Too many pending") ||
-      msg.includes("valid");
-    return res.status(isUserError ? 400 : 500).json({ message: msg });
+    const status = Number.isInteger(err?.status) ? err.status : 500;
+    return res.status(status).json({ message: msg });
+  } finally {
+    await session.endSession();
   }
 };
 
 export const listPayoutsForAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Admins only." });
     }
 
     const status = String(req.query.status || "pending");
-    const limitRaw = Number.parseInt(String(req.query.limit || "200"), 10);
-    const limit = Number.isFinite(limitRaw)
-      ? Math.min(Math.max(limitRaw, 1), 1000)
-      : 200;
+    const q = String(req.query.q || "").trim();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
     const query = { type: "payout" };
 
     if (["pending", "completed", "failed"].includes(status)) {
       query.status = status;
+    }
+
+    if (q) {
+      const userMatches = await User.find(
+        {
+          $or: [
+            { email: { $regex: q, $options: "i" } },
+            { username: { $regex: q, $options: "i" } },
+          ],
+        },
+        { _id: 1 }
+      )
+        .limit(500)
+        .lean();
+      const userIds = userMatches.map((user) => user._id);
+      query.$or = [
+        { reference: { $regex: q, $options: "i" } },
+        { recipientId: { $regex: q, $options: "i" } },
+      ];
+      if (userIds.length > 0) {
+        query.$or.push({ senderId: { $in: userIds } });
+      }
     }
 
     const dateFromRaw = String(req.query.dateFrom || "").trim();
@@ -1238,21 +2200,23 @@ export const listPayoutsForAdmin = async (req, res) => {
       query.createdAt = createdAt;
     }
 
-    const payouts = await Transaction.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .populate("senderId", "email username")
-      .select("amount status reference recipientId createdAt updatedAt senderId");
-
-    const statsByStatus = await Transaction.aggregate([
-      { $match: query },
-      {
-        $group: {
-          _id: "$status",
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
+    const [payouts, statsByStatus] = await Promise.all([
+      Transaction.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .populate("senderId", "email username")
+        .select("amount status reference recipientId createdAt updatedAt senderId"),
+      Transaction.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: "$status",
+            totalAmount: { $sum: "$amount" },
+            count: { $sum: 1 },
+          },
         },
-      },
+      ]),
     ]);
 
     const summary = {
@@ -1301,6 +2265,14 @@ export const listPayoutsForAdmin = async (req, res) => {
         updatedAt: p.updatedAt,
       })),
       summary,
+      pagination: {
+        page,
+        pageSize,
+        total: summary.totalCount,
+        totalPages: Math.max(Math.ceil(summary.totalCount / pageSize), 1),
+        hasNext: skip + payouts.length < summary.totalCount,
+        hasPrev: page > 1,
+      },
       message: "Payout queue loaded.",
     });
   } catch (err) {
@@ -1308,9 +2280,104 @@ export const listPayoutsForAdmin = async (req, res) => {
   }
 };
 
+export const getAdminPayoutDetails = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const { payoutId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(payoutId)) {
+      return res.status(400).json({ message: "Invalid payout id." });
+    }
+
+    const payout = await Transaction.findOne({ _id: payoutId, type: "payout" })
+      .populate("senderId", "_id email username role isBanned suspendedUntil")
+      .lean();
+    if (!payout) {
+      return res.status(404).json({ message: "Payout no dey." });
+    }
+
+    const [wallet, payoutLedger, recentPayouts] = await Promise.all([
+      Wallet.findOne({ userId: payout.senderId?._id || payout.senderId })
+        .select("balance availableBalance heldBalance updatedAt")
+        .lean(),
+      WalletLedger.find({
+        $or: [{ transactionId: payout._id }, { reference: payout.reference }],
+      })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .select(
+          "_id entryKind walletEffect amount status reference recipientId counterparty createdAt transactionId"
+        )
+        .lean(),
+      Transaction.find({
+        senderId: payout.senderId?._id || payout.senderId,
+        type: "payout",
+      })
+        .sort({ createdAt: -1 })
+        .limit(12)
+        .select("_id amount status reference recipientId createdAt updatedAt")
+        .lean(),
+    ]);
+
+    return res.json({
+      payout: {
+        _id: payout._id,
+        amount: payout.amount,
+        status: payout.status,
+        reference: payout.reference || null,
+        recipientId: payout.recipientId || null,
+        createdAt: payout.createdAt,
+        updatedAt: payout.updatedAt,
+        user: payout.senderId
+          ? {
+              _id: payout.senderId._id,
+              email: payout.senderId.email,
+              username: payout.senderId.username || null,
+              role: payout.senderId.role || "user",
+              isBanned: Boolean(payout.senderId.isBanned),
+              suspendedUntil: payout.senderId.suspendedUntil || null,
+            }
+          : null,
+      },
+      wallet: {
+        balance: Number(wallet?.balance || 0),
+        availableBalance: Number(wallet?.availableBalance || 0),
+        heldBalance: Number(wallet?.heldBalance || 0),
+        updatedAt: wallet?.updatedAt || null,
+      },
+      payoutLedger: payoutLedger.map((row) => ({
+        _id: row._id,
+        entryKind: row.entryKind,
+        walletEffect: Number(row.walletEffect || 0),
+        amount: Number(row.amount || 0),
+        status: row.status,
+        reference: row.reference || null,
+        recipientId: row.recipientId || null,
+        counterparty: row.counterparty || null,
+        createdAt: row.createdAt,
+        transactionId: row.transactionId || null,
+      })),
+      recentPayouts: recentPayouts.map((row) => ({
+        _id: row._id,
+        amount: row.amount,
+        status: row.status,
+        reference: row.reference || null,
+        recipientId: row.recipientId || null,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      })),
+      message: "Payout details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Payout details scatter: " + err.message });
+  }
+};
+
 export const getPayoutRollupsForAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Admins only." });
     }
 
@@ -1411,26 +2478,689 @@ export const getPayoutRollupsForAdmin = async (req, res) => {
   }
 };
 
-export const detectWalletMismatchesForAdmin = async (req, res) => {
+export const getPayoutRollupBucketDetails = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Admins only." });
     }
 
-    const limitRaw = Number.parseInt(String(req.query.limit || "100"), 10);
-    const limit = Number.isFinite(limitRaw)
-      ? Math.min(Math.max(limitRaw, 1), 500)
-      : 100;
+    const { bucket } = req.params;
+    const periodRaw = String(req.query.period || "daily").toLowerCase();
+    const period = periodRaw === "monthly" ? "monthly" : "daily";
+    const status = String(req.query.status || "all").toLowerCase();
+    const timezone = String(req.query.timezone || "Africa/Lagos");
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
 
+    const match = { type: "payout" };
+    if (["pending", "completed", "failed"].includes(status)) {
+      match.status = status;
+    }
+
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) match.createdAt = createdAt;
+
+    const allRows = await Transaction.find(match)
+      .sort({ createdAt: -1 })
+      .populate("senderId", "_id email username")
+      .select("amount status reference recipientId createdAt updatedAt senderId")
+      .lean();
+    const scopedRows = allRows.filter((row) => getDateBucket(row.createdAt, period, timezone) === bucket);
+
+    const total = scopedRows.length;
+    const skip = (page - 1) * pageSize;
+    const rows = scopedRows.slice(skip, skip + pageSize);
+
+    const summary = {
+      totalAmount: scopedRows.reduce((sum, row) => sum + Number(row.amount || 0), 0),
+      totalCount: total,
+      pendingCount: scopedRows.filter((row) => row.status === "pending").length,
+      completedCount: scopedRows.filter((row) => row.status === "completed").length,
+      failedCount: scopedRows.filter((row) => row.status === "failed").length,
+    };
+
+    return res.json({
+      bucket,
+      period,
+      timezone,
+      summary,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasPrev: page > 1,
+        hasNext: skip + rows.length < total,
+      },
+      rows: rows.map((p) => ({
+        _id: p._id,
+        amount: p.amount,
+        status: p.status,
+        reference: p.reference || null,
+        recipientId: p.recipientId || null,
+        createdAt: p.createdAt,
+        updatedAt: p.updatedAt,
+        user: {
+          _id: p.senderId?._id || null,
+          email: p.senderId?.email || "",
+          username: p.senderId?.username || null,
+        },
+      })),
+      message: "Rollup bucket details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Rollup bucket details scatter: " + err.message });
+  }
+};
+
+const PLATFORM_ENTRY_KIND_FILTER_MAP = {
+  platform_fee: ["platform_fee"],
+  contest_prize_paid: ["contest_prize_paid"],
+};
+
+const buildPlatformWalletEntries = ({ feeRows = [], contestRows = [] }) => {
+  const entries = [];
+
+  for (const row of feeRows) {
+    const user = row.senderId
+      ? {
+          _id: String(row.senderId._id),
+          email: row.senderId.email || "",
+          username: row.senderId.username || null,
+          role: row.senderId.role || "user",
+        }
+      : null;
+    entries.push({
+      entryId: `tx_${row._id}`,
+      source: "transaction",
+      sourceId: String(row._id),
+      entryKind: "platform_fee",
+      direction: "credit",
+      amount: Number(row.platformCut || 0),
+      walletEffect: Number(row.platformCut || 0),
+      status: row.status,
+      reference: row.reference || null,
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt || row.createdAt,
+      type: row.type,
+      listingTitle: row.listingId?.title || null,
+      user,
+      contestTitle: null,
+      contestId: null,
+      metadata: {},
+    });
+  }
+
+  for (const row of contestRows) {
+    entries.push({
+      entryId: `wl_${row._id}`,
+      source: "wallet_ledger",
+      sourceId: String(row._id),
+      entryKind: row.entryKind || "contest_prize_paid",
+      direction: "debit",
+      amount: Number(row.amount || 0),
+      walletEffect: -Math.abs(Number(row.amount || 0)),
+      status: row.status,
+      reference: row.reference || null,
+      createdAt: row.createdAt,
+      updatedAt: row.createdAt,
+      type: null,
+      listingTitle: row.listingTitle || null,
+      user: row.userId
+        ? {
+            _id: String(row.userId._id),
+            email: row.userId.email || "",
+            username: row.userId.username || null,
+            role: row.userId.role || "user",
+          }
+        : null,
+      contestTitle: row.contestTitle || null,
+      contestId: row.contestId || null,
+      metadata: row.metadata || {},
+    });
+  }
+
+  return entries.sort(
+    (a, b) =>
+      new Date(b.createdAt || b.updatedAt).getTime() -
+      new Date(a.createdAt || a.updatedAt).getTime()
+  );
+};
+
+export const getPlatformWalletOverviewForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const createdAt = buildCreatedAtDateRangeFilter(req.query.dateFrom, req.query.dateTo);
+
+    const [platformWallet, feeAgg, contestAgg] = await Promise.all([
+      PlatformWallet.findOne().select("balance lastUpdated").lean(),
+      Transaction.aggregate([
+        {
+          $match: {
+            status: "completed",
+            platformCut: { $gt: 0 },
+            ...(createdAt ? { createdAt } : {}),
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$platformCut" },
+            totalCount: { $sum: 1 },
+          },
+        },
+      ]),
+      WalletLedger.aggregate([
+        {
+          $match: {
+            entryKind: "contest_prize_paid",
+            ...(createdAt ? { createdAt } : {}),
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$amount" },
+            totalCount: { $sum: 1 },
+          },
+        },
+      ]),
+    ]);
+
+    const credits = Number(feeAgg?.[0]?.totalAmount || 0);
+    const creditsCount = Number(feeAgg?.[0]?.totalCount || 0);
+    const debits = Number(contestAgg?.[0]?.totalAmount || 0);
+    const debitsCount = Number(contestAgg?.[0]?.totalCount || 0);
+
+    return res.json({
+      wallet: {
+        balance: Number(platformWallet?.balance || 0),
+        lastUpdated: platformWallet?.lastUpdated || null,
+      },
+      summary: {
+        totalCredits: credits,
+        totalCreditsCount: creditsCount,
+        totalDebits: debits,
+        totalDebitsCount: debitsCount,
+        netFlow: credits - debits,
+      },
+      dateRange: {
+        dateFrom: String(req.query.dateFrom || "") || null,
+        dateTo: String(req.query.dateTo || "") || null,
+      },
+      message: "Platform wallet overview loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Platform wallet overview scatter: " + err.message });
+  }
+};
+
+export const listPlatformWalletEntriesForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim().toLowerCase();
+    const status = String(req.query.status || "all").trim().toLowerCase();
+    const entryKindFilter = String(req.query.entryKind || "all").trim().toLowerCase();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw) ? Math.min(Math.max(pageSizeRaw, 1), 200) : 25;
+
+    const createdAt = buildCreatedAtDateRangeFilter(req.query.dateFrom, req.query.dateTo);
+    const requestedKinds =
+      entryKindFilter in PLATFORM_ENTRY_KIND_FILTER_MAP
+        ? PLATFORM_ENTRY_KIND_FILTER_MAP[entryKindFilter]
+        : ["platform_fee", "contest_prize_paid"];
+
+    const feePromise = requestedKinds.includes("platform_fee")
+      ? Transaction.find({
+          platformCut: { $gt: 0 },
+          ...(status === "all" ? {} : { status }),
+          ...(createdAt ? { createdAt } : {}),
+        })
+          .sort({ createdAt: -1 })
+          .populate("senderId", "_id email username role")
+          .populate("listingId", "_id title")
+          .select("_id type status reference platformCut createdAt updatedAt senderId listingId")
+          .lean()
+      : Promise.resolve([]);
+
+    const contestPromise = requestedKinds.includes("contest_prize_paid")
+      ? WalletLedger.find({
+          entryKind: "contest_prize_paid",
+          ...(status === "all" ? {} : { status }),
+          ...(createdAt ? { createdAt } : {}),
+        })
+          .sort({ createdAt: -1 })
+          .populate("userId", "_id email username role")
+          .select("_id entryKind amount status reference listingTitle metadata createdAt userId")
+          .lean()
+      : Promise.resolve([]);
+
+    const [feeRowsRaw, contestRowsRaw] = await Promise.all([feePromise, contestPromise]);
+
+    const contestIds = Array.from(
+      new Set(
+        contestRowsRaw
+          .map((row) => row?.metadata?.contestId)
+          .filter((contestId) => mongoose.Types.ObjectId.isValid(String(contestId)))
+          .map((contestId) => String(contestId))
+      )
+    );
+    const contests = contestIds.length
+      ? await Contest.find({ _id: { $in: contestIds } }).select("_id title").lean()
+      : [];
+    const contestMap = new Map(contests.map((contest) => [String(contest._id), contest.title]));
+    const contestRows = contestRowsRaw.map((row) => {
+      const contestId =
+        row?.metadata?.contestId && mongoose.Types.ObjectId.isValid(String(row.metadata.contestId))
+          ? String(row.metadata.contestId)
+          : null;
+      return {
+        ...row,
+        contestId,
+        contestTitle: contestId ? contestMap.get(contestId) || null : null,
+      };
+    });
+
+    let entries = buildPlatformWalletEntries({
+      feeRows: feeRowsRaw,
+      contestRows,
+    });
+
+    if (q) {
+      entries = entries.filter((entry) => {
+        const haystack = [
+          entry.reference,
+          entry.entryKind,
+          entry.type,
+          entry.listingTitle,
+          entry.contestTitle,
+          entry.user?.email,
+          entry.user?.username,
+          entry.user?._id,
+          entry.sourceId,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(q);
+      });
+    }
+
+    const total = entries.length;
+    const skip = (page - 1) * pageSize;
+    const rows = entries.slice(skip, skip + pageSize);
+
+    return res.json({
+      entries: rows,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasPrev: page > 1,
+        hasNext: skip + rows.length < total,
+      },
+      summary: {
+        totalCredits: entries
+          .filter((entry) => entry.direction === "credit")
+          .reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+        totalDebits: entries
+          .filter((entry) => entry.direction === "debit")
+          .reduce((sum, entry) => sum + Number(entry.amount || 0), 0),
+      },
+      message: "Platform wallet entries loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Platform wallet entries scatter: " + err.message });
+  }
+};
+
+export const getPlatformWalletEntryDetailsForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const { entryId } = req.params;
+    const [prefix, rawId] = String(entryId || "").split("_");
+    if (!["tx", "wl"].includes(prefix) || !mongoose.Types.ObjectId.isValid(String(rawId || ""))) {
+      return res.status(400).json({ message: "Invalid platform wallet entry id." });
+    }
+
+    if (prefix === "tx") {
+      const tx = await Transaction.findById(rawId)
+        .populate("senderId", "_id email username role isBanned suspendedUntil")
+        .populate("receiverId", "_id email username role isBanned suspendedUntil")
+        .populate("listingId", "_id title")
+        .select(
+          "_id senderId receiverId type status amount platformCut reference recipientId listingId createdAt updatedAt"
+        )
+        .lean();
+      if (!tx) return res.status(404).json({ message: "Transaction entry no dey." });
+
+      const relatedLedger = await WalletLedger.find({
+        transactionId: tx._id,
+      })
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .select(
+          "_id userId entryKind amount walletEffect status reference recipientId counterparty listingTitle createdAt"
+        )
+        .populate("userId", "_id email username role")
+        .lean();
+
+      return res.json({
+        entry: {
+          entryId: `tx_${tx._id}`,
+          source: "transaction",
+          sourceId: String(tx._id),
+          entryKind: "platform_fee",
+          direction: "credit",
+          amount: Number(tx.platformCut || 0),
+          walletEffect: Number(tx.platformCut || 0),
+          status: tx.status,
+          reference: tx.reference || null,
+          createdAt: tx.createdAt,
+          updatedAt: tx.updatedAt || tx.createdAt,
+          type: tx.type,
+          listingTitle: tx.listingId?.title || null,
+          user: tx.senderId
+            ? {
+                _id: String(tx.senderId._id),
+                email: tx.senderId.email || "",
+                username: tx.senderId.username || null,
+                role: tx.senderId.role || "user",
+              }
+            : null,
+          contestTitle: null,
+          contestId: null,
+          metadata: {},
+        },
+        transaction: tx,
+        relatedLedger: relatedLedger.map((row) => ({
+          _id: row._id,
+          user: row.userId
+            ? {
+                _id: row.userId._id,
+                email: row.userId.email || "",
+                username: row.userId.username || null,
+                role: row.userId.role || "user",
+              }
+            : null,
+          entryKind: row.entryKind,
+          amount: Number(row.amount || 0),
+          walletEffect: Number(row.walletEffect || 0),
+          status: row.status,
+          reference: row.reference || null,
+          recipientId: row.recipientId || null,
+          counterparty: row.counterparty || null,
+          listingTitle: row.listingTitle || null,
+          createdAt: row.createdAt,
+        })),
+        message: "Platform wallet entry details loaded.",
+      });
+    }
+
+    const ledgerEntry = await WalletLedger.findById(rawId)
+      .populate("userId", "_id email username role isBanned suspendedUntil")
+      .select(
+        "_id userId entryKind amount walletEffect status reference recipientId counterparty listingTitle metadata createdAt transactionId"
+      )
+      .lean();
+    if (!ledgerEntry) return res.status(404).json({ message: "Wallet ledger entry no dey." });
+
+    const contestId =
+      ledgerEntry?.metadata?.contestId &&
+      mongoose.Types.ObjectId.isValid(String(ledgerEntry.metadata.contestId))
+        ? String(ledgerEntry.metadata.contestId)
+        : null;
+    const [contest, relatedSubmission, relatedTransaction] = await Promise.all([
+      contestId ? Contest.findById(contestId).select("_id title prize status").lean() : null,
+      ledgerEntry?.metadata?.submissionId &&
+      mongoose.Types.ObjectId.isValid(String(ledgerEntry.metadata.submissionId))
+        ? ContestSubmission.findById(String(ledgerEntry.metadata.submissionId))
+            .select("_id title status voteCount contestId createdAt updatedAt")
+            .lean()
+        : null,
+      ledgerEntry.transactionId
+        ? Transaction.findById(ledgerEntry.transactionId)
+            .select("_id type status amount platformCut reference recipientId createdAt updatedAt")
+            .lean()
+        : null,
+    ]);
+
+    return res.json({
+      entry: {
+        entryId: `wl_${ledgerEntry._id}`,
+        source: "wallet_ledger",
+        sourceId: String(ledgerEntry._id),
+        entryKind: ledgerEntry.entryKind || "contest_prize_paid",
+        direction: "debit",
+        amount: Number(ledgerEntry.amount || 0),
+        walletEffect: -Math.abs(Number(ledgerEntry.amount || 0)),
+        status: ledgerEntry.status,
+        reference: ledgerEntry.reference || null,
+        createdAt: ledgerEntry.createdAt,
+        updatedAt: ledgerEntry.createdAt,
+        type: null,
+        listingTitle: ledgerEntry.listingTitle || null,
+        user: ledgerEntry.userId
+          ? {
+              _id: String(ledgerEntry.userId._id),
+              email: ledgerEntry.userId.email || "",
+              username: ledgerEntry.userId.username || null,
+              role: ledgerEntry.userId.role || "user",
+            }
+          : null,
+        contestTitle: contest?.title || null,
+        contestId,
+        metadata: ledgerEntry.metadata || {},
+      },
+      ledgerEntry: {
+        ...ledgerEntry,
+        userId: ledgerEntry.userId
+          ? {
+              _id: ledgerEntry.userId._id,
+              email: ledgerEntry.userId.email || "",
+              username: ledgerEntry.userId.username || null,
+              role: ledgerEntry.userId.role || "user",
+              isBanned: Boolean(ledgerEntry.userId.isBanned),
+              suspendedUntil: ledgerEntry.userId.suspendedUntil || null,
+            }
+          : null,
+      },
+      contest: contest
+        ? {
+            _id: contest._id,
+            title: contest.title,
+            prize: Number(contest.prize || 0),
+            status: contest.status,
+          }
+        : null,
+      submission: relatedSubmission
+        ? {
+            _id: relatedSubmission._id,
+            title: relatedSubmission.title || "",
+            status: relatedSubmission.status,
+            voteCount: Number(relatedSubmission.voteCount || 0),
+            contestId: relatedSubmission.contestId || null,
+            createdAt: relatedSubmission.createdAt,
+            updatedAt: relatedSubmission.updatedAt,
+          }
+        : null,
+      transaction: relatedTransaction || null,
+      message: "Platform wallet entry details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Platform wallet entry details scatter: " + err.message });
+  }
+};
+
+export const dispatchSlaAlertsForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const dryRun = String(req.query.dryRun || req.body?.dryRun || "false").toLowerCase() === "true";
+    const recipients = getSlaAlertRecipients();
+    const snapshot = await buildSlaAlertSnapshot();
+    const findings = evaluateSlaAlerts(snapshot.metrics);
+    const { sendNow, suppressed } = filterSlaAlertCooldown(findings);
+
+    if (!sendNow.length) {
+      return res.json({
+        message: findings.length
+          ? "SLA breaches detected but currently in cooldown window."
+          : "No SLA threshold breaches detected.",
+        dryRun,
+        recipients,
+        thresholds: SLA_ALERT_THRESHOLDS,
+        snapshot,
+        findings,
+        sent: [],
+        suppressed,
+      });
+    }
+
+    if (!dryRun && recipients.length) {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      const nowIso = new Date().toISOString();
+      const lines = [
+        "NaijaTalk SLA Alert",
+        "",
+        `Time: ${nowIso}`,
+        `Window: last ${snapshot.windowDays} day(s)`,
+        "",
+        "Triggered Alerts:",
+        ...sendNow.map((row) => `- ${row.label}: ${row.value} (section: ${row.section})`),
+        "",
+        "Current Metrics:",
+        `- pendingPayoutCount: ${snapshot.metrics.pendingPayoutCount}`,
+        `- failedPayoutCount: ${snapshot.metrics.failedPayoutCount}`,
+        `- payoutFailureRatePct: ${snapshot.metrics.payoutFailureRatePct}%`,
+        `- premiumInFlightCount: ${snapshot.metrics.premiumInFlightCount}`,
+        `- premiumFailedCount: ${snapshot.metrics.premiumFailedCount}`,
+        `- premiumFailureRatePct: ${snapshot.metrics.premiumFailureRatePct}%`,
+        `- oldestPendingPayoutHours: ${snapshot.metrics.oldestPendingPayoutHours}`,
+        `- oldestPremiumInFlightHours: ${snapshot.metrics.oldestPremiumInFlightHours}`,
+        `- mismatchedUsersCount: ${snapshot.metrics.mismatchedUsersCount}`,
+        `- highSeverityMismatchCount: ${snapshot.metrics.highSeverityMismatchCount}`,
+        "",
+        `Admin dashboard: ${frontendUrl}/admin`,
+      ];
+
+      await sendEmail({
+        to: recipients,
+        subject: `[NaijaTalk SLA] ${sendNow.length} threshold breach(es)`,
+        text: lines.join("\n"),
+      });
+
+      const now = Date.now();
+      for (const finding of sendNow) {
+        slaAlertLastSentAtByKey.set(finding.key, now);
+      }
+
+      await logAdminAction({
+        actorId: req.user._id,
+        action: "admin.sla_alerts.dispatch",
+        reason: `Dispatched ${sendNow.length} SLA alert(s).`,
+        metadata: {
+          dryRun: false,
+          recipients,
+          findings: sendNow.map((row) => row.key),
+          windowDays: snapshot.windowDays,
+        },
+      });
+    }
+
+    return res.json({
+      message: dryRun
+        ? `SLA dry-run found ${sendNow.length} alert(s) ready to send.`
+        : recipients.length
+        ? `Dispatched ${sendNow.length} SLA alert(s).`
+        : "SLA alerts detected but no recipients configured.",
+      dryRun,
+      recipients,
+      thresholds: SLA_ALERT_THRESHOLDS,
+      snapshot,
+      findings,
+      sent: sendNow,
+      suppressed,
+    });
+  } catch (err) {
+    logger.error("admin.sla_alerts.dispatch.error", { message: err?.message || "unknown error" });
+    return res.status(500).json({ message: "SLA alert dispatch scatter: " + err.message });
+  }
+};
+
+export const detectWalletMismatchesForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const severity = String(req.query.severity || "all").toLowerCase();
+    const minDeltaRaw = Number.parseInt(String(req.query.minDeltaKobo || "0"), 10);
+    const minDelta = Number.isFinite(minDeltaRaw) ? Math.max(minDeltaRaw, 0) : 0;
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
     const [transactions, ledgers] = await Promise.all([
       Transaction.find({
         type: { $in: ["escrow", "tip", "refund", "payout"] },
         status: { $in: ["pending", "completed", "failed"] },
+        ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
       })
         .select("senderId receiverId type status amount platformCut createdAt")
         .lean(),
       WalletLedger.find({
         transactionId: { $ne: null },
+        ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
       })
         .select("userId transactionId walletEffect")
         .lean(),
@@ -1512,21 +3242,69 @@ export const detectWalletMismatchesForAdmin = async (req, res) => {
       }
     }
 
-    mismatches.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
-    const top = mismatches.slice(0, limit);
-    const highCount = mismatches.filter((x) => x.severity === "high").length;
-    const mediumCount = mismatches.filter((x) => x.severity === "medium").length;
-    const lowCount = mismatches.filter((x) => x.severity === "low").length;
+    let scoped = mismatches;
+    if (severity === "high" || severity === "medium" || severity === "low") {
+      scoped = scoped.filter((x) => x.severity === severity);
+    }
+    if (minDelta > 0) {
+      scoped = scoped.filter((x) => Math.abs(x.delta) >= minDelta);
+    }
+    if (q) {
+      const matchedUsers = await User.find(
+        {
+          $or: [
+            { email: { $regex: q, $options: "i" } },
+            { username: { $regex: q, $options: "i" } },
+          ],
+        },
+        { _id: 1 }
+      )
+        .limit(1000)
+        .lean();
+      const matchedIds = new Set(matchedUsers.map((u) => String(u._id)));
+      scoped = scoped.filter((row) => matchedIds.has(String(row.userId)));
+    }
+
+    scoped.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    const total = scoped.length;
+    const skip = (page - 1) * pageSize;
+    const paged = scoped.slice(skip, skip + pageSize);
+
+    const pageUserIds = [...new Set(paged.map((row) => row.userId))];
+    const users = await User.find({ _id: { $in: pageUserIds } }, "_id email username role").lean();
+    const userMap = new Map(users.map((u) => [String(u._id), u]));
+
+    const highCount = scoped.filter((x) => x.severity === "high").length;
+    const mediumCount = scoped.filter((x) => x.severity === "medium").length;
+    const lowCount = scoped.filter((x) => x.severity === "low").length;
 
     return res.json({
       summary: {
         totalUsersChecked: allUserIds.size,
-        mismatchedUsers: mismatches.length,
+        mismatchedUsers: total,
         highCount,
         mediumCount,
         lowCount,
       },
-      mismatches: top,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasPrev: page > 1,
+        hasNext: skip + paged.length < total,
+      },
+      mismatches: paged.map((row) => ({
+        ...row,
+        user: userMap.get(String(row.userId))
+          ? {
+              _id: userMap.get(String(row.userId))._id,
+              email: userMap.get(String(row.userId)).email,
+              username: userMap.get(String(row.userId)).username || null,
+              role: userMap.get(String(row.userId)).role || "user",
+            }
+          : null,
+      })),
       message: "Wallet mismatch scan completed.",
     });
   } catch (err) {
@@ -1534,9 +3312,278 @@ export const detectWalletMismatchesForAdmin = async (req, res) => {
   }
 };
 
-export const decidePayout = async (req, res) => {
+export const getWalletMismatchDetailsForAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const { userId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: "Invalid user id." });
+    }
+
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
+
+    const [user, wallet, transactions, ledgers] = await Promise.all([
+      User.findById(userId).select("_id email username role isBanned suspendedUntil").lean(),
+      Wallet.findOne({ userId }).select("balance availableBalance heldBalance updatedAt").lean(),
+      Transaction.find({
+        $or: [{ senderId: userId }, { receiverId: userId }],
+        type: { $in: ["escrow", "tip", "refund", "payout"] },
+        status: { $in: ["pending", "completed", "failed"] },
+        ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
+      })
+        .sort({ createdAt: -1 })
+        .limit(80)
+        .select("senderId receiverId type status amount platformCut reference recipientId createdAt")
+        .lean(),
+      WalletLedger.find({
+        userId,
+        transactionId: { $ne: null },
+        ...(Object.keys(createdAt).length > 0 ? { createdAt } : {}),
+      })
+        .sort({ createdAt: -1 })
+        .limit(120)
+        .select(
+          "_id entryKind amount walletEffect status reference recipientId counterparty transactionId createdAt"
+        )
+        .lean(),
+    ]);
+
+    const addToTotal = (obj, field, value) => {
+      obj[field] = Number(obj[field] || 0) + Number(value || 0);
+    };
+    const expected = { effect: 0, txCount: 0 };
+    for (const tx of transactions) {
+      const senderId = toObjectIdString(tx.senderId);
+      const receiverId = toObjectIdString(tx.receiverId);
+      const amount = Number(tx.amount || 0);
+      const platformCut = Number(tx.platformCut || 0);
+      const isSender = senderId === userId;
+      const isReceiver = receiverId === userId;
+      if (!isSender && !isReceiver) continue;
+
+      if (tx.type === "escrow") {
+        if (isSender) addToTotal(expected, "effect", -amount);
+        if (isReceiver && tx.status === "completed") addToTotal(expected, "effect", amount - platformCut);
+      } else if (tx.type === "tip") {
+        if (isReceiver && tx.status === "completed") addToTotal(expected, "effect", amount - platformCut);
+      } else if (tx.type === "refund" && tx.status === "completed") {
+        if (isReceiver) addToTotal(expected, "effect", amount);
+        if (isSender) addToTotal(expected, "effect", -amount);
+      } else if (tx.type === "payout" && isSender) {
+        if (tx.status === "failed") addToTotal(expected, "effect", amount);
+        if (tx.status === "pending" || tx.status === "completed") addToTotal(expected, "effect", -amount);
+      }
+      expected.txCount += 1;
+    }
+
+    const ledgerEffect = ledgers.reduce((sum, row) => sum + Number(row.walletEffect || 0), 0);
+    const delta = expected.effect - ledgerEffect;
+    const severity =
+      Math.abs(delta) >= 10000 ? "high" : Math.abs(delta) >= 1000 ? "medium" : "low";
+
+    return res.json({
+      user: user
+        ? {
+            _id: user._id,
+            email: user.email,
+            username: user.username || null,
+            role: user.role || "user",
+            isBanned: Boolean(user.isBanned),
+            suspendedUntil: user.suspendedUntil || null,
+          }
+        : null,
+      wallet: {
+        balance: Number(wallet?.balance || 0),
+        availableBalance: Number(wallet?.availableBalance || 0),
+        heldBalance: Number(wallet?.heldBalance || 0),
+        updatedAt: wallet?.updatedAt || null,
+      },
+      summary: {
+        expectedEffect: Number(expected.effect || 0),
+        ledgerEffect: Number(ledgerEffect || 0),
+        delta: Number(delta || 0),
+        transactionCount: expected.txCount,
+        ledgerCount: ledgers.length,
+        severity,
+      },
+      recentTransactions: transactions,
+      recentLedger: ledgers,
+      message: "Wallet mismatch details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Mismatch details scatter: " + err.message });
+  }
+};
+
+export const listUserRiskSignalsForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const severityFilter = String(req.query.severity || "all").toLowerCase();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const windowDaysRaw = Number.parseInt(String(req.query.windowDays || "14"), 10);
+    const windowDays = Number.isFinite(windowDaysRaw)
+      ? Math.min(Math.max(windowDaysRaw, 1), 90)
+      : 14;
+    const sinceDate = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000);
+
+    const [failedPayoutAgg, payoutTotalAgg, pendingPayoutAgg, tipReceivedAgg, allUsers] =
+      await Promise.all([
+        Transaction.aggregate([
+          {
+            $match: {
+              type: "payout",
+              status: "failed",
+              createdAt: { $gte: sinceDate },
+            },
+          },
+          { $group: { _id: "$senderId", count: { $sum: 1 } } },
+        ]),
+        Transaction.aggregate([
+          {
+            $match: {
+              type: "payout",
+              status: { $in: ["failed", "completed", "pending"] },
+              createdAt: { $gte: sinceDate },
+            },
+          },
+          { $group: { _id: "$senderId", count: { $sum: 1 } } },
+        ]),
+        Transaction.aggregate([
+          { $match: { type: "payout", status: "pending" } },
+          { $group: { _id: "$senderId", count: { $sum: 1 } } },
+        ]),
+        Transaction.aggregate([
+          {
+            $match: {
+              type: "tip",
+              status: "completed",
+              createdAt: { $gte: sinceDate },
+            },
+          },
+          {
+            $group: {
+              _id: "$receiverId",
+              count: { $sum: 1 },
+              totalKobo: { $sum: "$amount" },
+              senders: { $addToSet: "$senderId" },
+            },
+          },
+          {
+            $project: {
+              count: 1,
+              totalKobo: 1,
+              uniqueSenders: { $size: "$senders" },
+            },
+          },
+        ]),
+        User.find({}, "_id email username role isBanned suspendedUntil").lean(),
+      ]);
+
+    const toMap = (rows) => new Map(rows.map((row) => [String(row._id), row]));
+    const failedMap = toMap(failedPayoutAgg);
+    const payoutTotalMap = toMap(payoutTotalAgg);
+    const pendingMap = toMap(pendingPayoutAgg);
+    const tipMap = toMap(tipReceivedAgg);
+
+    let scopedUsers = allUsers;
+    if (q) {
+      const lowered = q.toLowerCase();
+      scopedUsers = allUsers.filter((user) => {
+        const email = String(user.email || "").toLowerCase();
+        const username = String(user.username || "").toLowerCase();
+        return email.includes(lowered) || username.includes(lowered);
+      });
+    }
+
+    const rows = scopedUsers
+      .map((user) => {
+        const userId = String(user._id);
+        const metrics = {
+          failedPayoutCount: Number(failedMap.get(userId)?.count || 0),
+          payoutTotalCount: Number(payoutTotalMap.get(userId)?.count || 0),
+          pendingPayoutCount: Number(pendingMap.get(userId)?.count || 0),
+          tipReceivedCount: Number(tipMap.get(userId)?.count || 0),
+          tipReceivedUniqueSenders: Number(tipMap.get(userId)?.uniqueSenders || 0),
+          tipReceivedTotalKobo: Number(tipMap.get(userId)?.totalKobo || 0),
+        };
+        const signal = computeUserRiskSignal(metrics);
+        return {
+          user: {
+            _id: user._id,
+            email: user.email,
+            username: user.username || null,
+            role: user.role || "user",
+            isBanned: Boolean(user.isBanned),
+            suspendedUntil: user.suspendedUntil || null,
+          },
+          metrics,
+          ...signal,
+        };
+      })
+      .filter((row) =>
+        severityFilter === "all" ? row.severity !== "none" : row.severity === severityFilter
+      )
+      .sort((a, b) => b.score - a.score || b.metrics.tipReceivedTotalKobo - a.metrics.tipReceivedTotalKobo);
+
+    const total = rows.length;
+    const skip = (page - 1) * pageSize;
+    const paged = rows.slice(skip, skip + pageSize);
+    const summary = {
+      totalFlagged: total,
+      high: rows.filter((row) => row.severity === "high").length,
+      medium: rows.filter((row) => row.severity === "medium").length,
+      low: rows.filter((row) => row.severity === "low").length,
+      windowDays,
+      since: sinceDate.toISOString(),
+    };
+
+    return res.json({
+      summary,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasPrev: page > 1,
+        hasNext: skip + paged.length < total,
+      },
+      rows: paged,
+      message: "User risk signals loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Risk signal scan scatter: " + err.message });
+  }
+};
+
+export const decidePayout = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Admins only." });
     }
 
@@ -1546,49 +3593,69 @@ export const decidePayout = async (req, res) => {
       return res.status(400).json({ message: "Invalid payout id." });
     }
 
-    const payout = await Transaction.findOneAndUpdate(
-      { _id: payoutId, type: "payout", status: "pending" },
-      { $set: { status: approve ? "completed" : "failed", updatedAt: new Date() } },
-      { new: true }
-    );
-    if (!payout) {
-      return res.status(400).json({ message: "Payout not found or already processed." });
-    }
+    let payout = null;
+    await session.withTransaction(async () => {
+      payout = await Transaction.findOneAndUpdate(
+        { _id: payoutId, type: "payout", status: "pending" },
+        { $set: { status: approve ? "completed" : "failed", updatedAt: new Date() } },
+        { new: true, session }
+      );
+      if (!payout) {
+        const error = new Error("Payout not found or already processed.");
+        error.status = 400;
+        throw error;
+      }
 
-    if (!approve) {
-      await ensureWalletBalanceFields(payout.senderId);
-      const wallet = await Wallet.findOneAndUpdate(
-        { userId: payout.senderId },
-        { $inc: { availableBalance: payout.amount, balance: payout.amount } },
-        { new: true }
-      );
-      await createLedgerEntry({
-        userId: payout.senderId,
-        entryKind: "payout_reversed",
-        amount: payout.amount,
-        walletEffect: payout.amount,
-        status: "completed",
-        reference: payout.reference,
-        recipientId: payout.recipientId || null,
-        wallet,
-        transactionId: payout._id,
+      if (!approve) {
+        await ensureWalletBalanceFields(payout.senderId, { session });
+        const wallet = await Wallet.findOneAndUpdate(
+          { userId: payout.senderId },
+          { $inc: { availableBalance: payout.amount, balance: payout.amount } },
+          { new: true, session }
+        );
+        await createLedgerEntry({
+          userId: payout.senderId,
+          entryKind: "payout_reversed",
+          amount: payout.amount,
+          walletEffect: payout.amount,
+          status: "completed",
+          reference: payout.reference,
+          recipientId: payout.recipientId || null,
+          wallet,
+          transactionId: payout._id,
+          session,
+        });
+      } else {
+        const wallet = await Wallet.findOne({ userId: payout.senderId })
+          .select("balance availableBalance heldBalance updatedAt")
+          .session(session);
+        await createLedgerEntry({
+          userId: payout.senderId,
+          entryKind: "payout_completed",
+          amount: payout.amount,
+          walletEffect: 0,
+          status: "completed",
+          reference: payout.reference,
+          recipientId: payout.recipientId || null,
+          wallet,
+          transactionId: payout._id,
+          session,
+        });
+      }
+
+      await logAdminAction({
+        actorId: req.user._id,
+        targetUserId: payout.senderId,
+        action: approve ? "payout.approve" : "payout.reject",
+        metadata: {
+          payoutId: payout._id,
+          reference: payout.reference || null,
+          amount: payout.amount,
+          recipientId: payout.recipientId || null,
+        },
+        session,
       });
-    } else {
-      const wallet = await Wallet.findOne({ userId: payout.senderId }).select(
-        "balance availableBalance heldBalance updatedAt"
-      );
-      await createLedgerEntry({
-        userId: payout.senderId,
-        entryKind: "payout_completed",
-        amount: payout.amount,
-        walletEffect: 0,
-        status: "completed",
-        reference: payout.reference,
-        recipientId: payout.recipientId || null,
-        wallet,
-        transactionId: payout._id,
-      });
-    }
+    });
 
     return res.json({
       payout,
@@ -1598,11 +3665,10 @@ export const decidePayout = async (req, res) => {
     });
   } catch (err) {
     const msg = err.message || "Payout decision scatter.";
-    const isUserError =
-      msg.includes("not found") ||
-      msg.includes("already processed") ||
-      msg.includes("Invalid payout");
-    return res.status(isUserError ? 400 : 500).json({ message: msg });
+    const status = Number.isInteger(err?.status) ? err.status : 500;
+    return res.status(status).json({ message: msg });
+  } finally {
+    await session.endSession();
   }
 };
 
@@ -1683,6 +3749,7 @@ export const decidePayout = async (req, res) => {
 export const sendTip = async (req, res) => {
   const { receiverId, amount, threadId, replyId } = req.body; // Added threadId/replyId
   const senderId = req.user._id;
+  let reference = "";
 
   try {
     if (!mongoose.Types.ObjectId.isValid(receiverId)) {
@@ -1716,7 +3783,7 @@ export const sendTip = async (req, res) => {
       return res.status(400).json({ message: "You don tip this one today!" });
     }
 
-    const reference = `naijatalk_tip_${Date.now()}`;
+    reference = `naijatalk_tip_${Date.now()}`;
     const platformCut = amount * 0.1;
     const transaction = new Transaction({
       senderId,
@@ -1731,9 +3798,11 @@ export const sendTip = async (req, res) => {
     await transaction.save();
 
     const callbackUrl = `${process.env.FRONTEND_URL}/tip/success?reference=${reference}&receiverId=${receiverId}`;
-    console.log(
-      `[sendTip] Initiating Paystack: ref=${reference}, callback=${callbackUrl}`
-    );
+    logger.info("tip.initiate.start", {
+      reference,
+      senderId: senderId?.toString?.() || null,
+      receiverId: receiverId?.toString?.() || String(receiverId || ""),
+    });
 
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
@@ -1751,7 +3820,10 @@ export const sendTip = async (req, res) => {
       }
     );
 
-    console.log(`[sendTip] Paystack response:`, response.data);
+    logger.info("tip.initiate.response", {
+      reference,
+      status: Boolean(response.data?.status),
+    });
 
     if (response.data.status) {
       res.json({
@@ -1763,7 +3835,11 @@ export const sendTip = async (req, res) => {
       throw new Error("Tip init scatter!");
     }
   } catch (err) {
-    console.error("[sendTip] Error:", err.response?.data || err.message);
+    logger.error("tip.initiate.error", {
+      reference: typeof reference === "string" ? reference : null,
+      senderId: senderId?.toString?.() || null,
+      error: err.response?.data || err.message,
+    });
     res.status(500).json({ message: "Tip scatter: " + (err.message || err) });
   }
 };
@@ -1791,7 +3867,12 @@ export const hasTipped = async (req, res) => {
       message: existingTip ? "You don tip this one today!" : "You fit tip am!",
     });
   } catch (err) {
-    console.error("[hasTipped] Error:", err.message);
+    logger.error("tip.has_tipped.error", {
+      senderId: senderId?.toString?.() || null,
+      threadId: String(threadId || ""),
+      replyId: String(replyId || ""),
+      error: err.message,
+    });
     res.status(500).json({ message: "Check scatter: " + err.message });
   }
 };
@@ -1819,15 +3900,21 @@ export const verifyTip = async (req, res) => {
       return res.status(200).json({ message: "Tip already verified—chill!" });
     }
 
-    console.log(
-      `[verifyTip] Starting: ref=${reference}, sender=${senderId}, receiver=${receiverId}`
-    );
+    logger.info("tip.verify.start", {
+      reference,
+      senderId: senderId?.toString?.() || null,
+      receiverId: receiverId?.toString?.() || String(receiverId || ""),
+    });
 
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       { headers: { Authorization: `Bearer ${process.env.PAYSTACK_SECRET}` } }
     );
-    console.log(`[verifyTip] Paystack response:`, response.data);
+    logger.info("tip.verify.response", {
+      reference,
+      paystackStatus: Boolean(response.data?.status),
+      txStatus: response.data?.data?.status || null,
+    });
 
     if (response.data.status && response.data.data.status === "success") {
       const paystackAmount = response.data.data.amount;
@@ -1857,7 +3944,10 @@ export const verifyTip = async (req, res) => {
       if (!tx) {
         throw new Error("Transaction no longer pending.");
       }
-      console.log(`[verifyTip] Transaction updated: ${tx._id}`);
+      logger.info("tip.verify.transaction_updated", {
+        reference,
+        transactionId: tx._id?.toString?.() || null,
+      });
 
       const receiverWallet = await Wallet.findOneAndUpdate(
         { userId: receiverId },
@@ -1867,9 +3957,11 @@ export const verifyTip = async (req, res) => {
         },
         { new: true, upsert: true }
       );
-      console.log(
-        `[verifyTip] Receiver wallet: ${receiverWallet.balance} kobo total`
-      );
+      logger.info("tip.verify.receiver_wallet_updated", {
+        reference,
+        receiverId: receiverId?.toString?.() || String(receiverId || ""),
+        balance: Number(receiverWallet?.balance || 0),
+      });
       await createLedgerEntry({
         userId: receiverId,
         entryKind: "tip_received",
@@ -1889,7 +3981,10 @@ export const verifyTip = async (req, res) => {
       platformWallet.balance += platformCut;
       platformWallet.lastUpdated = Date.now();
       await platformWallet.save();
-      console.log(`[verifyTip] Platform wallet: ${platformWallet.balance} kobo`);
+      logger.info("tip.verify.platform_wallet_updated", {
+        reference,
+        balance: Number(platformWallet?.balance || 0),
+      });
 
       res.json({
         message: `Tip of ₦${receiverAmount / 100} sent—enjoy the vibes!`,
@@ -1897,11 +3992,15 @@ export const verifyTip = async (req, res) => {
     } else {
       transaction.status = "failed";
       await transaction.save();
-      console.log(`[verifyTip] Transaction failed: ${reference}`);
+      logger.warn("tip.verify.failed", { reference });
       res.status(400).json({ message: "Tip no work—Paystack no gree!" });
     }
   } catch (err) {
-    console.error("[verifyTip] Error:", err.response?.data || err.message);
+    logger.error("tip.verify.error", {
+      reference: typeof reference === "string" ? reference : null,
+      senderId: senderId?.toString?.() || null,
+      error: err.response?.data || err.message,
+    });
     const knownBadRequest = err.message?.includes("no longer pending");
     res.status(knownBadRequest ? 400 : 500).json({
       message: knownBadRequest

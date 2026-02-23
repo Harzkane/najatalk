@@ -162,7 +162,7 @@ export default function Marketplace() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(res.data._id);
-      setIsAdmin(res.data.role === "admin");
+      setIsAdmin(res.data.role === "admin" || res.data.role === "super_admin");
       setDefaultDeliveryAddress(
         res.data.defaultDeliveryAddress
           ? normalizeDeliveryAddress(res.data.defaultDeliveryAddress)

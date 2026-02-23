@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "build": "node -e \"console.log('No backend build step required')\"",
+    "lint": "node -e \"console.log('No backend lint configured yet')\"",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "retention:report": "node scripts/retention_report.mjs"
   },
   "keywords": [],
   "author": "",

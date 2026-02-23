@@ -1,0 +1,2400 @@
+[{
+  "_id": {
+    "$oid": "67c318ae5f791afc64473962"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "platformCut": 1000,
+  "reference": "naijatalk_tip_1740839086680",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:24:46.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:24:46.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c3192e5f791afc64473a86"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "platformCut": 2000,
+  "reference": "naijatalk_tip_1740839214030",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:26:54.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:26:54.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31b2f1ff088572bd50595"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "platformCut": 500,
+  "reference": "naijatalk_tip_1740839727034",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:35:27.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:35:27.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31bfa1ff088572bd50a45"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "recipientId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 20000,
+  "platformCut": 2000,
+  "reference": "naijatalk_tip_1740839930170",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:38:50.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:38:50.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31e111ff088572bd50c3f"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "recipientId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 5000,
+  "platformCut": 500,
+  "reference": "naijatalk_tip_1740840465833",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:47:45.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:47:45.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31eb21ff088572bd51542"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 20000,
+  "platformCut": 2000,
+  "reference": "naijatalk_tip_1740840626518",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:50:26.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:50:26.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31ec31ff088572bd51666"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "platformCut": 1000,
+  "reference": "naijatalk_tip_1740840643863",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:50:43.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:50:43.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c31ed61ff088572bd5178a"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 5000,
+  "platformCut": 500,
+  "reference": "naijatalk_tip_1740840662364",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T14:51:02.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T14:51:02.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67c32719d189f96a47becc7c"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "platformCut": 2000,
+  "reference": "naijatalk_tip_1740842777719",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-01T15:26:17.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-01T15:26:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd7a1b5bf3e8416f9ae260"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "platformCut": 1000,
+  "reference": "naijatalk_tip_1742567963745",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-21T14:39:23.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-21T14:39:23.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd8509bc46dffd6a7e806e"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "platformCut": 500,
+  "reference": "naijatalk_tip_1742570761770",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-21T15:26:01.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-21T15:26:01.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dd851dbc46dffd6a7e8196"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "recipientId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "platformCut": 1000,
+  "reference": "naijatalk_tip_1742570781553",
+  "status": "completed",
+  "createdAt": {
+    "$date": "2025-03-21T15:26:21.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-21T15:26:21.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddaf5a697395b8b6494157"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 700000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": null,
+  "platformCut": 35000,
+  "recipientId": null,
+  "createdAt": "3/21/2025, 7:26:34 PM",
+  "updatedAt": "3/22/2025, 12:52:22 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb398e04bde9b84c3737f"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 200000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": null,
+  "platformCut": 10000,
+  "recipientId": null,
+  "createdAt": "3/21/2025, 7:44:40 PM",
+  "updatedAt": "3/22/2025, 12:40:43 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb3a2e04bde9b84c37388"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 650000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": null,
+  "platformCut": 32500,
+  "recipientId": null,
+  "createdAt": "3/21/2025, 7:44:50 PM",
+  "updatedAt": "3/21/2025, 11:37:41 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb3a7e04bde9b84c37391"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 600000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": null,
+  "platformCut": 30000,
+  "recipientId": null,
+  "createdAt": "3/21/2025, 7:44:55 PM",
+  "updatedAt": "3/21/2025, 11:37:30 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddb4fb0da8078e0ab86b02"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 200000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "950b7cbe-5098-4f43-9fdf-86a40a806701",
+  "platformCut": 10000,
+  "recipientId": null,
+  "createdAt": "3/21/2025, 7:50:35 PM",
+  "updatedAt": "3/21/2025, 10:11:05 PM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddf92c9cb2595b487e9074"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 100000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "ab0f0b80-3e19-40b0-8aaf-efce8f8d3636",
+  "platformCut": 5000,
+  "recipientId": null,
+  "createdAt": "3/22/2025, 12:41:32 AM",
+  "updatedAt": "3/22/2025, 1:04:42 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67ddfe8a9cb2595b487e90a5"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 300000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "ebf94290-376d-47b3-afad-4f495fd9fbcb",
+  "platformCut": 15000,
+  "recipientId": null,
+  "createdAt": "3/22/2025, 1:04:26 AM",
+  "updatedAt": "3/22/2025, 2:45:16 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de15c5aaf6a884d2e0ae0f"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 120000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "35c2753c-4527-4bb4-8ad6-b2505c3b6699",
+  "platformCut": 6000,
+  "recipientId": null,
+  "createdAt": "3/22/2025, 2:43:33 AM",
+  "updatedAt": "3/22/2025, 2:44:33 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de15f1aaf6a884d2e0ae30"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 100000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "9c4b9cb8-d8ec-42b5-8e94-a1d4437739f0",
+  "platformCut": 5000,
+  "recipientId": null,
+  "createdAt": "3/22/2025, 2:44:17 AM",
+  "updatedAt": "3/22/2025, 2:59:21 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de168baaf6a884d2e0aec8"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 138900,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "190cabd1-719a-4f2a-a871-fe7f8f60b65b",
+  "platformCut": 6945,
+  "recipientId": null,
+  "createdAt": "3/22/2025, 2:46:51 AM",
+  "updatedAt": "3/22/2025, 2:59:21 AM",
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67de2be944f0c6480740d266"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 120000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "e6e5a66c-def0-4339-9489-66361d982198",
+  "platformCut": 6000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "67de15aaaaf6a884d2e0ae04"
+  },
+  "createdAt": {
+    "$date": "2025-03-22T03:18:01.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T11:45:56.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67df231f392060f1c47f1e40"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742676767907",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-22T20:52:47.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T20:52:47.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67df23a6392060f1c47f208d"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742676902840",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-22T20:55:02.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T20:55:02.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67df2430392060f1c47f2418"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742677040801",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-22T20:57:20.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T20:57:20.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67df2447392060f1c47f2665"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742677063050",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-22T20:57:43.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T20:57:43.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67df24a2392060f1c47f28e7"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 210000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "d991f4b6-3157-48a9-b4ec-565510e43c14",
+  "platformCut": 10500,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "67de1974aaf6a884d2e0aed3"
+  },
+  "createdAt": {
+    "$date": "2025-03-22T20:59:14.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-22T20:59:46.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfd3b85ddd17ddd7afdbe0"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742721976939",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T09:26:16.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T09:26:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfd3f15ddd17ddd7afdd01"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742722033648",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T09:27:13.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T09:27:13.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfd55b5ddd17ddd7afe0f8"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742722395509",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T09:33:15.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T09:33:15.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfdb66121bdfdc005b6d01"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742723942414",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T09:59:02.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T09:59:02.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfdc0b3f1e94ddd49170fe"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742724107276",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:01:47.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:01:47.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfdfc4656c2f4cb7b5536a"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742725060844",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:17:40.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:17:40.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe07dde6b63d3c4b65356"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742725245675",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:20:45.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:20:45.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe4881987f2645cf95b64"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742726280176",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:38:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:38:00.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe4ad1987f2645cf95d5f"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742726317638",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:38:37.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:38:37.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe51b1987f2645cf9601f"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742726427198",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:40:27.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:40:27.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe5c2d9a9a8c102db330c"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742726594974",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:43:14.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:43:14.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe73ed9a9a8c102db3675"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742726974769",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:49:34.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:49:34.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe989cfd47bedf669978a"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742727561646",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T10:59:21.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T10:59:21.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfe9f34fe0dafe1b933cb6"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742727667073",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:01:07.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T11:01:07.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfea81576ba73c937d5803"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742727809326",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:03:29.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T11:03:29.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dfeb363ffd7abb809dc32e"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742727990095",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:06:30.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T11:06:30.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dff08d8c52b409b4162c86"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742729357360",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:29:17.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T11:29:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dff295e4d8f021da6c84ee"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742729877002",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:37:57.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T11:37:57.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dff52c121d718700aedd55"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742730540020",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T11:49:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T12:01:07.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67dffd35121d718700aedf5d"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742732597276",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T12:23:17.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T12:25:18.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e007415f84df6bea97fe14"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742735169901",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:06:09.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:10:58.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e008365f84df6bea9801de"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742735414917",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:10:14.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:10:14.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e008f24a2afad9d9b1b29f"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742735602232",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:13:22.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:13:22.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e00973064b947048535f80"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742735731889",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:15:31.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:15:31.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e009a1405e8465fd0689ff"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742735777461",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:16:17.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:16:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e00a91f6910cda2626fdda"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742736017189",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:20:17.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:20:17.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e00b3a27e23c9fc9f8a65d"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742736186831",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:23:06.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:30:33.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e00bba27e23c9fc9f8a77e"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742736314557",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:25:14.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:25:14.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e00d1dbe673b69a2c84964"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742736669632",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:31:09.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:31:09.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0102062b6f0666969d12e"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742737440570",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:44:00.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:44:10.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e010e962b6f0666969d390"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742737641491",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:47:21.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:47:38.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0119802747e98b62e4344"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742737816125",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T13:50:16.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:50:28.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e012de02747e98b62e4860"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 320000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "8c09c1c7-9613-4fef-bdfb-81fd91aae60c",
+  "platformCut": 16000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "67e012ce02747e98b62e4852"
+  },
+  "createdAt": {
+    "$date": "2025-03-23T13:55:42.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T13:56:10.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0a04802747e98b62e4957"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742774344664",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-23T23:59:04.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-23T23:59:16.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0a0bd2e4568a2dbf42839"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742774461379",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T00:01:01.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T00:01:09.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0a4962e4568a2dbf42a07"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742775446400",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T00:17:26.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T00:17:26.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0a4aa2e4568a2dbf42ae6"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742775466024",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T00:17:46.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T00:17:53.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e159d47ee06fbd259c450e"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742821844726",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T13:10:44.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T13:11:03.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e15a6c7ee06fbd259c4787"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742821996024",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T13:13:16.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T13:13:24.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e15a7b7ee06fbd259c49a8"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742822011901",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T13:13:31.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T13:13:39.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e15b9a7ee06fbd259c4cfe"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 1000000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "2426c8b5-4153-47d5-a990-6ebac7b45d8a",
+  "platformCut": 50000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "67e15b887ee06fbd259c4cf0"
+  },
+  "createdAt": {
+    "$date": "2025-03-24T13:18:18.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T13:18:42.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e17a9bcdb9db960382ed08"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742830235683",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T15:30:35.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T15:30:44.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e1e72d2eb8b0d596b18165"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742858029800",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-24T23:13:49.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-24T23:13:49.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e2ec20a816ed81bd973150"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742924832518",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-25T17:47:12.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T17:47:22.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e319e8ed3f4127c544d0f6"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742936552616",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:02:32.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:02:45.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e31aa4ed3f4127c544d5fc"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742936740729",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:05:40.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:06:13.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e31bdd214aae81eb9a1484"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 10000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742937053803",
+  "platformCut": 1000,
+  "recipientId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:10:53.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:11:06.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e31d718fb6ff389b2b5b67"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742937457900",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": {
+    "$oid": "67be4b0e797c0af66060ba4a"
+  },
+  "replyId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:17:37.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:17:49.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e31db58fb6ff389b2b5f27"
+  },
+  "senderId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742937525028",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": {
+    "$oid": "67c226efdd4413344b53f6f1"
+  },
+  "replyId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:18:45.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:18:55.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e322788fb6ff389b2b62fd"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742938744796",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": {
+    "$oid": "67c226efdd4413344b53f6f2"
+  },
+  "replyId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:39:04.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:39:21.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e323a58fb6ff389b2b674a"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742939045604",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": {
+    "$oid": "67c226efdd4413344b53f6f1"
+  },
+  "replyId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:44:05.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:44:16.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e3254001874fe1cf02dbf2"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742939456537",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": {
+    "$oid": "67be4184f373a7352b0c3556"
+  },
+  "replyId": null,
+  "createdAt": {
+    "$date": "2025-03-25T21:50:56.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T21:50:56.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e329a801874fe1cf02ed3b"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742940584577",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "67c18b80f819f84f21538dcc"
+  },
+  "createdAt": {
+    "$date": "2025-03-25T22:09:44.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T22:09:56.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e329fa01874fe1cf02f07d"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1742940666877",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "67c34fe69184781bbc96a885"
+  },
+  "createdAt": {
+    "$date": "2025-03-25T22:11:06.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T22:11:06.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e32a1201874fe1cf02f1fb"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1742940690210",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "67c34fe69184781bbc96a885"
+  },
+  "createdAt": {
+    "$date": "2025-03-25T22:11:30.000Z"
+  },
+  "updatedAt": {
+    "$date": "2025-03-25T22:11:40.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69972cd23cd24fde0044d036"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "completed",
+  "reference": "naijatalk_tip_1771515090052",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "67c34fe69184781bbc96a885"
+  },
+  "createdAt": {
+    "$date": "2026-02-19T15:31:30.000Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-19T15:33:22.000Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "699891472505730bb13a1d0b"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 5000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1771606343195",
+  "platformCut": 500,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "6998080de7a031bdab2475f4"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T16:52:23.198Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T16:52:23.201Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "699891f8a5d0a4acd8eea463"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 20000,
+  "type": "tip",
+  "status": "pending",
+  "reference": "naijatalk_tip_1771606520584",
+  "platformCut": 2000,
+  "recipientId": null,
+  "listingId": null,
+  "threadId": null,
+  "replyId": {
+    "$oid": "6998080de7a031bdab2475f4"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T16:55:20.587Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T16:55:20.590Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "699899efe3c6e95ab5f6611b"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 1000000,
+  "type": "payout",
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608559282_67bdd7393417dff455b2c0bc",
+  "platformCut": 0,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingId": null,
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T17:29:19.284Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:14:18.945Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69989a7fe3c6e95ab5f66126"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 1000000,
+  "type": "payout",
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608703668_67bdd7393417dff455b2c0bc",
+  "platformCut": 0,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingId": null,
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T17:31:43.668Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:14:18.511Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69989af3e3c6e95ab5f66131"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 1000000,
+  "type": "payout",
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608819579_67bdd7393417dff455b2c0bc",
+  "platformCut": 0,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingId": null,
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T17:33:39.579Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:14:17.968Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a1607ca1967476364d5c"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 1000000,
+  "type": "payout",
+  "status": "completed",
+  "reference": "naijatalk_payout_1771610464328_67c17a5273ac45a1e34fc364",
+  "platformCut": 0,
+  "recipientId": "Harun Jib1993 (****0160) - Opay",
+  "listingId": null,
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:01:04.329Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:14:17.407Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a1777ca1967476364d97"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 245000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "b9366f32-ce54-43a3-8aae-4ffc707eb701",
+  "platformCut": 12250,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "69987ae0d3534e30972a3632"
+  },
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:01:27.940Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:01:31.703Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998ad3fb82cc90c3c527295"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 25000000,
+  "type": "payout",
+  "status": "completed",
+  "reference": "naijatalk_payout_1771613503698_67c17a5273ac45a1e34fc364",
+  "platformCut": 0,
+  "recipientId": "8107060160 (**** Bah) - MoniePoint",
+  "listingId": null,
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:51:43.700Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-20T18:51:58.035Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f5eab7f835ce675d23b4"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 75000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "62c076f0-f170-4a78-b781-193cb2c82f6e",
+  "platformCut": 7500,
+  "marketplaceFeeBps": 1000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-21T00:01:46.336Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:02:17.886Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f8bff7ea0ec342b820ec"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 55000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "26b55b96-5f11-4772-a2a0-4a32562ddd81",
+  "platformCut": 5500,
+  "marketplaceFeeBps": 1000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-21T00:13:51.632Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:14:51.958Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fc68f99a97edf06aa8e0"
+  },
+  "senderId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "receiverId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "amount": 60000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "7e5710e3-3e17-4517-b58d-84cbd44b4fb3",
+  "platformCut": 3000,
+  "marketplaceFeeBps": 500,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-21T00:29:28.799Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:34:12.710Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fe15f99a97edf06aaa8c"
+  },
+  "senderId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "receiverId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "amount": 29000,
+  "type": "escrow",
+  "status": "completed",
+  "reference": "fc832772-97c2-4fab-be36-a9b406b887dd",
+  "platformCut": 2900,
+  "marketplaceFeeBps": 1000,
+  "recipientId": null,
+  "listingId": {
+    "$oid": "6998fddaf99a97edf06aaa67"
+  },
+  "threadId": null,
+  "replyId": null,
+  "createdAt": {
+    "$date": "2026-02-21T00:36:37.048Z"
+  },
+  "updatedAt": {
+    "$date": "2026-02-21T00:37:43.579Z"
+  },
+  "__v": 0
+}]

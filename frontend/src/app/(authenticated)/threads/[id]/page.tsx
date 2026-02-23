@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
+import { isAxiosError } from "axios";
 import api from "../../../../utils/api";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -40,7 +41,7 @@ function ThreadDetailContent() {
   const [message, setMessage] = useState<string>("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<
-    "user" | "mod" | "admin" | null
+    "user" | "mod" | "admin" | "super_admin" | null
   >(null);
   const { id } = useParams();
   const router = useRouter();
@@ -49,8 +50,8 @@ function ThreadDetailContent() {
     try {
       const res = await api.get<Thread>(`/threads/${id}`);
       setThread(res.data);
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         setMessage(err.response?.data?.message || "Thread no dey!");
       } else {
         setMessage("Thread fetch scatter o!");
@@ -76,7 +77,9 @@ function ThreadDetailContent() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUserId(userRes.data._id || null);
-        setCurrentUserRole((userRes.data.role as "user" | "mod" | "admin") || null);
+        setCurrentUserRole(
+          (userRes.data.role as "user" | "mod" | "admin" | "super_admin") || null
+        );
       } catch (err) {
         console.error("Failed to load current user:", err);
         setCurrentUserId(null);

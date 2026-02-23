@@ -1,0 +1,231 @@
+#!/usr/bin/env node
+// npm run ops:synthetic
+
+const BACKEND_BASE = (
+  process.env.SYNTH_BACKEND_BASE || "http://localhost:8000"
+).replace(/\/$/, "");
+const FRONTEND_BASE = (
+  process.env.SYNTH_FRONTEND_BASE || "http://localhost:3000"
+).replace(/\/$/, "");
+const API_BASE = `${BACKEND_BASE}/api`;
+
+const USER_TOKEN = process.env.SYNTH_USER_TOKEN || "";
+const ADMIN_TOKEN = process.env.SYNTH_ADMIN_TOKEN || "";
+const REQUEST_TIMEOUT_MS = Number.parseInt(
+  process.env.SYNTH_TIMEOUT_MS || "12000",
+  10,
+);
+
+const nowIso = () => new Date().toISOString();
+
+const safeJson = async (res) => {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { _raw: text.slice(0, 240) };
+  }
+};
+
+const runCheck = async ({
+  name,
+  url,
+  method = "GET",
+  headers = {},
+  body,
+  expect,
+}) => {
+  const started = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+    const elapsedMs = Date.now() - started;
+    const payload = await safeJson(res);
+
+    let ok = expect.status.includes(res.status);
+    let reason = ok ? "ok" : `Unexpected status ${res.status}`;
+
+    if (ok && typeof expect.validate === "function") {
+      const verdict = expect.validate(payload);
+      if (verdict !== true) {
+        ok = false;
+        reason = String(verdict || "validation failed");
+      }
+    }
+
+    return {
+      ts: nowIso(),
+      name,
+      url,
+      method,
+      status: res.status,
+      elapsedMs,
+      ok,
+      reason,
+      sample: payload,
+    };
+  } catch (err) {
+    return {
+      ts: nowIso(),
+      name,
+      url,
+      method,
+      status: 0,
+      elapsedMs: Date.now() - started,
+      ok: false,
+      reason:
+        err?.name === "AbortError"
+          ? `timeout>${REQUEST_TIMEOUT_MS}ms`
+          : err?.message || "request failed",
+      sample: null,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const checks = [
+  {
+    name: "backend.health",
+    url: `${BACKEND_BASE}/health`,
+    expect: {
+      status: [200],
+      validate: (payload) =>
+        payload?.status === "ok" ? true : "health status is not ok",
+    },
+  },
+  {
+    name: "backend.ready",
+    url: `${BACKEND_BASE}/ready`,
+    expect: {
+      status: [200],
+      validate: (payload) =>
+        payload?.status === "ready"
+          ? true
+          : `readiness is ${payload?.status || "unknown"}`,
+    },
+  },
+  {
+    name: "api.threads",
+    url: `${API_BASE}/threads`,
+    expect: {
+      status: [200],
+      validate: (payload) =>
+        Array.isArray(payload?.threads) ? true : "threads list missing",
+    },
+  },
+  {
+    name: "api.contests",
+    url: `${API_BASE}/contests`,
+    expect: {
+      status: [200],
+      validate: (payload) =>
+        Array.isArray(payload?.contests) ? true : "contests list missing",
+    },
+  },
+  {
+    name: "frontend.home",
+    url: `${FRONTEND_BASE}/`,
+    expect: {
+      status: [200],
+      validate: () => true,
+    },
+  },
+  {
+    name: "frontend.contests",
+    url: `${FRONTEND_BASE}/contests`,
+    expect: {
+      status: [200],
+      validate: () => true,
+    },
+  },
+];
+
+if (USER_TOKEN) {
+  checks.push(
+    {
+      name: "api.users.me",
+      url: `${API_BASE}/users/me`,
+      headers: { Authorization: `Bearer ${USER_TOKEN}` },
+      expect: {
+        status: [200],
+        validate: (payload) => (payload?._id ? true : "missing user id"),
+      },
+    },
+    {
+      name: "api.wallet.ledger",
+      url: `${API_BASE}/users/me/wallet-ledger`,
+      headers: { Authorization: `Bearer ${USER_TOKEN}` },
+      expect: {
+        status: [200],
+        validate: (payload) =>
+          Array.isArray(payload?.ledger) ? true : "missing wallet ledger",
+      },
+    },
+    {
+      name: "api.premium.my_payments",
+      url: `${API_BASE}/premium/my-payments`,
+      headers: { Authorization: `Bearer ${USER_TOKEN}` },
+      expect: {
+        status: [200],
+        validate: (payload) =>
+          Array.isArray(payload?.payments) ? true : "missing premium payments",
+      },
+    },
+  );
+}
+
+if (ADMIN_TOKEN) {
+  checks.push({
+    name: "api.admin.sla_alerts.dispatch_dry_run",
+    url: `${API_BASE}/users/admin/sla-alerts/dispatch?dryRun=true`,
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${ADMIN_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: {},
+    expect: {
+      status: [200],
+      validate: (payload) =>
+        payload?.thresholds ? true : "missing thresholds in sla dry-run",
+    },
+  });
+}
+
+console.log(`Synthetic monitor started at ${nowIso()}`);
+console.log(`Backend: ${BACKEND_BASE}`);
+console.log(`Frontend: ${FRONTEND_BASE}`);
+console.log(`Checks: ${checks.length}`);
+
+const results = [];
+for (const check of checks) {
+  // Sequential run keeps load predictable and easier to inspect in logs.
+  // eslint-disable-next-line no-await-in-loop
+  const result = await runCheck(check);
+  results.push(result);
+  const status = result.ok ? "PASS" : "FAIL";
+  console.log(
+    `[${status}] ${result.name} ${result.status} ${result.elapsedMs}ms - ${result.reason}`,
+  );
+}
+
+const failed = results.filter((row) => !row.ok);
+const summary = {
+  ts: nowIso(),
+  total: results.length,
+  passed: results.length - failed.length,
+  failed: failed.length,
+};
+
+console.log(`Summary: ${JSON.stringify(summary)}`);
+if (failed.length) {
+  process.exitCode = 1;
+}

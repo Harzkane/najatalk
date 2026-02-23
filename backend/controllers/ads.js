@@ -1,7 +1,10 @@
 // backend/controllers/ads.js
 import Ad from "../models/ad.js";
+import User from "../models/user.js";
+import { hasPermission } from "../utils/permissions.js";
 import Wallet from "../models/wallet.js";
 import WalletLedger from "../models/walletLedger.js";
+import { logger } from "../utils/logger.js";
 
 const ensureWalletBalanceFields = async (userId) => {
   const wallet = await Wallet.findOne({ userId });
@@ -43,11 +46,124 @@ export const getAds = async (req, res) => {
       query = { status: "active", budget: { $gt: 0 } }; // Default for public
     }
     const ads = await Ad.find(query);
-    console.log("Fetched Ads with Query:", query, ads);
+    logger.info("ads.list.fetch", {
+      query,
+      count: Array.isArray(ads) ? ads.length : 0,
+    });
     res.json({ ads, message: "Ads dey here—check am!" });
   } catch (err) {
-    console.error("Ads fetch error:", err);
+    logger.error("ads.list.error", { error: err?.message || err });
     res.status(500).json({ message: "Ads scatter: " + err.message });
+  }
+};
+
+export const listAdsForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const q = String(req.query.q || "").trim();
+    const status = String(req.query.status || "pending").trim().toLowerCase();
+    const type = String(req.query.type || "all").trim().toLowerCase();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
+    const dateFromRaw = String(req.query.dateFrom || "").trim();
+    const dateToRaw = String(req.query.dateTo || "").trim();
+
+    const query = {};
+    if (status !== "all" && ["pending", "active", "paused", "expired"].includes(status)) {
+      query.status = status;
+    }
+    if (type !== "all" && ["sidebar", "banner", "popup"].includes(type)) {
+      query.type = type;
+    }
+    if (q) {
+      query.$or = [
+        { brand: { $regex: q, $options: "i" } },
+        { text: { $regex: q, $options: "i" } },
+        { link: { $regex: q, $options: "i" } },
+      ];
+      const userMatches = await User.find(
+        {
+          $or: [
+            { email: { $regex: q, $options: "i" } },
+            { username: { $regex: q, $options: "i" } },
+          ],
+        },
+        { _id: 1 }
+      )
+        .limit(500)
+        .lean();
+      if (userMatches.length > 0) {
+        query.$or.push({ userId: { $in: userMatches.map((u) => u._id) } });
+      }
+    }
+    const createdAt = {};
+    if (dateFromRaw) {
+      const parsedFrom = new Date(dateFromRaw);
+      if (!Number.isNaN(parsedFrom.getTime())) createdAt.$gte = parsedFrom;
+    }
+    if (dateToRaw) {
+      const parsedTo = new Date(dateToRaw);
+      if (!Number.isNaN(parsedTo.getTime())) {
+        parsedTo.setHours(23, 59, 59, 999);
+        createdAt.$lte = parsedTo;
+      }
+    }
+    if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
+
+    const [ads, total, statusAgg] = await Promise.all([
+      Ad.find(query)
+        .sort({ createdAt: -1, _id: -1 })
+        .skip(skip)
+        .limit(pageSize)
+        .populate("userId", "_id email username role")
+        .lean(),
+      Ad.countDocuments(query),
+      Ad.aggregate([
+        { $match: query },
+        { $group: { _id: "$status", count: { $sum: 1 }, budget: { $sum: "$budget" } } },
+      ]),
+    ]);
+
+    const summary = {
+      total,
+      pending: 0,
+      active: 0,
+      paused: 0,
+      expired: 0,
+      totalBudget: 0,
+    };
+    for (const row of statusAgg) {
+      const key = String(row?._id || "");
+      if (key === "pending") summary.pending = Number(row.count || 0);
+      if (key === "active") summary.active = Number(row.count || 0);
+      if (key === "paused") summary.paused = Number(row.count || 0);
+      if (key === "expired") summary.expired = Number(row.count || 0);
+      summary.totalBudget += Number(row.budget || 0);
+    }
+
+    return res.json({
+      ads,
+      summary,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + ads.length < total,
+        hasPrev: page > 1,
+      },
+      message: "Admin ads review loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Ads review scatter: " + err.message });
   }
 };
 
@@ -113,10 +229,18 @@ export const createAd = async (req, res) => {
       return res.status(500).json({ message: "Ad creation scatter: no ad created" });
     }
 
-    console.log("Ad Created:", createdAd);
+    logger.info("ads.create.success", {
+      adId: createdAd?._id?.toString?.() || null,
+      userId: req.user?._id?.toString?.() || null,
+      budget: Number(createdAd?.budget || 0),
+      type: createdAd?.type || null,
+    });
     res.status(201).json({ ad: createdAd, message: "Ad submitted—wait for approval!" });
   } catch (err) {
-    console.error("Ad creation error:", err);
+    logger.error("ads.create.error", {
+      userId: req.user?._id?.toString?.() || null,
+      error: err?.message || err,
+    });
     const message = err.message || "Ad creation scatter";
     const status = message.includes("Wallet") || message.includes("CPC") ? 400 : 500;
     res.status(status).json({ message });
@@ -151,7 +275,7 @@ export const updateAd = async (req, res) => {
     if (!ad) return res.status(404).json({ message: "Ad no dey!" });
 
     const isOwner = ad.userId.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = hasPermission(req.user, "platform.admin");
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "No be your ad—abeg comot!" });
     }
@@ -184,7 +308,7 @@ export const deleteAd = async (req, res) => {
     if (!ad) return res.status(404).json({ message: "Ad no dey!" });
 
     const isOwner = ad.userId.toString() === req.user._id.toString();
-    const isAdmin = req.user.role === "admin";
+    const isAdmin = hasPermission(req.user, "platform.admin");
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ message: "No be your ad—abeg comot!" });
     }
@@ -210,10 +334,16 @@ export const trackImpression = async (req, res) => {
     if (ad.budget <= 0) ad.status = "expired";
     ad.updatedAt = new Date();
     await ad.save();
-    console.log("Impression tracked:", { adId, budgetLeft: ad.budget });
+    logger.info("ads.impression.tracked", {
+      adId,
+      budgetLeft: Number(ad?.budget || 0),
+    });
     res.json({ message: "Impression tracked—ad dey shine!" });
   } catch (err) {
-    console.error("Impression track error:", err);
+    logger.error("ads.impression.error", {
+      adId,
+      error: err?.message || err,
+    });
     res
       .status(500)
       .json({ message: "Impression track scatter: " + err.message });

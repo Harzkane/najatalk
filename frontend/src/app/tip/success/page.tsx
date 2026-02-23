@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, Suspense } from "react";
+import { isAxiosError } from "axios";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/api";
@@ -45,8 +46,8 @@ function TipSuccessContent() {
         console.log("Verify Response:", res.data);
         setMessage(res.data.message || "Tip landed—gist too sweet!");
         setTimeout(() => router.push("/threads"), 3000);
-      } catch (err: any) {
-        if (err.isAxiosError) {
+      } catch (err: unknown) {
+        if (isAxiosError<{ message?: string }>(err)) {
           console.error("Verify Error:", err.response?.data || err.message);
           setMessage(err.response?.data?.message || "Tip scatter o—try again!");
         } else {

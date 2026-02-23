@@ -1,4 +1,5 @@
 // backend/controllers/premium.js
+import mongoose from "mongoose";
 import User from "../models/user.js";
 import Wallet from "../models/wallet.js";
 import Transaction from "../models/transaction.js";
@@ -11,6 +12,8 @@ import {
   getPremiumSnapshot,
   syncPremiumAccessState,
 } from "../utils/premiumAccess.js";
+import { hasPermission } from "../utils/permissions.js";
+import { logger } from "../utils/logger.js";
 
 const PREMIUM_AMOUNT_KOBO = 50000;
 const PREMIUM_CURRENCY = "NGN";
@@ -33,6 +36,40 @@ const toPaystackSummary = (tx = {}) => ({
   customerEmail: normalizeEmail(tx?.customer?.email),
 });
 
+export const getVerificationStateDecision = (status = "") => {
+  if (status === "completed") return { code: "already_completed", httpStatus: 200 };
+  if (status === "processing") return { code: "in_progress", httpStatus: 409 };
+  if (status === "failed") return { code: "already_failed", httpStatus: 400 };
+  if (status !== "initiated") return { code: "invalid_state", httpStatus: 400 };
+  return { code: "verifiable", httpStatus: 200 };
+};
+
+export const evaluatePremiumPaymentChecks = ({ txSummary, paymentRecord }) => {
+  const checks = {
+    successStatus: txSummary?.status === "success",
+    amountMatches: Number(txSummary?.amount || 0) === Number(paymentRecord?.amount || 0),
+    referenceMatches:
+      String(txSummary?.reference || "") === String(paymentRecord?.reference || ""),
+    emailMatches:
+      normalizeEmail(txSummary?.customerEmail) === normalizeEmail(paymentRecord?.email),
+    currencyAllowed: normalizeCurrency(txSummary?.currency) === PREMIUM_CURRENCY,
+    currencyMatchesRecord:
+      normalizeCurrency(txSummary?.currency) === normalizeCurrency(paymentRecord?.currency),
+  };
+  const allPassed = Object.values(checks).every(Boolean);
+  let failureReason = null;
+  if (!allPassed) {
+    if (!checks.successStatus) failureReason = "paystack_status_not_success";
+    else if (!checks.amountMatches) failureReason = "amount_mismatch";
+    else if (!checks.referenceMatches) failureReason = "reference_mismatch";
+    else if (!checks.emailMatches) failureReason = "email_mismatch";
+    else if (!checks.currencyAllowed) failureReason = "unexpected_currency";
+    else if (!checks.currencyMatchesRecord) failureReason = "currency_mismatch";
+    else failureReason = "verification_checks_failed";
+  }
+  return { allPassed, checks, failureReason };
+};
+
 const claimPaymentForProcessing = async (paymentId) =>
   PremiumPayment.findOneAndUpdate(
     { _id: paymentId, status: "initiated" },
@@ -45,6 +82,32 @@ const claimPaymentForProcessing = async (paymentId) =>
     },
     { new: true }
   );
+
+const buildPremiumMismatchReasons = (row, user, premiumSnapshot) => {
+  const mismatchReasons = [];
+  if (row.status === "completed" && user && !premiumSnapshot?.isPremium) {
+    mismatchReasons.push("completed_payment_but_user_not_premium");
+  }
+  if (
+    row.status !== "completed" &&
+    user &&
+    user.premiumLastPaymentRef &&
+    String(user.premiumLastPaymentRef) === String(row.reference) &&
+    premiumSnapshot?.isPremium
+  ) {
+    mismatchReasons.push("user_premium_from_non_completed_payment");
+  }
+  if (normalizeCurrency(row.currency) !== PREMIUM_CURRENCY) {
+    mismatchReasons.push("unexpected_currency");
+  }
+  if (row.status === "completed" && !row.gatewayTransactionId) {
+    mismatchReasons.push("missing_gateway_transaction_id");
+  }
+  if (row.status === "processing" && row.verifyAttempts > 3) {
+    mismatchReasons.push("stuck_processing");
+  }
+  return mismatchReasons;
+};
 
 const ensureWalletBalanceFields = async (userId) => {
   const wallet = await Wallet.findOne({ userId });
@@ -98,7 +161,7 @@ export const initiatePremium = async (req, res) => {
       status: "initiated",
     });
 
-    console.log("Initiating premium payment for user:", _id.toString());
+    logger.info("premium.initiate.start", { userId: _id.toString(), reference });
     const response = await axios.post(
       "https://api.paystack.co/transaction/initialize",
       {
@@ -136,7 +199,11 @@ export const initiatePremium = async (req, res) => {
       await paymentRecord.save();
     }
 
-    console.error("Premium initiate error:", err.response?.data?.message || err.message);
+    logger.error("premium.initiate.error", {
+      userId: _id?.toString?.() || null,
+      reference,
+      error: err.response?.data?.message || err.message,
+    });
     res
       .status(500)
       .json({ message: "Premium scatter: " + (err.message || err) });
@@ -163,7 +230,8 @@ export const verifyPremium = async (req, res) => {
       return res.status(404).json({ message: "Payment reference no match this user!" });
     }
 
-    if (paymentRecord.status === "completed") {
+    const decision = getVerificationStateDecision(paymentRecord.status);
+    if (decision.code === "already_completed") {
       const existingUser = await User.findById(req.user._id).select(
         "_id email flair isPremium premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd"
       );
@@ -176,12 +244,15 @@ export const verifyPremium = async (req, res) => {
         user: existingUser || null,
       });
     }
-
-    if (paymentRecord.status === "processing") {
-      return res.status(409).json({ message: "Verification in progress. Retry shortly." });
-    }
-    if (paymentRecord.status !== "initiated") {
-      return res.status(400).json({ message: "Payment is not in a verifiable state." });
+    if (decision.code !== "verifiable") {
+      const messageByCode = {
+        in_progress: "Verification in progress. Retry shortly.",
+        already_failed: "Payment already failed and cannot be retried.",
+        invalid_state: "Payment is not in a verifiable state.",
+      };
+      return res
+        .status(decision.httpStatus)
+        .json({ message: messageByCode[decision.code] || "Payment verification blocked." });
     }
 
     claimedRecord = await claimPaymentForProcessing(paymentRecord._id);
@@ -189,7 +260,10 @@ export const verifyPremium = async (req, res) => {
       return res.status(409).json({ message: "Verification already running. Retry shortly." });
     }
 
-    console.log("Verifying premium payment reference:", reference);
+    logger.info("premium.verify.start", {
+      userId: req.user?._id?.toString?.() || null,
+      reference,
+    });
     const response = await axios.get(
       `https://api.paystack.co/transaction/verify/${reference}`,
       {
@@ -199,17 +273,21 @@ export const verifyPremium = async (req, res) => {
 
     const paystackTx = response.data?.data;
     const txSummary = toPaystackSummary(paystackTx);
-    const isSuccessful =
-      response.data?.status === true && paystackTx?.status === "success";
-    const amountMatches = txSummary.amount === claimedRecord.amount;
-    const referenceMatches = txSummary.reference === claimedRecord.reference;
-    const emailMatches = txSummary.customerEmail === claimedRecord.email;
-    const currencyMatches = txSummary.currency === normalizeCurrency(claimedRecord.currency);
-
-    if (!isSuccessful || !amountMatches || !referenceMatches || !emailMatches || !currencyMatches) {
+    const paystackEnvelopeOk = response.data?.status === true;
+    const verification = evaluatePremiumPaymentChecks({
+      txSummary,
+      paymentRecord: claimedRecord,
+    });
+    if (!paystackEnvelopeOk || !verification.allPassed) {
       claimedRecord.status = "failed";
-      claimedRecord.failureReason = "verification_checks_failed";
-      claimedRecord.gatewayResponse = txSummary;
+      claimedRecord.failureReason = paystackEnvelopeOk
+        ? verification.failureReason || "verification_checks_failed"
+        : "paystack_response_invalid";
+      claimedRecord.gatewayResponse = {
+        ...txSummary,
+        checks: verification.checks,
+        paystackEnvelopeOk,
+      };
       await claimedRecord.save();
       return res.status(400).json({ message: "Payment verification failed checks." });
     }
@@ -252,7 +330,11 @@ export const verifyPremium = async (req, res) => {
       };
       await claimedRecord.save();
     }
-    console.error("Premium verify error:", err.response?.data?.message || err.message);
+    logger.error("premium.verify.error", {
+      userId: req.user?._id?.toString?.() || null,
+      reference,
+      error: err.response?.data?.message || err.message,
+    });
     res.status(500).json({
       message:
         "Verify scatter: " + (err.response?.data?.message || err.message),
@@ -375,14 +457,17 @@ export const handlePaystackWebhook = async (req, res) => {
       return res.status(200).send("Webhook already being processed");
     }
 
-    const referenceMatches = txSummary.reference === claimedRecord.reference;
-    const emailMatches = txSummary.customerEmail === claimedRecord.email;
-    const amountMatches = txSummary.amount === claimedRecord.amount;
-    const currencyMatches = txSummary.currency === normalizeCurrency(claimedRecord.currency);
-    if (!referenceMatches || !emailMatches || !amountMatches || !currencyMatches) {
+    const verification = evaluatePremiumPaymentChecks({
+      txSummary,
+      paymentRecord: claimedRecord,
+    });
+    if (!verification.allPassed) {
       claimedRecord.status = "failed";
-      claimedRecord.failureReason = "webhook_payload_mismatch";
-      claimedRecord.gatewayResponse = txSummary;
+      claimedRecord.failureReason = verification.failureReason || "webhook_payload_mismatch";
+      claimedRecord.gatewayResponse = {
+        ...txSummary,
+        checks: verification.checks,
+      };
       await claimedRecord.save();
       return res.status(200).send("Webhook payload mismatch");
     }
@@ -423,24 +508,31 @@ export const handlePaystackWebhook = async (req, res) => {
       };
       await claimedRecord.save();
     }
-    console.error("Webhook processing error:", err?.message || err);
+    logger.error("premium.webhook.error", {
+      reference: claimedRecord?.reference || null,
+      error: err?.message || err,
+    });
     return res.status(500).send("Webhook error");
   }
 };
 
 export const listPremiumPaymentsForAdmin = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Admins only." });
     }
 
     const statusRaw = String(req.query.status || "all").toLowerCase();
     const sourceRaw = String(req.query.source || "all").toLowerCase();
     const mismatchOnly = req.query.mismatchOnly === "true";
-    const parsedLimit = Number.parseInt(String(req.query.limit || "100"), 10);
-    const limit = Number.isFinite(parsedLimit)
-      ? Math.min(Math.max(parsedLimit, 1), 300)
-      : 100;
+    const q = String(req.query.q || "").trim();
+    const pageRaw = Number.parseInt(String(req.query.page || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(req.query.pageSize || req.query.limit || "25"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 200)
+      : 25;
+    const skip = (page - 1) * pageSize;
     const dateFromRaw = String(req.query.dateFrom || "").trim();
     const dateToRaw = String(req.query.dateTo || "").trim();
     const query = {};
@@ -466,41 +558,28 @@ export const listPremiumPaymentsForAdmin = async (req, res) => {
     }
     if (Object.keys(createdAt).length > 0) query.createdAt = createdAt;
 
-    const rows = await PremiumPayment.find(query)
+    if (q) {
+      query.$or = [
+        { reference: { $regex: q, $options: "i" } },
+        { email: { $regex: q, $options: "i" } },
+        { gatewayTransactionId: { $regex: q, $options: "i" } },
+        { failureReason: { $regex: q, $options: "i" } },
+        { channel: { $regex: q, $options: "i" } },
+      ];
+    }
+
+    const candidates = await PremiumPayment.find(query)
       .sort({ createdAt: -1 })
-      .limit(limit)
       .populate(
         "userId",
         "_id email username isPremium premiumStatus premiumPlan premiumExpiresAt premiumLastPaymentRef"
       )
       .lean();
 
-    const mapped = rows.map((row) => {
+    const mapped = candidates.map((row) => {
       const user = row.userId || null;
       const premiumSnapshot = user ? getPremiumSnapshot(user) : null;
-      const mismatchReasons = [];
-      if (row.status === "completed" && user && !premiumSnapshot?.isPremium) {
-        mismatchReasons.push("completed_payment_but_user_not_premium");
-      }
-      if (
-        row.status !== "completed" &&
-        user &&
-        user.premiumLastPaymentRef &&
-        String(user.premiumLastPaymentRef) === String(row.reference) &&
-        premiumSnapshot?.isPremium
-      ) {
-        mismatchReasons.push("user_premium_from_non_completed_payment");
-      }
-      if (normalizeCurrency(row.currency) !== PREMIUM_CURRENCY) {
-        mismatchReasons.push("unexpected_currency");
-      }
-      if (row.status === "completed" && !row.gatewayTransactionId) {
-        mismatchReasons.push("missing_gateway_transaction_id");
-      }
-      if (row.status === "processing" && row.verifyAttempts > 3) {
-        mismatchReasons.push("stuck_processing");
-      }
-
+      const mismatchReasons = buildPremiumMismatchReasons(row, user, premiumSnapshot);
       return {
         _id: row._id,
         reference: row.reference,
@@ -531,25 +610,109 @@ export const listPremiumPaymentsForAdmin = async (req, res) => {
       };
     });
 
-    const filteredRows = mismatchOnly
-      ? mapped.filter((row) => row.hasMismatch)
-      : mapped;
+    const scopedRows = mismatchOnly ? mapped.filter((row) => row.hasMismatch) : mapped;
+    const rows = scopedRows.slice(skip, skip + pageSize);
+    const total = scopedRows.length;
     const summary = {
-      total: mapped.length,
-      mismatchCount: mapped.filter((row) => row.hasMismatch).length,
-      completedCount: mapped.filter((row) => row.status === "completed").length,
-      failedCount: mapped.filter((row) => row.status === "failed").length,
-      processingCount: mapped.filter((row) => row.status === "processing").length,
-      initiatedCount: mapped.filter((row) => row.status === "initiated").length,
+      total,
+      mismatchCount: scopedRows.filter((row) => row.hasMismatch).length,
+      completedCount: scopedRows.filter((row) => row.status === "completed").length,
+      failedCount: scopedRows.filter((row) => row.status === "failed").length,
+      processingCount: scopedRows.filter((row) => row.status === "processing").length,
+      initiatedCount: scopedRows.filter((row) => row.status === "initiated").length,
     };
 
     return res.json({
       summary,
-      rows: filteredRows,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasPrev: page > 1,
+        hasNext: skip + rows.length < total,
+      },
+      rows,
       message: "Premium payment audit loaded.",
     });
   } catch (err) {
     return res.status(500).json({ message: "Premium payment audit scatter: " + err.message });
+  }
+};
+
+export const getPremiumPaymentDetailsForAdmin = async (req, res) => {
+  try {
+    if (!hasPermission(req.user, "platform.admin")) {
+      return res.status(403).json({ message: "Admins only." });
+    }
+
+    const { paymentId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(paymentId)) {
+      return res.status(400).json({ message: "Invalid premium payment id." });
+    }
+    const payment = await PremiumPayment.findById(paymentId)
+      .populate(
+        "userId",
+        "_id email username role isPremium premiumStatus premiumPlan premiumStartedAt premiumExpiresAt nextBillingAt cancelAtPeriodEnd premiumLastPaymentRef"
+      )
+      .lean();
+    if (!payment) {
+      return res.status(404).json({ message: "Premium payment no dey." });
+    }
+
+    const user = payment.userId || null;
+    const premiumSnapshot = user ? getPremiumSnapshot(user) : null;
+    const mismatchReasons = buildPremiumMismatchReasons(payment, user, premiumSnapshot);
+
+    const recentRows = await PremiumPayment.find({ userId: payment.userId?._id || payment.userId })
+      .sort({ createdAt: -1 })
+      .limit(12)
+      .select(
+        "_id reference status amount currency verificationSource verifyAttempts failureReason createdAt verifiedAt"
+      )
+      .lean();
+
+    return res.json({
+      payment: {
+        _id: payment._id,
+        reference: payment.reference,
+        status: payment.status,
+        amount: payment.amount,
+        currency: payment.currency || PREMIUM_CURRENCY,
+        verificationSource: payment.verificationSource || null,
+        verifyAttempts: payment.verifyAttempts || 0,
+        failureReason: payment.failureReason || null,
+        channel: payment.channel || null,
+        gatewayTransactionId: payment.gatewayTransactionId || null,
+        paidAt: payment.paidAt || null,
+        verifiedAt: payment.verifiedAt || null,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
+        gatewayResponse: payment.gatewayResponse || null,
+      },
+      user: user
+        ? {
+            _id: user._id,
+            email: user.email,
+            username: user.username || null,
+            role: user.role || "user",
+            isPremium: Boolean(premiumSnapshot?.isPremium),
+            premiumStatus: premiumSnapshot?.premiumStatus || "inactive",
+            premiumPlan: user.premiumPlan || null,
+            premiumStartedAt: user.premiumStartedAt || null,
+            premiumExpiresAt: user.premiumExpiresAt || null,
+            nextBillingAt: user.nextBillingAt || null,
+            cancelAtPeriodEnd: Boolean(user.cancelAtPeriodEnd),
+            premiumLastPaymentRef: user.premiumLastPaymentRef || null,
+          }
+        : null,
+      hasMismatch: mismatchReasons.length > 0,
+      mismatchReasons,
+      recentRows,
+      message: "Premium payment details loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Premium payment details scatter: " + err.message });
   }
 };
 
@@ -632,12 +795,11 @@ export const listMyPremiumPayments = async (req, res) => {
 export const getWallet = async (req, res) => {
   try {
     const wallet = await ensureWalletBalanceFields(req.user._id);
-    console.log(
-      "Fetching wallet for:",
-      req.user.email,
-      "Balance:",
-      wallet?.balance
-    );
+    logger.info("premium.wallet.fetch", {
+      userId: req.user?._id?.toString?.() || null,
+      hasWallet: Boolean(wallet),
+      balance: Number(wallet?.balance || 0),
+    });
     if (!wallet) {
       return res.json({
         balance: 0,
@@ -653,14 +815,19 @@ export const getWallet = async (req, res) => {
       message: "Wallet dey here!",
     });
   } catch (err) {
-    console.error("Wallet Error:", err.message);
+    logger.error("premium.wallet.error", {
+      userId: req.user?._id?.toString?.() || null,
+      error: err.message,
+    });
     res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };
 
 export const getTipHistory = async (req, res) => {
   try {
-    console.log("Fetching tip history for:", req.user.email);
+    logger.info("premium.tip_history.fetch", {
+      userId: req.user?._id?.toString?.() || null,
+    });
     const tipsSent = await Transaction.find({
       senderId: req.user._id,
       status: "completed",
@@ -687,7 +854,10 @@ export const getTipHistory = async (req, res) => {
 
     res.json({ sent, received, message: "Tip history dey here!" });
   } catch (err) {
-    console.error("Tip History Error:", err.message);
+    logger.error("premium.tip_history.error", {
+      userId: req.user?._id?.toString?.() || null,
+      error: err.message,
+    });
     res.status(500).json({ message: "Fetch scatter: " + err.message });
   }
 };

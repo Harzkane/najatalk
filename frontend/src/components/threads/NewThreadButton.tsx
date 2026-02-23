@@ -1,23 +1,43 @@
 // frontend/src/components/threads/NewThreadButton.tsx
-import { useState, RefObject } from "react";
+import { useEffect, useState, RefObject } from "react";
 // import { useRouter } from "next/navigation";
 
 interface NewThreadButtonProps {
   isLoggedIn: boolean;
-  onSubmit: (title: string, body: string, category: string) => Promise<void>;
+  onSubmit: (
+    title: string,
+    body: string,
+    category: string
+  ) => Promise<{ _id?: string; title?: string } | void>;
   buttonRef?: RefObject<HTMLButtonElement | null>;
+  initialOpen?: boolean;
+  initialTitle?: string;
+  initialBody?: string;
+  initialCategory?: string;
 }
 
 const NewThreadButton = ({
   isLoggedIn,
   onSubmit,
   buttonRef,
+  initialOpen = false,
+  initialTitle = "",
+  initialBody = "",
+  initialCategory = "General",
 }: NewThreadButtonProps) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [category, setCategory] = useState("General");
+  const [isExpanded, setIsExpanded] = useState(initialOpen);
+  const [title, setTitle] = useState(initialTitle);
+  const [body, setBody] = useState(initialBody);
+  const [category, setCategory] = useState(initialCategory);
   //   const router = useRouter();
+
+  useEffect(() => {
+    if (!initialOpen) return;
+    setIsExpanded(true);
+    setTitle(initialTitle);
+    setBody(initialBody);
+    setCategory(initialCategory);
+  }, [initialOpen, initialTitle, initialBody, initialCategory]);
 
   if (!isLoggedIn) {
     return null;

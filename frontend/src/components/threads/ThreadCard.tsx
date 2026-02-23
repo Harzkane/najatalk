@@ -1,7 +1,8 @@
 // // frontend/src/components/threads/ThreadCard.tsx
 "use client";
 
-import { FC, useState, useEffect } from "react";
+import { FC, useState, useEffect, useCallback } from "react";
+import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/api";
@@ -41,7 +42,7 @@ interface ThreadCardProps {
   depth?: number;
   threadLocked?: boolean;
   currentUserId?: string | null;
-  currentUserRole?: "user" | "mod" | "admin" | null;
+  currentUserRole?: "user" | "mod" | "admin" | "super_admin" | null;
   onThreadUpdated?: () => Promise<void> | void;
 }
 
@@ -88,7 +89,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
   const router = useRouter();
 
-  const isThread = (t: Thread | Reply): t is Thread => !isReply && "title" in t;
+  const isThread = useCallback(
+    (t: Thread | Reply): t is Thread => !isReply && "title" in t,
+    [isReply],
+  );
 
   const displayTitle = isReply
     ? `Re: ${originalTitle}`
@@ -109,20 +113,21 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const isCurrentThreadLocked = isThread(thread)
     ? Boolean(thread.isLocked)
     : threadLocked;
+  const isAdminLike = currentUserRole === "admin" || currentUserRole === "super_admin";
   const canToggleSolved = Boolean(
     isThread(thread) &&
     currentUserId &&
     (thread.userId?._id === currentUserId ||
       currentUserRole === "mod" ||
-      currentUserRole === "admin")
+      isAdminLike)
   );
   const canModerateThread = Boolean(
-    !isReply && (currentUserRole === "mod" || currentUserRole === "admin")
+    !isReply && (currentUserRole === "mod" || isAdminLike)
   );
   const canReplyToThread = Boolean(
     !isCurrentThreadLocked ||
     currentUserRole === "mod" ||
-    currentUserRole === "admin"
+    isAdminLike
   );
 
   const handleReplyClick = () => {
@@ -247,7 +252,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsLiked(likes.includes(currentUserId));
     setIsBookmarked(bookmarks.includes(currentUserId));
-  }, [thread, currentUserId]);
+  }, [thread, currentUserId, isThread]);
 
   const handleLikeToggle = async () => {
     if (isReply || !isThread(thread) || isLikeLoading) return;
@@ -435,9 +440,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
       });
       console.log("Tip Response:", res.data);
       window.location.href = res.data.paymentLink;
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Tip Error:", err);
-      if (err.isAxiosError && err.response?.data?.message) {
+      if (isAxiosError<{ message?: string }>(err) && err.response?.data?.message) {
         setReplyError(err.response.data.message); // Show "You no fit tip yourself, bros!"
       } else {
         setReplyError("Tip scatter o!");

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, FormEvent } from "react";
+import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 
@@ -22,8 +23,8 @@ export default function Signup() {
       setEmail(""); // Clear fields
       setPassword("");
       setTimeout(() => router.push("/login"), 1000); // Redirect to login
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         setMessage(err.response?.data?.message || "Signup scatter o!");
       } else {
         setMessage("Signup scatter o!");

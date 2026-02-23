@@ -1,0 +1,186 @@
+[{
+  "_id": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "email": "harzkane@gmail.com",
+  "password": "$2b$10$ouUhS/MXRWSQOQ09au8FseAejIcM5PJJuif10tIne0Ynme4I1wda2",
+  "isVerified": true,
+  "verificationToken": null,
+  "__v": 1,
+  "role": "admin",
+  "isBanned": false,
+  "isPremium": true,
+  "flair": "Verified G",
+  "bio": "Harz Kane The Hustler",
+  "location": "Abuja",
+  "profileCompleted": true,
+  "username": "harzkane",
+  "savedListings": [
+    {
+      "$oid": "67de1974aaf6a884d2e0aed3"
+    },
+    {
+      "$oid": "67de15aaaaf6a884d2e0ae04"
+    }
+  ],
+  "cancelAtPeriodEnd": false,
+  "premiumStatus": "active",
+  "defaultDeliveryAddress": {
+    "fullName": "Harz Kane",
+    "phone": "08107060160",
+    "addressLine1": "Aminu Kano Wuse 2",
+    "addressLine2": "",
+    "city": "Abuja",
+    "state": "FT",
+    "postalCode": "910101",
+    "deliveryNote": "careul"
+  }
+},
+{
+  "_id": {
+    "$oid": "67be32bef373a7352b0c354c"
+  },
+  "email": "harunbah93@gmail.com",
+  "password": "$2b$10$tSbaiLUGQr8ltVk7Thj6Nu/Fy/I9MXyD7ilxD1fuy7DXZokF0BtJS",
+  "isVerified": true,
+  "verificationToken": null,
+  "__v": 1,
+  "isBanned": false,
+  "appealStatus": "approved",
+  "appealReason": null,
+  "isPremium": true,
+  "flair": "Oga at the Top",
+  "role": "user",
+  "cancelAtPeriodEnd": false,
+  "premiumStatus": "active",
+  "profileCompleted": true,
+  "bio": "testing stage for now",
+  "location": "Lagos",
+  "username": "harunbah93",
+  "savedListings": []
+},
+{
+  "_id": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "email": "harzjunior1993@gmail.com",
+  "password": "$2b$10$lo1y9eCT1X7.wfHvDABr6O0LoEQUZSIOB4BbxCtWGV4NBGWy4417K",
+  "isVerified": true,
+  "verificationToken": null,
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "__v": null,
+  "appealStatus": "approved",
+  "isPremium": false,
+  "savedListings": [
+    {
+      "$oid": "6998118ae7a031bdab24941a"
+    },
+    {
+      "$oid": "69987ae0d3534e30972a3632"
+    },
+    {
+      "$oid": "67de1974aaf6a884d2e0aed3"
+    },
+    {
+      "$oid": "67de15aaaaf6a884d2e0ae04"
+    }
+  ],
+  "bio": "Setting up my public identity before using marketplace and community features.",
+  "location": "Abuja",
+  "profileCompleted": true,
+  "username": "abujahustler"
+},
+{
+  "_id": {
+    "$oid": "67c247a45dc27b0913b02d3d"
+  },
+  "email": "harunjibs@gmail.com",
+  "password": "$2b$10$ow/zbcq3b.QfYqngxt2u9OSBZ98gqcrTt/Ni36OzGmB8OtFolowY6",
+  "isVerified": true,
+  "verificationToken": null,
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "appealStatus": null,
+  "isPremium": true,
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0e1324866e0ae1f38a762"
+  },
+  "email": "kane4dia@gmailc.om",
+  "password": "$2b$10$re7BdJJQmT/4kPKXywmbhetO8tODlViHehcSqVh/hu898a.zSplPK",
+  "isVerified": false,
+  "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImthbmU0ZGlhQGdtYWlsYy5vbSIsImlhdCI6MTc0Mjc5MDk2MiwiZXhwIjoxNzQyODc3MzYyfQ.doh7p-B2DQ95VdmhqHR9YPeY0LhDMdv6exFw-pLXuPE",
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "appealStatus": null,
+  "isPremium": false,
+  "flair": null,
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e0e1414866e0ae1f38a765"
+  },
+  "email": "kane4dia@gmail.com",
+  "password": "$2b$10$gm2EMbFgV16KPsCc.Z.5o.sv3426wP8rP5FTOlO/6fRT4JswEuZgO",
+  "isVerified": false,
+  "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImthbmU0ZGlhQGdtYWlsLmNvbSIsImlhdCI6MTc0Mjc5MDk3NywiZXhwIjoxNzQyODc3Mzc3fQ.9psV3SPdatHlJYCXAArb-8E1ky2pWsYt8lifJqv4lrc",
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "appealStatus": null,
+  "isPremium": false,
+  "flair": null,
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67e1376bd698f0da504b907a"
+  },
+  "email": "bytebuddiez@gmail.com",
+  "password": "$2b$10$ymD3vcf3kV7iN1QPbw00GuLqB9jBSqOL0Fy/UI1grEp14NbTWBkqK",
+  "isVerified": false,
+  "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImJ5dGVidWRkaWV6QGdtYWlsLmNvbSIsImlhdCI6MTc0MjgxMzAzNSwiZXhwIjoxNzQyODk5NDM1fQ.W8GZ-if2hHtB5HpvPbMW4zaIKcCNiFlWSJ649mL75O4",
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "appealStatus": null,
+  "isPremium": false,
+  "flair": null,
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998c7c6d9f8864122273a75"
+  },
+  "email": "primetaker10@gmail.com",
+  "password": "$2b$10$RFe1sNWbUfYo753oAbxmuODDduKj.cJnUlcVq9yNuYPPHjgWyYkNK",
+  "isVerified": false,
+  "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InByaW1ldGFrZXIxMEBnbWFpbC5jb20iLCJpYXQiOjE3NzE2MjAyOTQsImV4cCI6MTc3MTcwNjY5NH0.-GyE-ECMO4Jmn3v8EjyQikjoNspJ81Kvb4TLAhYfjzg",
+  "role": "user",
+  "isBanned": false,
+  "appealReason": null,
+  "appealStatus": null,
+  "isPremium": false,
+  "premiumStatus": "inactive",
+  "premiumPlan": null,
+  "premiumStartedAt": null,
+  "premiumExpiresAt": null,
+  "nextBillingAt": null,
+  "cancelAtPeriodEnd": false,
+  "premiumCanceledAt": null,
+  "premiumLastPaymentRef": null,
+  "flair": null,
+  "avatarUrl": null,
+  "bio": "",
+  "location": "",
+  "profileCompleted": false,
+  "savedListings": [],
+  "__v": 0
+}]

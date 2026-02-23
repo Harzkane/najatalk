@@ -1,0 +1,1942 @@
+[{
+  "_id": {
+    "$oid": "6998a1607ca1967476364d5e"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "payout_pending",
+  "amount": 1000000,
+  "walletEffect": -1000000,
+  "status": "pending",
+  "reference": "naijatalk_payout_1771610464328_67c17a5273ac45a1e34fc364",
+  "counterparty": null,
+  "recipientId": "Harun Jib1993 (****0160) - Opay",
+  "listingTitle": null,
+  "availableBalance": 999000000,
+  "heldBalance": 100000000,
+  "balance": 1099000000,
+  "transactionId": {
+    "$oid": "6998a1607ca1967476364d5c"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:01:04.332Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a1777ca1967476364d9a"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_hold",
+  "amount": 245000,
+  "walletEffect": 0,
+  "status": "pending",
+  "reference": "b9366f32-ce54-43a3-8aae-4ffc707eb701",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "Jollof Pot",
+  "availableBalance": 998755000,
+  "heldBalance": 100245000,
+  "balance": 1099000000,
+  "transactionId": {
+    "$oid": "6998a1777ca1967476364d97"
+  },
+  "listingId": {
+    "$oid": "69987ae0d3534e30972a3632"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T18:01:27.945Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a17b7ca1967476364dad"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_sale_credit",
+  "amount": 245000,
+  "walletEffect": 232750,
+  "status": "completed",
+  "reference": "b9366f32-ce54-43a3-8aae-4ffc707eb701",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "Jollof Pot",
+  "availableBalance": 232750,
+  "heldBalance": 0,
+  "balance": 232750,
+  "transactionId": {
+    "$oid": "6998a1777ca1967476364d97"
+  },
+  "listingId": {
+    "$oid": "69987ae0d3534e30972a3632"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T18:01:31.707Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a17b7ca1967476364dac"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_release",
+  "amount": 245000,
+  "walletEffect": -245000,
+  "status": "completed",
+  "reference": "b9366f32-ce54-43a3-8aae-4ffc707eb701",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "Jollof Pot",
+  "availableBalance": 998755000,
+  "heldBalance": 100000000,
+  "balance": 1098755000,
+  "transactionId": {
+    "$oid": "6998a1777ca1967476364d97"
+  },
+  "listingId": {
+    "$oid": "69987ae0d3534e30972a3632"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T18:01:31.707Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a31c7ca196747636504d"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "ad_budget_locked",
+  "amount": 100000,
+  "walletEffect": -100000,
+  "status": "pending",
+  "reference": "6998a31c7ca196747636504b",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": null,
+  "availableBalance": 132750,
+  "heldBalance": 0,
+  "balance": 132750,
+  "metadata": {
+    "adType": "sidebar",
+    "cpc": 5000
+  },
+  "transactionId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:08:28.734Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a4797ca196747636516a"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "payout_completed",
+  "amount": 1000000,
+  "walletEffect": 0,
+  "status": "completed",
+  "reference": "naijatalk_payout_1771610464328_67c17a5273ac45a1e34fc364",
+  "counterparty": null,
+  "recipientId": "Harun Jib1993 (****0160) - Opay",
+  "listingTitle": null,
+  "availableBalance": 998755000,
+  "heldBalance": 100000000,
+  "balance": 1098755000,
+  "transactionId": {
+    "$oid": "6998a1607ca1967476364d5c"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:14:17.412Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a4797ca196747636516f"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "payout_completed",
+  "amount": 1000000,
+  "walletEffect": 0,
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608819579_67bdd7393417dff455b2c0bc",
+  "counterparty": null,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingTitle": null,
+  "availableBalance": 130275000,
+  "heldBalance": 0,
+  "balance": 130275000,
+  "transactionId": {
+    "$oid": "69989af3e3c6e95ab5f66131"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:14:17.972Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a47a7ca1967476365174"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "payout_completed",
+  "amount": 1000000,
+  "walletEffect": 0,
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608703668_67bdd7393417dff455b2c0bc",
+  "counterparty": null,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingTitle": null,
+  "availableBalance": 130275000,
+  "heldBalance": 0,
+  "balance": 130275000,
+  "transactionId": {
+    "$oid": "69989a7fe3c6e95ab5f66126"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:14:18.518Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a47a7ca1967476365179"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "payout_completed",
+  "amount": 1000000,
+  "walletEffect": 0,
+  "status": "completed",
+  "reference": "naijatalk_payout_1771608559282_67bdd7393417dff455b2c0bc",
+  "counterparty": null,
+  "recipientId": "Harz Kane (****0160) - Opay",
+  "listingTitle": null,
+  "availableBalance": 130275000,
+  "heldBalance": 0,
+  "balance": 130275000,
+  "transactionId": {
+    "$oid": "699899efe3c6e95ab5f6611b"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:14:18.949Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a55d7ca19674763653ca"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "ad_budget_locked",
+  "amount": 100000,
+  "walletEffect": -100000,
+  "status": "pending",
+  "reference": "6998a55d7ca19674763653c8",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": null,
+  "availableBalance": 130175000,
+  "heldBalance": 0,
+  "balance": 130175000,
+  "metadata": {
+    "adType": "banner",
+    "cpc": 7500
+  },
+  "transactionId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:18:05.712Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998a5657ca19674763653d5"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "ad_budget_locked",
+  "amount": 100000,
+  "walletEffect": -100000,
+  "status": "pending",
+  "reference": "6998a5657ca19674763653d3",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": null,
+  "availableBalance": 130075000,
+  "heldBalance": 0,
+  "balance": 130075000,
+  "metadata": {
+    "adType": "popup",
+    "cpc": 10000
+  },
+  "transactionId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:18:13.574Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998ad3fb82cc90c3c527297"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "payout_pending",
+  "amount": 25000000,
+  "walletEffect": -25000000,
+  "status": "pending",
+  "reference": "naijatalk_payout_1771613503698_67c17a5273ac45a1e34fc364",
+  "counterparty": null,
+  "recipientId": "8107060160 (**** Bah) - MoniePoint",
+  "listingTitle": null,
+  "availableBalance": 973755000,
+  "heldBalance": 100000000,
+  "balance": 1073755000,
+  "transactionId": {
+    "$oid": "6998ad3fb82cc90c3c527295"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:51:43.703Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998ad4eb82cc90c3c5272b1"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "payout_completed",
+  "amount": 25000000,
+  "walletEffect": 0,
+  "status": "completed",
+  "reference": "naijatalk_payout_1771613503698_67c17a5273ac45a1e34fc364",
+  "counterparty": null,
+  "recipientId": "8107060160 (**** Bah) - MoniePoint",
+  "listingTitle": null,
+  "availableBalance": 973755000,
+  "heldBalance": 100000000,
+  "balance": 1073755000,
+  "transactionId": {
+    "$oid": "6998ad3fb82cc90c3c527295"
+  },
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T18:51:58.038Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998c384845a69e46c2dfed0"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "ad_budget_locked",
+  "amount": 100000,
+  "walletEffect": -100000,
+  "status": "pending",
+  "reference": "6998c384845a69e46c2dfece",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": null,
+  "availableBalance": 129975000,
+  "heldBalance": 0,
+  "balance": 129975000,
+  "metadata": {
+    "adType": "banner",
+    "cpc": 7500
+  },
+  "transactionId": null,
+  "listingId": null,
+  "createdAt": {
+    "$date": "2026-02-20T20:26:44.487Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de502b19bfe007027bc2"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771626064386",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129965000,
+  "heldBalance": 0,
+  "balance": 129965000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:21:04.387Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de532b19bfe007027bd0"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771626067732",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129955000,
+  "heldBalance": 0,
+  "balance": 129955000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:21:07.732Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de852b19bfe007027bde"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626117777",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973730000,
+  "heldBalance": 100000000,
+  "balance": 1073730000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:21:57.778Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de8a2b19bfe007027bec"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626122550",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973705000,
+  "heldBalance": 100000000,
+  "balance": 1073705000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:22:02.550Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de8b2b19bfe007027bfa"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626123030",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973680000,
+  "heldBalance": 100000000,
+  "balance": 1073680000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:22:03.030Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998de8c2b19bfe007027c08"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dde42b19bfe007027b9c_1771626124919",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item2",
+  "availableBalance": 973655000,
+  "heldBalance": 100000000,
+  "balance": 1073655000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:22:04.920Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e05a2b19bfe007027d01"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626586390",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973630000,
+  "heldBalance": 100000000,
+  "balance": 1073630000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:29:46.390Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e06b2b19bfe007027d39"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626603853",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973605000,
+  "heldBalance": 100000000,
+  "balance": 1073605000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:30:03.853Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e06e2b19bfe007027d47"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626606257",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973580000,
+  "heldBalance": 100000000,
+  "balance": 1073580000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:30:06.257Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e0752b19bfe007027d55"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626613526",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973555000,
+  "heldBalance": 100000000,
+  "balance": 1073555000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:30:13.527Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e12b2b19bfe007027dc4"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771626795917",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973530000,
+  "heldBalance": 100000000,
+  "balance": 1073530000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:33:15.917Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e2f3ed6652251723a1c2"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627251410",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973505000,
+  "heldBalance": 100000000,
+  "balance": 1073505000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:40:51.411Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e2f5ed6652251723a1da"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627253904",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973480000,
+  "heldBalance": 100000000,
+  "balance": 1073480000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:40:53.904Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e2f6ed6652251723a1f2"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627254926",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973455000,
+  "heldBalance": 100000000,
+  "balance": 1073455000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:40:54.926Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e2f7ed6652251723a20a"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627255724",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973430000,
+  "heldBalance": 100000000,
+  "balance": 1073430000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:40:55.725Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e2f8ed6652251723a222"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627256561",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973405000,
+  "heldBalance": 100000000,
+  "balance": 1073405000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:40:56.561Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e302ed6652251723a23a"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627266685",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973380000,
+  "heldBalance": 100000000,
+  "balance": 1073380000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:41:06.686Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e303ed6652251723a252"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627267295",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973355000,
+  "heldBalance": 100000000,
+  "balance": 1073355000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:41:07.295Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e324ed6652251723a2b5"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627300564",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973330000,
+  "heldBalance": 100000000,
+  "balance": 1073330000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:41:40.564Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998e3c0ed6652251723a4b3"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771627456152",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973305000,
+  "heldBalance": 100000000,
+  "balance": 1073305000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T22:44:16.152Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998efaa22934fe7070ac522"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630506671",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129945000,
+  "heldBalance": 0,
+  "balance": 129945000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:35:06.672Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998efb022934fe7070ac53a"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630512650",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129935000,
+  "heldBalance": 0,
+  "balance": 129935000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:35:12.651Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f01a22934fe7070ac577"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630618715",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129925000,
+  "heldBalance": 0,
+  "balance": 129925000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:36:58.715Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f03122934fe7070ac5ac"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630641635",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129915000,
+  "heldBalance": 0,
+  "balance": 129915000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:37:21.635Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f03222934fe7070ac5c4"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630642996",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129905000,
+  "heldBalance": 0,
+  "balance": 129905000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:37:22.996Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f03422934fe7070ac5dc"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630644026",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129895000,
+  "heldBalance": 0,
+  "balance": 129895000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:37:24.026Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f03f22934fe7070ac611"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630655479",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129885000,
+  "heldBalance": 0,
+  "balance": 129885000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:37:35.479Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f04022934fe7070ac629"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771630656057",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129875000,
+  "heldBalance": 0,
+  "balance": 129875000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:37:36.058Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f23022934fe7070ac9f7"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998dd952b19bfe007027b91_1771631152539",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973280000,
+  "heldBalance": 100000000,
+  "balance": 1073280000,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:45:52.539Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f2e222934fe7070aca5e"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771631330843",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129865000,
+  "heldBalance": 0,
+  "balance": 129865000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:48:50.843Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f2e622934fe7070aca7d"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771631334257",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129855000,
+  "heldBalance": 0,
+  "balance": 129855000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:48:54.257Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f2f722934fe7070acac2"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771631351767",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129845000,
+  "heldBalance": 0,
+  "balance": 129845000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:49:11.767Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f33022934fe7070acada"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771631408134",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129835000,
+  "heldBalance": 0,
+  "balance": 129835000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:50:08.134Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f33f22934fe7070acaf9"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 10000,
+  "walletEffect": -10000,
+  "status": "completed",
+  "reference": "boost_6998dd722b19bfe007027b73_1771631423066",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129825000,
+  "heldBalance": 0,
+  "balance": 129825000,
+  "metadata": {
+    "tier": "premium",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-20T23:50:23.066Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f5eab7f835ce675d23b7"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_hold",
+  "amount": 75000,
+  "walletEffect": 0,
+  "status": "pending",
+  "reference": "62c076f0-f170-4a78-b781-193cb2c82f6e",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "item2",
+  "availableBalance": 129750000,
+  "heldBalance": 75000,
+  "balance": 129825000,
+  "transactionId": {
+    "$oid": "6998f5eab7f835ce675d23b4"
+  },
+  "listingId": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:01:46.352Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f609b7f835ce675d23e0"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_release",
+  "amount": 75000,
+  "walletEffect": -75000,
+  "status": "completed",
+  "reference": "62c076f0-f170-4a78-b781-193cb2c82f6e",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "item2",
+  "availableBalance": 129750000,
+  "heldBalance": 0,
+  "balance": 129750000,
+  "transactionId": {
+    "$oid": "6998f5eab7f835ce675d23b4"
+  },
+  "listingId": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:02:17.890Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f609b7f835ce675d23e1"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_sale_credit",
+  "amount": 75000,
+  "walletEffect": 67500,
+  "status": "completed",
+  "reference": "62c076f0-f170-4a78-b781-193cb2c82f6e",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "item2",
+  "availableBalance": 973347500,
+  "heldBalance": 100000000,
+  "balance": 1073347500,
+  "metadata": {
+    "marketplaceFeeKobo": 7500,
+    "marketplaceFeeBps": 1000,
+    "grossAmountKobo": 75000,
+    "sellerNetKobo": 67500
+  },
+  "transactionId": {
+    "$oid": "6998f5eab7f835ce675d23b4"
+  },
+  "listingId": {
+    "$oid": "6998dde42b19bfe007027b9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:02:17.891Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f8bff7ea0ec342b820ef"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_hold",
+  "amount": 55000,
+  "walletEffect": 0,
+  "status": "pending",
+  "reference": "26b55b96-5f11-4772-a2a0-4a32562ddd81",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129695000,
+  "heldBalance": 55000,
+  "balance": 129750000,
+  "transactionId": {
+    "$oid": "6998f8bff7ea0ec342b820ec"
+  },
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:13:51.645Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f8fbf7ea0ec342b821cb"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_release",
+  "amount": 55000,
+  "walletEffect": -55000,
+  "status": "completed",
+  "reference": "26b55b96-5f11-4772-a2a0-4a32562ddd81",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129695000,
+  "heldBalance": 0,
+  "balance": 129695000,
+  "transactionId": {
+    "$oid": "6998f8bff7ea0ec342b820ec"
+  },
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:14:51.964Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998f8fbf7ea0ec342b821cc"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_sale_credit",
+  "amount": 55000,
+  "walletEffect": 49500,
+  "status": "completed",
+  "reference": "26b55b96-5f11-4772-a2a0-4a32562ddd81",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973397000,
+  "heldBalance": 100000000,
+  "balance": 1073397000,
+  "metadata": {
+    "marketplaceFeeKobo": 5500,
+    "marketplaceFeeBps": 1000,
+    "grossAmountKobo": 55000,
+    "sellerNetKobo": 49500
+  },
+  "transactionId": {
+    "$oid": "6998f8bff7ea0ec342b820ec"
+  },
+  "listingId": {
+    "$oid": "6998dd952b19bfe007027b91"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:14:51.964Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fc68f99a97edf06aa8e3"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_hold",
+  "amount": 60000,
+  "walletEffect": 0,
+  "status": "pending",
+  "reference": "7e5710e3-3e17-4517-b58d-84cbd44b4fb3",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973337000,
+  "heldBalance": 100060000,
+  "balance": 1073397000,
+  "transactionId": {
+    "$oid": "6998fc68f99a97edf06aa8e0"
+  },
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:29:28.806Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fd84f99a97edf06aa9ad"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_sale_credit",
+  "amount": 60000,
+  "walletEffect": 57000,
+  "status": "completed",
+  "reference": "7e5710e3-3e17-4517-b58d-84cbd44b4fb3",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 129752000,
+  "heldBalance": 0,
+  "balance": 129752000,
+  "metadata": {
+    "marketplaceFeeKobo": 3000,
+    "marketplaceFeeBps": 500,
+    "grossAmountKobo": 60000,
+    "sellerNetKobo": 57000
+  },
+  "transactionId": {
+    "$oid": "6998fc68f99a97edf06aa8e0"
+  },
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:34:12.715Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fd84f99a97edf06aa9ac"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_release",
+  "amount": 60000,
+  "walletEffect": -60000,
+  "status": "completed",
+  "reference": "7e5710e3-3e17-4517-b58d-84cbd44b4fb3",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "item1",
+  "availableBalance": 973337000,
+  "heldBalance": 100000000,
+  "balance": 1073337000,
+  "transactionId": {
+    "$oid": "6998fc68f99a97edf06aa8e0"
+  },
+  "listingId": {
+    "$oid": "6998dd722b19bfe007027b73"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:34:12.715Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fe15f99a97edf06aaa8f"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_hold",
+  "amount": 29000,
+  "walletEffect": 0,
+  "status": "pending",
+  "reference": "fc832772-97c2-4fab-be36-a9b406b887dd",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 129723000,
+  "heldBalance": 29000,
+  "balance": 129752000,
+  "transactionId": {
+    "$oid": "6998fe15f99a97edf06aaa8c"
+  },
+  "listingId": {
+    "$oid": "6998fddaf99a97edf06aaa67"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:36:37.053Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fe57f99a97edf06aab6b"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "escrow_sale_credit",
+  "amount": 29000,
+  "walletEffect": 26100,
+  "status": "completed",
+  "reference": "fc832772-97c2-4fab-be36-a9b406b887dd",
+  "counterparty": "67bdd7393417dff455b2c0bc",
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 973363100,
+  "heldBalance": 100000000,
+  "balance": 1073363100,
+  "metadata": {
+    "marketplaceFeeKobo": 2900,
+    "marketplaceFeeBps": 1000,
+    "grossAmountKobo": 29000,
+    "sellerNetKobo": 26100
+  },
+  "transactionId": {
+    "$oid": "6998fe15f99a97edf06aaa8c"
+  },
+  "listingId": {
+    "$oid": "6998fddaf99a97edf06aaa67"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:37:43.582Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6998fe57f99a97edf06aab6a"
+  },
+  "userId": {
+    "$oid": "67bdd7393417dff455b2c0bc"
+  },
+  "entryKind": "escrow_release",
+  "amount": 29000,
+  "walletEffect": -29000,
+  "status": "completed",
+  "reference": "fc832772-97c2-4fab-be36-a9b406b887dd",
+  "counterparty": "67c17a5273ac45a1e34fc364",
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 129723000,
+  "heldBalance": 0,
+  "balance": 129723000,
+  "transactionId": {
+    "$oid": "6998fe15f99a97edf06aaa8c"
+  },
+  "listingId": {
+    "$oid": "6998fddaf99a97edf06aaa67"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T00:37:43.582Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6999096da9a9acfb73e92b02"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998fe26f99a97edf06aaa9c_1771637101019",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 973338100,
+  "heldBalance": 100000000,
+  "balance": 1073338100,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998fe26f99a97edf06aaa9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T01:25:01.020Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69990974a9a9acfb73e92b22"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998fe26f99a97edf06aaa9c_1771637108043",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 973313100,
+  "heldBalance": 100000000,
+  "balance": 1073313100,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998fe26f99a97edf06aaa9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T01:25:08.044Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6999097ba9a9acfb73e92b42"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998fe26f99a97edf06aaa9c_1771637115901",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 973288100,
+  "heldBalance": 100000000,
+  "balance": 1073288100,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998fe26f99a97edf06aaa9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T01:25:15.902Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "69990b0f09e46001706bddb0"
+  },
+  "userId": {
+    "$oid": "67c17a5273ac45a1e34fc364"
+  },
+  "entryKind": "marketplace_boost",
+  "amount": 25000,
+  "walletEffect": -25000,
+  "status": "completed",
+  "reference": "boost_6998fe26f99a97edf06aaa9c_1771637519560",
+  "counterparty": null,
+  "recipientId": null,
+  "listingTitle": "product1",
+  "availableBalance": 973263100,
+  "heldBalance": 100000000,
+  "balance": 1073263100,
+  "metadata": {
+    "tier": "free",
+    "boostHours": 72
+  },
+  "transactionId": null,
+  "listingId": {
+    "$oid": "6998fe26f99a97edf06aaa9c"
+  },
+  "createdAt": {
+    "$date": "2026-02-21T01:31:59.562Z"
+  },
+  "__v": 0
+}]

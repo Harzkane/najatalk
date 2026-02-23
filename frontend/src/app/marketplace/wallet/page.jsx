@@ -54,7 +54,7 @@ export default function PlatformWallet() {
       const res = await api.get("/users/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setIsAdmin(res.data.role === "admin");
+      setIsAdmin(res.data.role === "admin" || res.data.role === "super_admin");
     } catch (err) {
       setIsAdmin(false);
     }

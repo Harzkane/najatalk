@@ -11,6 +11,8 @@ import {
   calculateMarketplaceFee,
   getMarketplacePolicy,
 } from "../utils/marketplacePolicy.js";
+import { hasPermission } from "../utils/permissions.js";
+import { logger } from "../utils/logger.js";
 
 const categories = [
   "Electronics",
@@ -156,7 +158,7 @@ const sanitizeListingForViewer = (listingObj, viewer) => {
     typeof listingObj.buyerId === "string"
       ? listingObj.buyerId
       : listingObj.buyerId?._id?.toString?.() || listingObj.buyerId?.toString?.() || null;
-  const isAdmin = viewer?.role === "admin";
+  const isAdmin = hasPermission(viewer, "platform.admin");
   const isSeller = Boolean(viewerId && sellerId && viewerId === sellerId);
   const isBuyer = Boolean(viewerId && buyerId && viewerId === buyerId);
 
@@ -449,7 +451,7 @@ export const deleteListing = async (req, res) => {
     }
     if (
       listing.userId.toString() !== req.user._id.toString() &&
-      req.user.role !== "admin"
+      !hasPermission(req.user, "platform.admin")
     ) {
       return res.status(403).json({ message: "No be your item—abeg comot!" });
     }
@@ -501,13 +503,15 @@ export const buyListing = async (req, res) => {
   const { id } = req.params;
   const { orderDetails = {} } = req.body || {};
   try {
-    console.log("Buy Attempt:", { id, user: req.user._id });
+    logger.info("marketplace.buy.start", {
+      listingId: id,
+      buyerId: req.user?._id?.toString?.() || null,
+    });
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Invalid listing ID—check am!" });
     }
 
     const listing = await Listing.findOne({ _id: id, status: "active" });
-    console.log("Listing:", listing);
     if (!listing) {
       return res.status(400).json({ message: "Item no dey or e don waka!" });
     }
@@ -528,7 +532,11 @@ export const buyListing = async (req, res) => {
       { $inc: { availableBalance: -listing.price, heldBalance: listing.price } },
       { new: true }
     );
-    console.log("Wallet:", buyerWallet);
+    logger.info("marketplace.buy.wallet_reserved", {
+      listingId: id,
+      buyerId: req.user?._id?.toString?.() || null,
+      hasWallet: Boolean(buyerWallet),
+    });
     if (!buyerWallet) {
       return res.status(400).json({ message: "Oga, your wallet no reach!" });
     }
@@ -542,7 +550,11 @@ export const buyListing = async (req, res) => {
       reference: uuidv4(),
       listingId: listing._id,
     });
-    console.log("Transaction:", transaction);
+    logger.info("marketplace.buy.transaction_created", {
+      listingId: id,
+      transactionId: transaction?._id?.toString?.() || null,
+      reference: transaction?.reference || null,
+    });
 
     const updatedListing = await Listing.findOneAndUpdate(
       { _id: listing._id, status: "active" },
@@ -589,7 +601,11 @@ export const buyListing = async (req, res) => {
       listing: updatedListing,
     });
   } catch (err) {
-    console.error("Buy Error:", err);
+    logger.error("marketplace.buy.error", {
+      listingId: id,
+      buyerId: req.user?._id?.toString?.() || null,
+      error: err?.message || err,
+    });
     const status = err.message?.includes("no reach") || err.message?.includes("fit buy") || err.message?.includes("no dey") ? 400 : 500;
     res.status(status).json({ message: err.message || "Buy scatter" });
   }
@@ -632,7 +648,10 @@ export const markOrderShipped = async (req, res) => {
 export const releaseEscrow = async (req, res) => {
   const { id } = req.params;
   try {
-    console.log("Release Attempt:", { id, user: req.user._id });
+    logger.info("marketplace.release.start", {
+      listingId: id,
+      buyerId: req.user?._id?.toString?.() || null,
+    });
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res
         .status(400)
@@ -643,7 +662,6 @@ export const releaseEscrow = async (req, res) => {
     if (!listing) {
       throw new Error("Listing no dey—where e waka go?");
     }
-    console.log("Listing:", listing);
 
     if (listing.status !== "pending") {
       throw new Error("Item no dey for escrow—e don waka!");
@@ -656,7 +674,6 @@ export const releaseEscrow = async (req, res) => {
     }
 
     const transaction = await Transaction.findById(listing.transactionId);
-    console.log("Transaction:", transaction);
     if (!transaction || transaction.status !== "pending") {
       throw new Error("Transaction no dey or e don finish!");
     }
@@ -675,7 +692,8 @@ export const releaseEscrow = async (req, res) => {
       feeKobo: platformCut,
       sellerNetKobo: sellerAmount,
     } = calculateMarketplaceFee(listing.price, sellerUser);
-    console.log("Funds Split:", {
+    logger.info("marketplace.release.funds_split", {
+      listingId: id,
       platformCut,
       sellerAmount,
       sellerTier: sellerPolicy.tier,
@@ -710,7 +728,11 @@ export const releaseEscrow = async (req, res) => {
       },
       { new: true, upsert: true }
     );
-    console.log("Seller Wallet Updated:", sellerWallet);
+    logger.info("marketplace.release.seller_wallet_updated", {
+      listingId: id,
+      sellerId: listing.userId?.toString?.() || null,
+      balance: Number(sellerWallet?.balance || 0),
+    });
 
     let platformWallet = await PlatformWallet.findOne();
     if (!platformWallet) {
@@ -719,20 +741,31 @@ export const releaseEscrow = async (req, res) => {
     platformWallet.balance += platformCut;
     platformWallet.lastUpdated = Date.now();
     await platformWallet.save();
-    console.log("Platform Wallet Updated:", platformWallet);
+    logger.info("marketplace.release.platform_wallet_updated", {
+      listingId: id,
+      balance: Number(platformWallet?.balance || 0),
+    });
 
     transaction.status = "completed";
     transaction.platformCut = platformCut;
     transaction.marketplaceFeeBps = sellerPolicy.commissionBps;
     transaction.listingId = listing._id;
     await transaction.save();
-    console.log("Transaction Updated:", transaction);
+    logger.info("marketplace.release.transaction_completed", {
+      listingId: id,
+      transactionId: transaction?._id?.toString?.() || null,
+      reference: transaction?.reference || null,
+    });
 
     listing.status = "sold";
     listing.fulfillmentStatus = "delivered";
     listing.buyerConfirmedAt = new Date();
     await listing.save();
-    console.log("Listing Updated:", listing);
+    logger.info("marketplace.release.listing_sold", {
+      listingId: listing?._id?.toString?.() || id,
+      buyerId: listing?.buyerId?.toString?.() || null,
+      sellerId: listing?.userId?.toString?.() || null,
+    });
 
     await Promise.all([
       createWalletLedgerEntry({
@@ -771,7 +804,11 @@ export const releaseEscrow = async (req, res) => {
 
     res.json({ message: "Delivery confirmed—funds don land!", listing });
   } catch (err) {
-    console.error("Release Error:", err);
+    logger.error("marketplace.release.error", {
+      listingId: id,
+      buyerId: req.user?._id?.toString?.() || null,
+      error: err?.message || err,
+    });
     const status = err.message?.includes("Only buyer")
       ? 403
       : err.message?.includes("no dey") ||
@@ -876,7 +913,7 @@ export const boostListing = async (req, res) => {
 
 export const getPlatformWallet = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
+    if (!hasPermission(req.user, "platform.admin")) {
       return res.status(403).json({ message: "Abeg, admins only!" });
     }
     const platformWallet = await PlatformWallet.findOne();
@@ -927,7 +964,10 @@ export const getPlatformWallet = async (req, res) => {
       message: "Platform wallet dey here—check am!",
     });
   } catch (err) {
-    console.error("Wallet Error:", err);
+    logger.error("marketplace.platform_wallet.error", {
+      actorId: req.user?._id?.toString?.() || null,
+      error: err?.message || err,
+    });
     res.status(500).json({ message: "Wallet fetch scatter: " + err.message });
   }
 };

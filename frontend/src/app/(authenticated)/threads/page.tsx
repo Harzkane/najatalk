@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { isAxiosError } from "axios";
 import api from "../../../utils/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -62,7 +63,7 @@ function ThreadsContent() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<
-    "user" | "mod" | "admin" | null
+    "user" | "mod" | "admin" | "super_admin" | null
   >(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
@@ -74,6 +75,10 @@ function ThreadsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
+  const composeMode = searchParams.get("compose") === "1";
+  const contestId = searchParams.get("contestId");
+  const contestTitle = searchParams.get("contestTitle");
+  const returnTo = searchParams.get("returnTo") || "/contests";
 
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -103,9 +108,9 @@ function ThreadsContent() {
         });
         console.log("[verifyTip] Wallet after tip:", walletRes.data);
         router.push("/premium");
-      } catch (err: any) {
+      } catch (err: unknown) {
         let errMsg = "Tip scatter o—try again!";
-        if (err.isAxiosError) {
+        if (isAxiosError<{ message?: string }>(err)) {
           errMsg = err.response?.data?.message || errMsg;
         }
         setMessage(errMsg);
@@ -149,7 +154,9 @@ function ThreadsContent() {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCurrentUserId(userRes.data._id || null);
-        setCurrentUserRole((userRes.data.role as "user" | "mod" | "admin") || null);
+        setCurrentUserRole(
+          (userRes.data.role as "user" | "mod" | "admin" | "super_admin") || null
+        );
         setIsPremium(userRes.data.isPremium);
         if (!userRes.data.isPremium) {
           fetchBannerAd();
@@ -216,8 +223,8 @@ function ThreadsContent() {
       const res = await api.get<Thread>(`/threads/${id}`);
       setSelectedThread(res.data);
       setThreads([]);
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         setMessage(err.response?.data?.message || "Thread no dey!");
       } else {
         setMessage("Thread fetch scatter o!");
@@ -247,8 +254,8 @@ function ThreadsContent() {
             JSON.stringify(updatedSearches)
           );
         }
-      } catch (err: any) {
-        if (err.isAxiosError) {
+      } catch (err: unknown) {
+        if (isAxiosError<{ message?: string }>(err)) {
           setMessage(err.response?.data?.message || "Search scatter o!");
         } else {
           setMessage("No gist match—try another search!");
@@ -279,8 +286,8 @@ function ThreadsContent() {
       setThreads(threadsWithReplies);
       setMessage(res.data.message || "");
       setSelectedThread(null);
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         setMessage(err.response?.data?.message || "Fetch scatter o!");
       } else {
         setMessage("No gist yet—drop your own!");
@@ -292,7 +299,7 @@ function ThreadsContent() {
     title: string,
     body: string,
     category: string
-  ) => {
+  ): Promise<{ _id?: string; title?: string } | void> => {
     if (!isLoggedIn) {
       setMessage("Abeg login first!");
       setTimeout(() => router.push("/login"), 1000);
@@ -308,8 +315,18 @@ function ThreadsContent() {
       );
       setMessage(res.data.message);
       if (!selectedThread) await fetchThreads();
-    } catch (err: any) {
-      if (err.isAxiosError) {
+      if (contestId && res.data.thread?._id) {
+        const params = new URLSearchParams({
+          contestId,
+          threadId: res.data.thread._id,
+          from: "create-thread",
+        });
+        router.push(`${returnTo}?${params.toString()}`);
+        return { _id: res.data.thread._id, title: res.data.thread.title };
+      }
+      return { _id: res.data.thread?._id, title: res.data.thread?.title };
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         const errorMsg = err.response?.data?.message || "Thread scatter o!";
         setMessage(errorMsg);
         if (err.response?.status === 401) {
@@ -320,6 +337,7 @@ function ThreadsContent() {
       } else {
         setMessage("Thread scatter o!");
       }
+      return;
     }
   };
 
@@ -351,8 +369,8 @@ function ThreadsContent() {
           ? { ...prev, replies: [res.data.reply, ...(prev.replies || [])] }
           : null
       );
-    } catch (err: any) {
-      if (err.isAxiosError) {
+    } catch (err: unknown) {
+      if (isAxiosError<{ message?: string }>(err)) {
         setMessage(err.response?.data?.message || "Reply scatter o!");
         if (err.response?.status === 401) {
           setMessage("Token don expire—abeg login again!");
@@ -388,7 +406,7 @@ function ThreadsContent() {
   const canReplySelectedThread = Boolean(
     !selectedThread?.isLocked ||
     currentUserRole === "mod" ||
-    currentUserRole === "admin"
+    currentUserRole === "admin" || currentUserRole === "super_admin"
   );
 
   return (
@@ -625,6 +643,14 @@ function ThreadsContent() {
           isLoggedIn={isLoggedIn}
           onSubmit={handleSubmitThread}
           buttonRef={newThreadButtonRef}
+          initialOpen={composeMode}
+          initialTitle={contestTitle ? `${contestTitle} - My Contest Entry` : ""}
+          initialBody={
+            contestTitle
+              ? `Contest Entry for "${contestTitle}"\n\nMy submission:\n1. \n2. \n3. `
+              : ""
+          }
+          initialCategory="Gist"
         />
       </div>
     </>
