@@ -17,26 +17,34 @@ Run scheduled probes against critical NaijaTalk endpoints and fail fast when ava
 - Frontend:
   - `GET /`
   - `GET /contests`
-- Authenticated checks (only if token envs are provided):
+- Authenticated checks (if token or credentials are provided):
   - `GET /api/users/me`
   - `GET /api/users/me/wallet-ledger`
   - `GET /api/premium/my-payments`
-- Admin check (only if admin token env is provided):
+- Admin check (if token or credentials are provided):
   - `POST /api/users/admin/sla-alerts/dispatch?dryRun=true`
 
 ## Env Variables
 For local/script usage:
 - `SYNTH_BACKEND_BASE` (default `http://localhost:8000`)
 - `SYNTH_FRONTEND_BASE` (default `http://localhost:3000`)
-- `SYNTH_USER_TOKEN` (optional)
-- `SYNTH_ADMIN_TOKEN` (optional)
+- `SYNTH_USER_EMAIL` + `SYNTH_USER_PASSWORD` (optional)
+- `SYNTH_ADMIN_EMAIL` + `SYNTH_ADMIN_PASSWORD` (optional)
+- `SYNTH_USER_TOKEN` (optional fallback)
+- `SYNTH_ADMIN_TOKEN` (optional fallback)
 - `SYNTH_TIMEOUT_MS` (default `12000`)
 
 For GitHub Actions secrets:
 - `SYNTH_BACKEND_BASE`
 - `SYNTH_FRONTEND_BASE`
-- `SYNTH_USER_TOKEN` (optional)
-- `SYNTH_ADMIN_TOKEN` (optional)
+- `SYNTH_USER_EMAIL` + `SYNTH_USER_PASSWORD` (optional)
+- `SYNTH_ADMIN_EMAIL` + `SYNTH_ADMIN_PASSWORD` (optional)
+- `SYNTH_USER_TOKEN` (optional fallback)
+- `SYNTH_ADMIN_TOKEN` (optional fallback)
+
+Credential requirement:
+- Credential values must belong to real users in the same DB backing `SYNTH_BACKEND_BASE`.
+- If credentials are present, monitor uses fresh login tokens first.
 
 ## Operational Response
 If a scheduled run fails:

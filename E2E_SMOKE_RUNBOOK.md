@@ -37,6 +37,12 @@ Admin checks (if admin creds/token provided):
 - `E2E_USER_TOKEN` (optional; skips login if provided)
 - `E2E_ADMIN_TOKEN` (optional; skips login if provided)
 
+Credential requirement:
+- `E2E_USER_*` and `E2E_ADMIN_*` must be real users already created in the same database used by `E2E_BACKEND_BASE`.
+- If `E2E_BACKEND_BASE=http://localhost:8000`, users must exist in local DB.
+- If `E2E_BACKEND_BASE` points to Render/production, users must exist there.
+- Accounts should be `isVerified=true`, not banned, and not suspended.
+
 ## Local Example
 ```bash
 E2E_BACKEND_BASE=http://localhost:8000 \
@@ -46,6 +52,15 @@ E2E_ADMIN_EMAIL="admin@example.com" \
 E2E_ADMIN_PASSWORD="password" \
 npm run ops:e2e:smoke
 ```
+
+Quick backend-target runs:
+```bash
+E2E_BACKEND_BASE=http://localhost:8000 npm run ops:e2e:smoke
+E2E_BACKEND_BASE=https://najatalk.onrender.com npm run ops:e2e:smoke
+```
+
+If `E2E_USER_*` / `E2E_ADMIN_*` are not configured, login checks may fail or authenticated checks will be skipped.  
+For full pass coverage, provide valid user/admin credentials or tokens.
 
 Local convenience:
 - `scripts/e2e_smoke.mjs` auto-loads `backend/.env` if present.

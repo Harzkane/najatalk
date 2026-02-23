@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "e2e:ui": "playwright test",
+    "e2e:ui:headed": "playwright test --headed"
   },
   "dependencies": {
     "autoprefixer": "^10.4.20",
@@ -23,6 +25,7 @@
     "@types/react-dom": "^19"
   },
   "devDependencies": {
+    "@playwright/test": "^1.54.2",
     "@eslint/eslintrc": "^3",
     "eslint": "^9",
     "eslint-config-next": "15.1.11"

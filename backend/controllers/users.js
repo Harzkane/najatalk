@@ -427,6 +427,46 @@ const getSlaAlertRecipients = () => {
     .filter(Boolean);
 };
 
+const getSlaSlackWebhookUrls = () => {
+  const raw =
+    process.env.SLA_ALERT_SLACK_WEBHOOK_URLS || process.env.SLA_ALERT_SLACK_WEBHOOK_URL || "";
+  return String(raw)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
+
+const sendSlaSlackAlerts = async ({ findings = [], snapshot }) => {
+  const webhookUrls = getSlaSlackWebhookUrls();
+  if (!webhookUrls.length || !findings.length) {
+    return { sentCount: 0, configuredCount: webhookUrls.length };
+  }
+
+  const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+  const lines = [
+    "*NaijaTalk SLA Alert*",
+    `Window: last ${snapshot.windowDays} day(s)`,
+    ...findings.map((row) => `• ${row.label}: ${row.value} (section: ${row.section})`),
+    `Admin dashboard: ${frontendUrl}/admin`,
+  ];
+  const payload = { text: lines.join("\n") };
+
+  let sentCount = 0;
+  for (const url of webhookUrls) {
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      await axios.post(url, payload, { timeout: 10000 });
+      sentCount += 1;
+    } catch (err) {
+      logger.error("admin.sla_alerts.slack.error", {
+        message: err?.message || "unknown slack error",
+      });
+    }
+  }
+
+  return { sentCount, configuredCount: webhookUrls.length };
+};
+
 const computeWalletMismatchSummaryForAlerts = async ({ createdAt }) => {
   const [transactions, ledgers] = await Promise.all([
     Transaction.find({
@@ -3048,7 +3088,7 @@ export const dispatchSlaAlertsForAdmin = async (req, res) => {
       });
     }
 
-    if (!dryRun && recipients.length) {
+    if (!dryRun) {
       const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
       const nowIso = new Date().toISOString();
       const lines = [
@@ -3075,11 +3115,15 @@ export const dispatchSlaAlertsForAdmin = async (req, res) => {
         `Admin dashboard: ${frontendUrl}/admin`,
       ];
 
-      await sendEmail({
-        to: recipients,
-        subject: `[NaijaTalk SLA] ${sendNow.length} threshold breach(es)`,
-        text: lines.join("\n"),
-      });
+      if (recipients.length) {
+        await sendEmail({
+          to: recipients,
+          subject: `[NaijaTalk SLA] ${sendNow.length} threshold breach(es)`,
+          text: lines.join("\n"),
+        });
+      }
+
+      const slackResult = await sendSlaSlackAlerts({ findings: sendNow, snapshot });
 
       const now = Date.now();
       for (const finding of sendNow) {
@@ -3093,6 +3137,8 @@ export const dispatchSlaAlertsForAdmin = async (req, res) => {
         metadata: {
           dryRun: false,
           recipients,
+          slackWebhooksConfigured: slackResult.configuredCount,
+          slackSentCount: slackResult.sentCount,
           findings: sendNow.map((row) => row.key),
           windowDays: snapshot.windowDays,
         },
@@ -3102,9 +3148,7 @@ export const dispatchSlaAlertsForAdmin = async (req, res) => {
     return res.json({
       message: dryRun
         ? `SLA dry-run found ${sendNow.length} alert(s) ready to send.`
-        : recipients.length
-        ? `Dispatched ${sendNow.length} SLA alert(s).`
-        : "SLA alerts detected but no recipients configured.",
+        : `Dispatched ${sendNow.length} SLA alert(s).`,
       dryRun,
       recipients,
       thresholds: SLA_ALERT_THRESHOLDS,

@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 
 type AdminOverviewProps = {
   reportsCount: number;
@@ -19,7 +20,17 @@ type AdminOverviewProps = {
   databaseStatus: string;
   uptimeHours: number;
   lastHealthCheckAt: string;
+  opsQuickCheckRows: Array<{
+    id: string;
+    label: string;
+    status: "pass" | "fail";
+    ms: number;
+    detail: string;
+  }>;
+  opsQuickCheckLastRunAt: string;
+  isOpsQuickCheckRunning: boolean;
   onRefreshAll: () => void;
+  onRunOpsQuickCheck: () => void;
 };
 
 export default function AdminOverview({
@@ -41,9 +52,29 @@ export default function AdminOverview({
   databaseStatus,
   uptimeHours,
   lastHealthCheckAt,
+  opsQuickCheckRows,
+  opsQuickCheckLastRunAt,
+  isOpsQuickCheckRunning,
   onRefreshAll,
+  onRunOpsQuickCheck,
 }: AdminOverviewProps) {
+  const [copiedCommandKey, setCopiedCommandKey] = useState<string>("");
   const formatStatus = (value: string) => value.replaceAll("_", " ");
+  const rollbackCaptureCommand =
+    "npm run ops:drill:rollback:capture -- evidence/drills/<drill-id>";
+  const restoreCaptureCommand =
+    "npm run ops:drill:restore:capture -- evidence/drills/<drill-id>";
+  const copyCommand = async (key: string, command: string) => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopiedCommandKey(key);
+      setTimeout(() => {
+        setCopiedCommandKey((prev) => (prev === key ? "" : prev));
+      }, 1500);
+    } catch {
+      setCopiedCommandKey("");
+    }
+  };
   const thresholds = {
     pendingPayoutCount: 20,
     failedPayoutCount: 10,
@@ -249,6 +280,101 @@ export default function AdminOverview({
         ) : (
           <p className="mt-2 text-sm text-emerald-700">No threshold breaches right now.</p>
         )}
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-wide text-slate-600">Ops Quick Check</p>
+          <p className="text-xs text-slate-500">
+            Last run:{" "}
+            {opsQuickCheckLastRunAt ? new Date(opsQuickCheckLastRunAt).toLocaleString() : "-"}
+          </p>
+        </div>
+        <p className="mt-1 text-sm text-slate-600">
+          Lightweight endpoint probes only. No Playwright jobs, no rollback/restore tasks.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button
+            onClick={onRunOpsQuickCheck}
+            disabled={isOpsQuickCheckRunning}
+            className="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isOpsQuickCheckRunning ? "Running..." : "Run Ops Quick Check"}
+          </button>
+        </div>
+        {opsQuickCheckRows.length ? (
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50">
+                <tr>
+                  <th className="p-2 font-semibold text-slate-700">Check</th>
+                  <th className="p-2 font-semibold text-slate-700">Status</th>
+                  <th className="p-2 font-semibold text-slate-700">Latency</th>
+                  <th className="p-2 font-semibold text-slate-700">Detail</th>
+                </tr>
+              </thead>
+              <tbody>
+                {opsQuickCheckRows.map((row) => (
+                  <tr key={row.id} className="border-t border-slate-100">
+                    <td className="p-2 text-slate-700">{row.label}</td>
+                    <td className="p-2">
+                      <span
+                        className={
+                          row.status === "pass"
+                            ? "rounded bg-emerald-100 px-2 py-0.5 text-emerald-800"
+                            : "rounded bg-rose-100 px-2 py-0.5 text-rose-800"
+                        }
+                      >
+                        {row.status.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="p-2 text-slate-600">{row.ms}ms</td>
+                    <td className="p-2 text-slate-600">{row.detail}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <p className="mt-3 text-xs text-slate-500">
+            Run once to capture current backend/admin endpoint health.
+          </p>
+        )}
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
+        <p className="text-xs uppercase tracking-wide text-slate-600">Drill Evidence</p>
+        <p className="mt-1 text-sm text-slate-600">
+          These commands capture rollback/restore validation logs for audit evidence. Run them in
+          terminal after completing the actual drill steps.
+        </p>
+        <div className="mt-3 space-y-3">
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-700">Post-Rollback Capture</p>
+            <code className="mt-1 block overflow-x-auto rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">
+              {rollbackCaptureCommand}
+            </code>
+            <button
+              onClick={() => copyCommand("rollback", rollbackCaptureCommand)}
+              className="mt-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              {copiedCommandKey === "rollback" ? "Copied" : "Copy command"}
+            </button>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <p className="text-xs font-semibold text-slate-700">Post-Restore Capture</p>
+            <code className="mt-1 block overflow-x-auto rounded bg-slate-900 px-2 py-1 text-xs text-slate-100">
+              {restoreCaptureCommand}
+            </code>
+            <button
+              onClick={() => copyCommand("restore", restoreCaptureCommand)}
+              className="mt-2 rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-100"
+            >
+              {copiedCommandKey === "restore" ? "Copied" : "Copy command"}
+            </button>
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-slate-500">
+          Note: Keep heavy drills in terminal/CI to avoid stressing production dashboard runtime.
+        </p>
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <button

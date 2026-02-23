@@ -19,7 +19,10 @@
     "ci:p0": "npm run ci:backend && npm run ci:frontend",
     "ops:synthetic": "node scripts/synthetic_monitor.mjs",
     "ops:e2e:smoke": "node scripts/e2e_smoke.mjs",
+    "ops:e2e:ui": "npm run e2e:ui --prefix frontend",
     "ops:retention:report": "npm run retention:report --prefix backend",
+    "ops:drill:rollback:capture": "bash scripts/drill_capture_post_rollback.sh",
+    "ops:drill:restore:capture": "bash scripts/drill_capture_post_restore.sh",
     "dev:proxy": "node vercel-dev.js",
     "start": "concurrently \"npm start --prefix frontend\" \"npm start --prefix backend\"",
     "vercel-build": "npm run build"

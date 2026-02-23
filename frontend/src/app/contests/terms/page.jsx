@@ -34,6 +34,21 @@ export default function ContestTermsPage() {
             submission for audit and dispute handling.
           </p>
         </section>
+
+        <section className="mt-8 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+          <h2 className="text-base font-semibold text-slate-900">Version & Change Log</h2>
+          <p className="mt-2">
+            Current version: <strong>v2026.02.21</strong>
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            <li>
+              <strong>2026-02-21:</strong> Contest terms baseline published for submit/vote/winner lifecycle.
+            </li>
+          </ul>
+          <p className="mt-3 text-xs text-slate-500">
+            Document owner: NaijaTalk Admin Team. Review cadence: before each sponsor contest cycle.
+          </p>
+        </section>
       </div>
     </main>
   );

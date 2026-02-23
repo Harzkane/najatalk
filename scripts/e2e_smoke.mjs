@@ -16,7 +16,12 @@ const loadBackendEnv = () => {
 
     const key = trimmed.slice(0, separatorIndex).trim();
     if (!key || Object.prototype.hasOwnProperty.call(process.env, key)) continue;
-    const value = trimmed.slice(separatorIndex + 1).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    const value =
+      (rawValue.startsWith("\"") && rawValue.endsWith("\"")) ||
+      (rawValue.startsWith("'") && rawValue.endsWith("'"))
+        ? rawValue.slice(1, -1)
+        : rawValue;
     process.env[key] = value;
   }
 };
@@ -216,7 +221,10 @@ if (userToken) {
       url: `${API_BASE}/users/me/wallet-ledger`,
       headers: authHeaders,
       expectedStatus: [200],
-      validate: (payload) => (Array.isArray(payload?.ledger) ? true : "missing wallet ledger"),
+      validate: (payload) =>
+        Array.isArray(payload?.entries) || Array.isArray(payload?.ledger)
+          ? true
+          : "missing wallet ledger entries",
     })
   );
 
@@ -226,7 +234,10 @@ if (userToken) {
       url: `${API_BASE}/premium/my-payments`,
       headers: authHeaders,
       expectedStatus: [200],
-      validate: (payload) => (Array.isArray(payload?.payments) ? true : "missing payments array"),
+      validate: (payload) =>
+        Array.isArray(payload?.rows) || Array.isArray(payload?.payments)
+          ? true
+          : "missing payments rows",
     })
   );
 

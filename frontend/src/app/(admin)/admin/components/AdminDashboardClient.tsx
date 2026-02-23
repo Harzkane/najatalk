@@ -64,6 +64,14 @@ type AdminDashboardClientProps = {
   focusSection?: AdminSectionId | "all";
 };
 
+type OpsQuickCheckRow = {
+  id: string;
+  label: string;
+  status: "pass" | "fail";
+  ms: number;
+  detail: string;
+};
+
 export default function AdminDashboardClient({
   focusSection = "all",
 }: AdminDashboardClientProps) {
@@ -432,6 +440,9 @@ export default function AdminDashboardClient({
     hasPrev: false,
   });
   const [message, setMessage] = useState<string>("");
+  const [opsQuickCheckRows, setOpsQuickCheckRows] = useState<OpsQuickCheckRow[]>([]);
+  const [opsQuickCheckLastRunAt, setOpsQuickCheckLastRunAt] = useState("");
+  const [isOpsQuickCheckRunning, setIsOpsQuickCheckRunning] = useState(false);
   const [slaApiHealthStatus, setSlaApiHealthStatus] = useState("unknown");
   const [slaReadinessStatus, setSlaReadinessStatus] = useState("unknown");
   const [slaDatabaseStatus, setSlaDatabaseStatus] = useState("unknown");
@@ -479,11 +490,23 @@ export default function AdminDashboardClient({
     const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     const serviceBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
     try {
+      const fetchReadiness = async () => {
+        try {
+          return await api.get<{ status?: string; checks?: { database?: { status?: string } } }>(
+            `${serviceBaseUrl}/ready`,
+          );
+        } catch (err) {
+          if (isAxiosError(err) && err.response?.status === 404) {
+            return api.get<{ status?: string; checks?: { database?: { status?: string } } }>(
+              `${serviceBaseUrl}/health/readiness`,
+            );
+          }
+          throw err;
+        }
+      };
       const [healthRes, readinessRes] = await Promise.all([
         api.get<{ status?: string; uptimeSeconds?: number }>(`${serviceBaseUrl}/health`),
-        api.get<{ status?: string; checks?: { database?: { status?: string } } }>(
-          `${serviceBaseUrl}/health/readiness`,
-        ),
+        fetchReadiness(),
       ]);
       const uptimeSeconds = Number(healthRes.data?.uptimeSeconds || 0);
       setSlaApiHealthStatus(String(healthRes.data?.status || "unknown"));
@@ -497,6 +520,91 @@ export default function AdminDashboardClient({
       setSlaReadinessStatus("unknown");
       setSlaDatabaseStatus("unknown");
       setSlaLastHealthCheckAt(new Date().toISOString());
+    }
+  }, []);
+
+  const runOpsQuickCheck = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setMessage("Please login again before running quick checks.");
+      return;
+    }
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const serviceBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
+    const authHeaders = { Authorization: `Bearer ${token}` };
+    const rows: OpsQuickCheckRow[] = [];
+    const pushResult = (
+      id: string,
+      label: string,
+      status: "pass" | "fail",
+      ms: number,
+      detail: string,
+    ) => {
+      rows.push({ id, label, status, ms, detail });
+    };
+
+    const runCheck = async (
+      id: string,
+      label: string,
+      fn: () => Promise<void>,
+    ) => {
+      const startedAt = performance.now();
+      try {
+        await fn();
+        pushResult(id, label, "pass", Math.round(performance.now() - startedAt), "ok");
+      } catch (err: unknown) {
+        const detail = isAxiosError<{ message?: string }>(err)
+          ? err.response?.data?.message || `http_${err.response?.status || "error"}`
+          : "unexpected_error";
+        pushResult(id, label, "fail", Math.round(performance.now() - startedAt), detail);
+      }
+    };
+
+    setIsOpsQuickCheckRunning(true);
+    try {
+      await runCheck("backend.health", "Backend Health", async () => {
+        const res = await api.get<{ status?: string }>(`${serviceBaseUrl}/health`);
+        if (!String(res.data?.status || "").toLowerCase().includes("ok")) {
+          throw new Error("health_not_ok");
+        }
+      });
+      await runCheck("backend.ready", "Backend Readiness", async () => {
+        let res;
+        try {
+          res = await api.get<{ status?: string }>(`${serviceBaseUrl}/ready`);
+        } catch (err) {
+          if (isAxiosError(err) && err.response?.status === 404) {
+            res = await api.get<{ status?: string }>(`${serviceBaseUrl}/health/readiness`);
+          } else {
+            throw err;
+          }
+        }
+        if (!String(res.data?.status || "").toLowerCase().includes("ready")) {
+          throw new Error("readiness_not_ready");
+        }
+      });
+      await runCheck("api.threads", "Threads List", async () => {
+        await api.get("/threads", { params: { page: 1, limit: 1 } });
+      });
+      await runCheck("api.contests", "Contests List", async () => {
+        await api.get("/contests", { params: { page: 1, limit: 1 } });
+      });
+      await runCheck("api.user.me", "Current User", async () => {
+        await api.get("/users/me", { headers: authHeaders });
+      });
+      await runCheck("api.admin.users", "Admin Users", async () => {
+        await api.get("/users/admin/users", {
+          headers: authHeaders,
+          params: { page: 1, pageSize: 1 },
+        });
+      });
+    } finally {
+      const passed = rows.filter((row) => row.status === "pass").length;
+      const total = rows.length;
+      setOpsQuickCheckRows(rows);
+      setOpsQuickCheckLastRunAt(new Date().toISOString());
+      setMessage(`Ops quick check: ${passed}/${total} checks passed.`);
+      setIsOpsQuickCheckRunning(false);
     }
   }, []);
 
@@ -2482,6 +2590,10 @@ export default function AdminDashboardClient({
                 databaseStatus={slaDatabaseStatus}
                 uptimeHours={slaUptimeHours}
                 lastHealthCheckAt={slaLastHealthCheckAt}
+                opsQuickCheckRows={opsQuickCheckRows}
+                opsQuickCheckLastRunAt={opsQuickCheckLastRunAt}
+                isOpsQuickCheckRunning={isOpsQuickCheckRunning}
+                onRunOpsQuickCheck={runOpsQuickCheck}
               />
             ) : null}
 
