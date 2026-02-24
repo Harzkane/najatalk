@@ -147,7 +147,7 @@ test("contest submit + vote flow works via UI", async ({ context, page }) => {
   });
   expect(createContestRes.ok, `Contest create failed: ${createContestRes.status}`).toBeTruthy();
   const contestJson = createContestRes.json;
-  const contestId = contestJson?.contest?._id;
+  const contestId = (contestJson?.contest as { _id?: string } | undefined)?._id;
   expect(contestId).toBeTruthy();
 
   const createThreadRes = await withAuth(`${apiBase}/threads`, user.token, "POST", {
@@ -157,7 +157,7 @@ test("contest submit + vote flow works via UI", async ({ context, page }) => {
   });
   expect(createThreadRes.ok, `Thread create failed: ${createThreadRes.status}`).toBeTruthy();
   const threadJson = createThreadRes.json;
-  const threadId = threadJson?.thread?._id;
+  const threadId = (threadJson?.thread as { _id?: string } | undefined)?._id;
   expect(threadId).toBeTruthy();
 
   const submitRes = await withAuth(
@@ -174,7 +174,7 @@ test("contest submit + vote flow works via UI", async ({ context, page }) => {
   );
   expect(submitRes.ok, `Submission create failed: ${submitRes.status}`).toBeTruthy();
   const submissionJson = submitRes.json;
-  const submissionId = submissionJson?.submission?._id;
+  const submissionId = (submissionJson?.submission as { _id?: string } | undefined)?._id;
   expect(submissionId).toBeTruthy();
 
   const approveRes = await withAuth(

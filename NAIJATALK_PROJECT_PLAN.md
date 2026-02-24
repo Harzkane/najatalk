@@ -1,6 +1,6 @@
 # NaijaTalk Project Plan (Current State)
 
-**Last Updated:** February 22, 2026  
+**Last Updated:** February 24, 2026  
 **Product:** NaijaTalk (Forum + Marketplace + Wallet + Premium + Admin Ops)
 
 ---
@@ -77,6 +77,13 @@ Implemented:
 - Thread admin controls: delete, lock/unlock, pin/unpin
 - Report review and dismiss flows
 - Like/bookmark/solved support in thread system
+
+Thread UX hardening delivered:
+- Recursive reply tree with collapse/expand behavior
+- Connector rails/elbow hierarchy for reply readability
+- First-level-visible / deeper-collapsed default strategy on details view
+- Single-active inline reply composer/report flow (reduces multi-form clutter)
+- Thread readiness automation command chain for release checks
 
 ### 3.4 Payout Operations
 
@@ -228,7 +235,10 @@ Needs further hardening:
 
 ## 7. Immediate Execution Checklist
 
-1. Run full TypeScript/lint/build in local CI environment and fix any regressions.
+1. Run release gate commands before deploy:
+   - `npm run threads:ready`
+   - `npm run threads:ready:smoke` (recommended)
+   - `npm run threads:ready:full` (pre-release/full confidence)
 2. Add integration tests for:
    - `/api/users/banned` filters/pagination
    - `/api/ads/admin/review` filters/pagination

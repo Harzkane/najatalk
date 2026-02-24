@@ -50,6 +50,11 @@ NaijaTalk aims to become Nigeria's most trusted digital community infrastructure
 - Tip creators
 - Subscribe to premium benefits
 
+Thread UX currently includes:
+- Nested replies with collapsible branches
+- Inline reply/report actions inside thread details
+- Single active reply composer/report form to reduce UI clutter
+
 ## What Admins Can Do
 
 NaijaTalk includes a full admin 360 dashboard with:
@@ -123,6 +128,11 @@ The current priority is scaling safely:
 - stronger abuse prevention,
 - broader test coverage,
 - and continued improvement of operational intelligence.
+
+Release gate for thread stack:
+- `npm run threads:ready`
+- `npm run threads:ready:smoke` (optional)
+- `npm run threads:ready:full` (optional, includes UI E2E)
 
 ## Contact and Project Docs
 

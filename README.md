@@ -105,6 +105,8 @@ NaijaTalk aims to become Nigeria's most trusted digital community infrastructure
 - Threads, replies, search
 - Reports and moderation actions
 - Likes, bookmarks, solved threads
+- Recursive reply tree with collapse/expand controls
+- Single-active inline composer/report flow on thread details
 
 ### Marketplace
 - Listing create/update/delete/read
@@ -207,6 +209,20 @@ Yes. There are dedicated admin sections for users/bans, reports, threads, payout
 ### Install
 ```bash
 npm run install:all
+```
+
+### Quality Gates (Production Readiness)
+Run these before deployment:
+
+```bash
+npm run threads:ready
+```
+
+Optional extended checks:
+
+```bash
+npm run threads:ready:smoke
+npm run threads:ready:full
 ```
 
 ### Environment Variables

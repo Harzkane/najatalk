@@ -69,6 +69,7 @@ type Ad = {
 
 type SortMode = "latest" | "top" | "unanswered";
 type ActiveFilter = "all" | "forYou" | "unread" | "following" | "solved" | "mostActive";
+const HOME_CATEGORIES = ["General", "Gist", "Politics", "Romance"] as const;
 
 const parseSortMode = (value: string | null): SortMode => {
   if (value === "top" || value === "unanswered") return value;
@@ -164,11 +165,10 @@ function HomeContent() {
     "Lagos traffic",
     "Best jollof",
   ];
-  const categories = ["General", "Gist", "Politics", "Romance"];
   const categoryCounts = useMemo(() => {
-    const counts = Object.fromEntries(categories.map((cat) => [cat, 0]));
+    const counts = Object.fromEntries(HOME_CATEGORIES.map((cat) => [cat, 0]));
     for (const thread of allThreads) {
-      const matchedCategory = categories.find(
+      const matchedCategory = HOME_CATEGORIES.find(
         (category) => category.toLowerCase() === thread.category.toLowerCase(),
       );
       if (matchedCategory) counts[matchedCategory] += 1;
@@ -649,7 +649,7 @@ function HomeContent() {
                   </span>
                 </button>
               </li>
-              {categories.map((cat) => (
+              {HOME_CATEGORIES.map((cat) => (
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}

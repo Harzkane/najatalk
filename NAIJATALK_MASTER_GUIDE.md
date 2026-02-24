@@ -1,6 +1,6 @@
 # NaijaTalk Master Guide
 
-Last updated: February 23, 2026  
+Last updated: February 24, 2026  
 Audience: Users, admins, partners, contributors, and non-technical readers
 
 ---
@@ -52,6 +52,8 @@ NaijaTalk combines all three and adds strong operations/governance from day one:
 - Search and discover conversations.
 - Like, bookmark, and engage.
 - Report harmful or abusive content.
+- Expand/collapse nested reply branches on thread details.
+- Use inline reply/report actions with controlled single-active flow.
 
 ### Marketplace
 - Create/manage listings.
@@ -198,6 +200,7 @@ Deployment:
 - Synthetic monitor checks backend/frontend and key API paths.
 - API E2E smoke checks core public/auth/admin flows.
 - UI E2E (Playwright) checks key user/admin journeys.
+- Unified thread readiness runner is available from repository root.
 
 ### Admin low-cost health check
 Admin Overview includes:
@@ -208,6 +211,11 @@ Admin Overview includes:
 ### Drill evidence commands (terminal/CI)
 - `ops:drill:rollback:capture`: captures post-rollback validation evidence.
 - `ops:drill:restore:capture`: captures post-restore validation evidence.
+
+### Thread production-readiness commands
+- `threads:ready`: backend tests + frontend lint/typecheck/build
+- `threads:ready:smoke`: adds synthetic/API smoke checks
+- `threads:ready:full`: adds UI E2E checks
 
 Important:
 - These capture evidence after drill actions.

@@ -140,9 +140,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
     : isThread(thread)
       ? thread.title
       : "Reply";
-  const threadReplies = isThread(thread)
-    ? thread.replies || []
-    : allThreadReplies;
+  const threadReplies = useMemo(
+    () => (isThread(thread) ? thread.replies || [] : allThreadReplies),
+    [isThread, thread, allThreadReplies],
+  );
   const repliesCount = isThread(thread)
     ? typeof thread.replyCount === "number"
       ? thread.replyCount
