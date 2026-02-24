@@ -85,7 +85,7 @@ function ThreadsContent() {
     "all" | "unanswered" | "solved" | "bookmarked"
   >("all");
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
-  const [showRepliesExpanded, setShowRepliesExpanded] = useState(false);
+  const [showRepliesExpanded, setShowRepliesExpanded] = useState(true);
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
@@ -98,7 +98,7 @@ function ThreadsContent() {
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setShowRepliesExpanded(Boolean(replyId));
+    setShowRepliesExpanded(true);
   }, [selectedThread?._id, replyId]);
 
   const trendingTopics = [

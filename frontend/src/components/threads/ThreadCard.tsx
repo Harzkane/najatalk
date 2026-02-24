@@ -58,6 +58,7 @@ interface ThreadCardProps {
   replyingToEmail?: string | null;
   focusReplyId?: string | null;
   focusReplyPathIds?: ReadonlySet<string>;
+  isLastSibling?: boolean;
 }
 
 const MAX_VISUAL_REPLY_DEPTH = 2;
@@ -88,14 +89,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
   replyingToEmail = null,
   focusReplyId = null,
   focusReplyPathIds,
+  isLastSibling = false,
 }) => {
   const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [replyHtml, setReplyHtml] = useState("<p></p>");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
-  const [localShowRepliesExpanded, setLocalShowRepliesExpanded] = useState(
-    isReply && depth <= 1,
-  );
+  const [localShowRepliesExpanded, setLocalShowRepliesExpanded] = useState(false);
   const [visibleRepliesCount, setVisibleRepliesCount] =
     useState(REPLIES_PAGE_SIZE);
   const [isReporting, setIsReporting] = useState(false);
@@ -154,13 +154,23 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const visualDepth = Math.min(depth, MAX_VISUAL_REPLY_DEPTH);
   const isCompactNode = depth >= 2;
   const depthClass =
-    visualDepth === 0
-      ? ""
-      : visualDepth === 1
-        ? "ml-2 border-l-2 border-l-slate-200"
-        : "ml-3 border-l-2 border-l-slate-200";
+    visualDepth === 0 ? "" : visualDepth === 1 ? "ml-1" : "ml-2";
   const isFlattenedReply = isReply && depth > MAX_VISUAL_REPLY_DEPTH;
   const replyingToHandle = emailToHandle(replyingToEmail);
+  const replyAuthorHandle = emailToHandle(thread.userId?.email || null);
+  const replyAuthorInitial = replyAuthorHandle.slice(0, 1).toUpperCase();
+  const replyBgToneClass = (() => {
+    if (!isReply) return "bg-white";
+    if (depth === 1) return "bg-green-50/40";
+    if (depth % 2 === 0) return "bg-white";
+    return "bg-green-100/40";
+  })();
+  const railToneClass =
+    depth <= 1
+      ? "border-slate-500"
+      : depth === 2
+        ? "border-slate-400"
+        : "border-slate-300";
   const rootThreadId = isReply ? threadId : thread._id;
   const computedFocusPathIds = useMemo(() => {
     if (!focusReplyId || !threadReplies.length) return new Set<string>();
@@ -184,12 +194,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
     ? resolvedFocusPathIds.has(thread._id)
     : Boolean(focusReplyId && resolvedFocusPathIds.size > 0);
   const containerClass = isReply
-    ? "mb-1 rounded-md border-l-2 border-l-slate-300 bg-white"
+    ? `relative mb-1 rounded-md ${replyBgToneClass}`
     : "mb-2 rounded-lg border border-gray-200 bg-white shadow-sm";
   const repliesExpanded =
     typeof controlledShowRepliesExpanded === "boolean"
       ? controlledShowRepliesExpanded
       : localShowRepliesExpanded;
+  const shouldNudgeRepliesTrigger = hasReplies && !repliesExpanded;
   const toggleRepliesExpanded = () => {
     if (onToggleRepliesExpanded) {
       onToggleRepliesExpanded();
@@ -268,6 +279,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
     if (!isReply) {
       router.push(`/threads/${thread._id}`);
     }
+  };
+  const canToggleReplyBranchFromAvatar = isReply && showReplies && hasReplies;
+  const handleAvatarToggle = () => {
+    if (!canToggleReplyBranchFromAvatar) return;
+    toggleRepliesExpanded();
   };
 
   const handleSubmitReply = async () => {
@@ -625,10 +641,43 @@ const ThreadCard: FC<ThreadCardProps> = ({
   return (
     <div
       ref={cardRef}
-      className={`${containerClass} ${depthClass} ${isFocusedReply ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
+      className={`${containerClass} ${depthClass} ${isReply ? "pl-5" : ""} ${isFocusedReply ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
     >
+      {isReply && (
+        <div className="absolute inset-y-0 left-0 w-8">
+          <span
+            className={`pointer-events-none absolute left-3 top-0 h-3 border-l-2 ${railToneClass}`}
+          />
+          <span
+            className={`pointer-events-none absolute left-3 top-4 h-4 w-4 rounded-bl-md border-b-2 border-l-2 ${railToneClass}`}
+          />
+          {!isLastSibling && (
+            <span
+              className={`pointer-events-none absolute left-3 top-8 bottom-0 border-l-2 ${railToneClass}`}
+            />
+          )}
+          {canToggleReplyBranchFromAvatar ? (
+            <button
+              type="button"
+              onClick={handleAvatarToggle}
+              title={repliesExpanded ? "Collapse thread" : "Expand thread"}
+              className={`absolute left-1 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-semibold ${
+                repliesExpanded
+                  ? "border-emerald-300 bg-emerald-100 text-emerald-800"
+                  : "border-slate-300 bg-slate-100 text-slate-700"
+              }`}
+            >
+              {replyAuthorInitial}
+            </button>
+          ) : (
+            <span className="absolute left-1 top-2 inline-flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 bg-emerald-100 text-[10px] font-semibold text-emerald-800">
+              {replyAuthorInitial}
+            </span>
+          )}
+        </div>
+      )}
       <div
-        className={`${isCompactNode ? "p-2" : "p-3"} ${isReply ? "bg-white" : "bg-gray-200"} pb-2`}
+        className={`${isCompactNode ? "p-2" : "p-3"} ${isReply ? replyBgToneClass : "bg-gray-200"} pb-2`}
       >
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
           {!isReply && (
@@ -661,7 +710,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
             <button
               type="button"
               onClick={handleRepliesCountClick}
-              className="inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-200"
+              className={`inline-flex items-center rounded-full bg-blue-100 px-2 py-0.5 text-[11px] font-semibold text-blue-700 hover:bg-blue-200 ${
+                shouldNudgeRepliesTrigger ? "animate-[pulse_2.8s_ease-in-out_infinite]" : ""
+              }`}
               title={showReplies ? "Toggle replies" : "Open thread discussion"}
             >
               {repliesCount} {repliesCount === 1 ? "Reply" : "Replies"}
@@ -707,7 +758,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
             {hasReplies && (
               <button
                 onClick={handleRepliesCountClick}
-                className="text-blue-600 hover:text-blue-800"
+                className={`group text-blue-600 hover:text-blue-800 ${
+                  shouldNudgeRepliesTrigger ? "animate-[pulse_2.8s_ease-in-out_infinite]" : ""
+                }`}
                 title={
                   showReplies
                     ? repliesExpanded
@@ -717,12 +770,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
                 }
               >
                 <span
-                  className="material-icons-outlined"
+                  className="material-icons-outlined transition-transform group-hover:-translate-y-0.5"
                   style={{ fontSize: "16px" }}
                 >
                   {showReplies && repliesExpanded ? "expand_less" : "chat"}
                 </span>
-                <span className="text-xs ml-1">{repliesCount}</span>
+                <span className="text-xs ml-1">+{repliesCount}</span>
               </button>
             )}
           </div>
@@ -730,7 +783,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       </div>
 
       <div
-        className={`${isCompactNode ? "px-3 py-2" : "px-4 py-3 sm:px-5"} text-sm text-gray-800 ${isReply ? "bg-white" : "bg-gray-50"}`}
+        className={`${isCompactNode ? "px-3 py-2" : "px-4 py-3 sm:px-5"} text-sm text-gray-800 ${isReply ? replyBgToneClass : "bg-gray-50"}`}
       >
         <div
           className="max-w-none text-sm text-gray-800 [&_h1]:my-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:text-base [&_h3]:font-semibold [&_h4]:my-2 [&_h4]:text-[15px] [&_h4]:font-semibold [&_h5]:my-2 [&_h5]:text-sm [&_h5]:font-semibold [&_h6]:my-2 [&_h6]:text-sm [&_h6]:font-semibold [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_blockquote]:my-2 [&_blockquote]:border-l-4 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-2 [&_pre]:text-slate-100 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline"
@@ -1068,9 +1121,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
       {showReplies && repliesExpanded && hasReplies && (
         <div
-          className={`${isReply ? "ml-2 mt-1" : "mx-3 mt-2"} space-y-2 border-t border-gray-100 py-2`}
+          className={`${isReply ? "ml-2 mt-1" : "mx-3 mt-2"} space-y-0 border-t border-gray-100 py-2`}
         >
-          {visibleNestedReplies.map((reply) => (
+          {visibleNestedReplies.map((reply, index) => (
             <ThreadCard
               key={reply._id}
               thread={reply}
@@ -1089,6 +1142,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
               replyingToEmail={thread.userId?.email || null}
               focusReplyId={focusReplyId}
               focusReplyPathIds={resolvedFocusPathIds}
+              isLastSibling={
+                index === visibleNestedReplies.length - 1 &&
+                !hasMoreNestedReplies
+              }
             />
           ))}
           {hasMoreNestedReplies && (
