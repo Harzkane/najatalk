@@ -151,7 +151,7 @@ export default function RichTextEditor({
           </button>
         </div>
         <span className="text-[11px] text-slate-500">
-          Supports markdown: `**bold**`, `- list`, `> quote`, `[link](url)`
+          {"Supports markdown: `**bold**`, `- list`, `> quote`, `[link](url)`"}
         </span>
       </div>
 
