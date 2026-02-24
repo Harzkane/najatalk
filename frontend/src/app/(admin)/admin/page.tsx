@@ -1,5 +1,5 @@
 import AdminDashboardClient from "./components/AdminDashboardClient";
 
 export default function AdminPage() {
-  return <AdminDashboardClient focusSection="all" />;
+  return <AdminDashboardClient focusSection="overview" />;
 }

@@ -1,8 +1,8 @@
 // frontend/src/app/page.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
 import api from "../utils/api";
 import Link from "next/link";
@@ -11,11 +11,30 @@ import NewThreadButton from "../components/threads/NewThreadButton";
 import Header from "../components/Header";
 import formatDate from "../utils/formatDate";
 import SponsoredAdCard from "../components/ads/SponsoredAdCard";
+import {
+  Activity,
+  CalendarPlus,
+  Clock3,
+  Flame,
+  Gem,
+  FolderTree,
+  LogIn,
+  Megaphone,
+  MessageCircle,
+  MessagesSquare,
+  Pin,
+  PenSquare,
+  ShieldAlert,
+  Sparkles,
+  Tag,
+  CheckCircle2,
+  UserRound,
+} from "lucide-react";
 
 type Reply = {
   _id: string;
   body: string;
-  userId: { email: string; flair?: string } | null;
+  userId: { _id?: string; email: string; flair?: string } | null;
   createdAt: string;
 };
 
@@ -23,9 +42,12 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { email: string; flair?: string } | null;
+  userId: { _id?: string; email: string; flair?: string } | null;
   category: string;
   createdAt: string;
+  replyCount?: number;
+  latestReplyAt?: string | null;
+  latestReplyUser?: { email: string; flair?: string | null } | null;
   replies?: Reply[];
 };
 
@@ -45,19 +67,91 @@ type Ad = {
   status?: "pending" | "active" | "expired";
 };
 
+type SortMode = "latest" | "top" | "unanswered";
+type ActiveFilter = "all" | "forYou" | "unread" | "following" | "solved" | "mostActive";
+
+const parseSortMode = (value: string | null): SortMode => {
+  if (value === "top" || value === "unanswered") return value;
+  return "latest";
+};
+
+const getLatestActivity = (thread: Thread) => {
+  if (thread.latestReplyAt) {
+    return new Date(thread.latestReplyAt);
+  }
+  if (!thread.replies || thread.replies.length === 0) {
+    return new Date(thread.createdAt);
+  }
+  const replyDates = thread.replies.map((reply) => new Date(reply.createdAt));
+  return new Date(Math.max(...replyDates.map((d) => d.getTime())));
+};
+
+const getReplyCount = (thread: Thread) => {
+  if (typeof thread.replyCount === "number") return thread.replyCount;
+  return thread.replies?.length || 0;
+};
+
+const getLatestReplyMeta = (thread: Thread) => {
+  if (thread.latestReplyUser?.email) {
+    return {
+      email: thread.latestReplyUser.email,
+      flair: thread.latestReplyUser.flair || null,
+    };
+  }
+  if (thread.replies?.length) {
+    const latestReply = thread.replies[0];
+    return {
+      email: latestReply.userId?.email || "",
+      flair: latestReply.userId?.flair || null,
+    };
+  }
+  return null;
+};
+
+const getEmailHandle = (email?: string | null) => {
+  if (!email) return "Unknown";
+  return email.split("@")[0] || "Unknown";
+};
+
+const getHandleInitial = (email?: string | null) => {
+  const handle = getEmailHandle(email);
+  return handle.slice(0, 1).toUpperCase();
+};
+
+const hasUserInIdList = (ids: unknown[] | undefined, userId: string) => {
+  if (!ids?.length) return false;
+  return ids.some((id) => String(id) === userId);
+};
+
 export default function Home() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [allThreads, setAllThreads] = useState<Thread[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [bannerAd, setBannerAd] = useState<Ad | null>(null);
   const [sidebarAds, setSidebarAds] = useState<Ad[]>([]);
   const [message, setMessage] = useState<string>("");
+  const [isLoadingThreads, setIsLoadingThreads] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [threadsPage, setThreadsPage] = useState(1);
+  const [hasMoreThreads, setHasMoreThreads] = useState(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [isPremium, setIsPremium] = useState(false);
+  const [lastVisitAt, setLastVisitAt] = useState<number>(0);
+  const [viewedCategories, setViewedCategories] = useState<string[]>([]);
 
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [sortMode, setSortMode] = useState<SortMode>(() => {
+    if (typeof window === "undefined") return "latest";
+    return parseSortMode(
+      new URLSearchParams(window.location.search).get("sort"),
+    );
+  });
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
   const getAxiosMessage = (err: unknown, fallback: string) =>
     isAxiosError<{ message?: string }>(err)
@@ -71,6 +165,103 @@ export default function Home() {
     "Best jollof",
   ];
   const categories = ["General", "Gist", "Politics", "Romance"];
+  const categoryCounts = useMemo(() => {
+    const counts = Object.fromEntries(categories.map((cat) => [cat, 0]));
+    for (const thread of allThreads) {
+      const matchedCategory = categories.find(
+        (category) => category.toLowerCase() === thread.category.toLowerCase(),
+      );
+      if (matchedCategory) counts[matchedCategory] += 1;
+    }
+    return counts;
+  }, [allThreads]);
+  const sortedThreads = useMemo(() => {
+    const list = [...threads];
+
+    if (sortMode === "unanswered") {
+      return list
+        .filter((thread) => getReplyCount(thread) === 0)
+        .sort(
+          (a, b) =>
+            getLatestActivity(b).getTime() - getLatestActivity(a).getTime(),
+        );
+    }
+
+    if (sortMode === "top") {
+      return list.sort((a, b) => {
+        const replyDiff = getReplyCount(b) - getReplyCount(a);
+        if (replyDiff !== 0) return replyDiff;
+        return getLatestActivity(b).getTime() - getLatestActivity(a).getTime();
+      });
+    }
+
+    return list.sort(
+      (a, b) => getLatestActivity(b).getTime() - getLatestActivity(a).getTime(),
+    );
+  }, [threads, sortMode]);
+  const filteredThreads = useMemo(() => {
+    return sortedThreads.filter((thread) => {
+      if (activeFilter === "all") return true;
+      if (activeFilter === "mostActive") return getReplyCount(thread) >= 5;
+      if (activeFilter === "solved") return Boolean((thread as { isSolved?: boolean }).isSolved);
+      if (activeFilter === "following") {
+        if (!currentUserId) return false;
+        const bookmarks = (thread as { bookmarks?: unknown[] }).bookmarks || [];
+        return hasUserInIdList(bookmarks, currentUserId);
+      }
+      if (activeFilter === "unread") {
+        if (!lastVisitAt) return false;
+        return getLatestActivity(thread).getTime() > lastVisitAt;
+      }
+      if (activeFilter === "forYou") {
+        const category = String(thread.category || "").toLowerCase();
+        if (viewedCategories.some((item) => item.toLowerCase() === category)) {
+          return true;
+        }
+        if (!currentUserId) return false;
+        const bookmarks = (thread as { bookmarks?: unknown[] }).bookmarks || [];
+        const likes = (thread as { likes?: unknown[] }).likes || [];
+        return (
+          hasUserInIdList(bookmarks, currentUserId) ||
+          hasUserInIdList(likes, currentUserId)
+        );
+      }
+      return true;
+    });
+  }, [sortedThreads, activeFilter, currentUserId, lastVisitAt, viewedCategories]);
+  const hasAnyThreads = threads.length > 0;
+  const communityMetrics = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    ).getTime();
+    const totalTopics = allThreads.length;
+    const totalReplies = allThreads.reduce(
+      (sum, thread) => sum + getReplyCount(thread),
+      0,
+    );
+    const unansweredTopics = allThreads.filter(
+      (thread) => getReplyCount(thread) === 0,
+    ).length;
+    const newToday = allThreads.filter(
+      (thread) => new Date(thread.createdAt).getTime() >= startOfToday,
+    ).length;
+    const activeUsers = new Set<string>();
+    for (const thread of allThreads) {
+      if (thread.userId?.email) activeUsers.add(thread.userId.email);
+      if (thread.latestReplyUser?.email)
+        activeUsers.add(thread.latestReplyUser.email);
+    }
+    return {
+      totalTopics,
+      totalReplies,
+      unansweredTopics,
+      activeUsersCount: activeUsers.size,
+      newToday,
+    };
+  }, [allThreads]);
 
   const fetchBannerAd = async () => {
     try {
@@ -139,25 +330,59 @@ export default function Home() {
   useEffect(() => {
     const savedSearches = localStorage.getItem("recentSearches");
     if (savedSearches) setRecentSearches(JSON.parse(savedSearches));
+    const cachedViewedCategories = localStorage.getItem("homeViewedCategories");
+    if (cachedViewedCategories) {
+      try {
+        setViewedCategories(JSON.parse(cachedViewedCategories));
+      } catch {
+        setViewedCategories([]);
+      }
+    }
+    const cachedLastVisit = Number(localStorage.getItem("homeLastVisitAt") || "0");
+    setLastVisitAt(Number.isFinite(cachedLastVisit) ? cachedLastVisit : 0);
+    localStorage.setItem("homeLastVisitAt", String(Date.now()));
   }, []);
 
-  const fetchThreads = useCallback(async () => {
+  useEffect(() => {
+    setSortMode(parseSortMode(searchParams.get("sort")));
+  }, [searchParams]);
+
+  const fetchThreads = useCallback(async (page = 1, append = false) => {
     try {
-      const res = await api.get("/threads");
-      const threads = res.data.threads || [];
-      const threadsWithReplies = await Promise.all(
-        threads.map(async (thread: Thread) => {
-          try {
-            const replyRes = await api.get(`/threads/${thread._id}`);
-            return replyRes.data;
-          } catch (err) {
-            console.error(`Failed to fetch thread ${thread._id}:`, err);
-            return { ...thread, replies: [] };
+      if (append) setIsLoadingMore(true);
+      else setIsLoadingThreads(true);
+      const res = await api.get<{
+        threads: Thread[];
+        message?: string;
+        pagination?: { page?: number; totalPages?: number; hasNext?: boolean };
+      }>("/threads", {
+        params: { page, pageSize: 20 },
+      });
+      const rows = res.data.threads || [];
+      const nextPage = Number(res.data.pagination?.page || page);
+      setThreadsPage(nextPage);
+      setHasMoreThreads(Boolean(res.data.pagination?.hasNext));
+      if (append) {
+        setAllThreads((prev) => {
+          const seen = new Set(prev.map((thread) => thread._id));
+          const merged = [...prev];
+          for (const row of rows) {
+            if (!seen.has(row._id)) merged.push(row);
           }
-        }),
-      );
-      setAllThreads(threadsWithReplies);
-      setThreads(threadsWithReplies);
+          return merged;
+        });
+        setThreads((prev) => {
+          const seen = new Set(prev.map((thread) => thread._id));
+          const merged = [...prev];
+          for (const row of rows) {
+            if (!seen.has(row._id)) merged.push(row);
+          }
+          return merged;
+        });
+      } else {
+        setAllThreads(rows);
+        setThreads(rows);
+      }
       setMessage(res.data.message || "");
     } catch (err: unknown) {
       if (isAxiosError(err)) {
@@ -165,6 +390,9 @@ export default function Home() {
       } else {
         setMessage("No gist yet—drop your own!");
       }
+    } finally {
+      if (append) setIsLoadingMore(false);
+      else setIsLoadingThreads(false);
     }
   }, []);
 
@@ -177,6 +405,7 @@ export default function Home() {
             headers: { Authorization: `Bearer ${token}` },
           });
           setIsPremium(res.data.isPremium);
+          setCurrentUserId(res.data._id || null);
           setIsLoggedIn(true);
           if (!res.data.isPremium) {
             await fetchBannerAd();
@@ -191,10 +420,11 @@ export default function Home() {
           return;
         }
       } else {
+        setCurrentUserId(null);
         await fetchBannerAd();
         await fetchSidebarAds();
       }
-      fetchThreads();
+      fetchThreads(1, false);
     };
     checkPremiumAndAds();
   }, [router, fetchThreads]);
@@ -202,21 +432,13 @@ export default function Home() {
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     setSelectedCategory(null);
+    setActiveFilter("all");
     try {
+      setIsLoadingThreads(true);
       const res = await api.get<SearchResponse>(`/threads/search?q=${query}`);
-      const threadsWithReplies = await Promise.all(
-        res.data.threads.map(async (thread) => {
-          try {
-            const replyRes = await api.get<Thread>(`/threads/${thread._id}`);
-            return replyRes.data;
-          } catch (err: unknown) {
-            console.error(`Failed to fetch thread ${thread._id}:`, err);
-            return { ...thread, replies: [] };
-          }
-        }),
-      );
-      setThreads(threadsWithReplies);
+      setThreads(res.data.threads || []);
       setMessage(res.data.message);
+      setHasMoreThreads(false);
 
       if (query.trim()) {
         const updatedSearches = [
@@ -232,6 +454,8 @@ export default function Home() {
       } else {
         setMessage("No gist match—try another search!");
       }
+    } finally {
+      setIsLoadingThreads(false);
     }
   };
 
@@ -284,6 +508,7 @@ export default function Home() {
 
   const handleCategoryFilter = (category: string | null) => {
     setSelectedCategory(category);
+    setActiveFilter("all");
     setSearchQuery("");
     if (!category) {
       setThreads(allThreads);
@@ -303,62 +528,141 @@ export default function Home() {
     }
   };
 
-  const getLatestActivity = (thread: Thread) => {
-    if (!thread.replies || thread.replies.length === 0) {
-      return thread.createdAt;
+  const handleLoadMore = async () => {
+    if (!hasMoreThreads || isLoadingMore || isLoadingThreads || searchQuery.trim()) {
+      return;
     }
-    const replyDates = thread.replies.map((reply) => new Date(reply.createdAt));
-    return new Date(Math.max(...replyDates.map((d) => d.getTime())));
+    await fetchThreads(threadsPage + 1, true);
   };
 
+  const trackThreadView = (thread: Thread) => {
+    const category = String(thread.category || "").trim();
+    if (!category) return;
+    setViewedCategories((prev) => {
+      const next = [category, ...prev.filter((item) => item.toLowerCase() !== category.toLowerCase())].slice(0, 8);
+      localStorage.setItem("homeViewedCategories", JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const handleSortChange = (nextSort: SortMode) => {
+    setSortMode(nextSort);
+    const nextParams = new URLSearchParams(searchParams.toString());
+    if (nextSort === "latest") {
+      nextParams.delete("sort");
+    } else {
+      nextParams.set("sort", nextSort);
+    }
+    const query = nextParams.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, {
+      scroll: false,
+    });
+  };
+
+  const sortOptions: Array<{
+    id: SortMode;
+    label: string;
+    icon: typeof Clock3;
+  }> = [
+    { id: "latest", label: "Latest", icon: Clock3 },
+    { id: "top", label: "Top", icon: Flame },
+    { id: "unanswered", label: "Unanswered", icon: MessagesSquare },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-      <div className="max-w-7xl mx-auto mb-4">
+    <div className="min-h-screen bg-slate-100 px-3 pb-20 pt-3 md:px-5 md:pt-5">
+      <div className="mx-auto mb-4 max-w-[1320px]">
         <Header
           title="NaijaTalk Forum"
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
+          compact
           secondaryLink={{ href: "/premium", label: "Premium" }}
         />
-        <div className="bg-white p-4 rounded-b-lg shadow-sm border border-slate-200 border-t-0">
+        <div className="mt-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <SearchBar
             onSearch={handleSearch}
             recentSearches={recentSearches}
             trendingTopics={trendingTopics}
           />
         </div>
+        <section className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition-transform hover:-translate-y-0.5">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <MessageCircle className="h-3.5 w-3.5" />
+              Topics
+            </p>
+            <p className="mt-1 text-xl font-semibold text-slate-900">
+              {communityMetrics.totalTopics}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition-transform hover:-translate-y-0.5">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <Activity className="h-3.5 w-3.5" />
+              Replies
+            </p>
+            <p className="mt-1 text-xl font-semibold text-slate-900">
+              {communityMetrics.totalReplies}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition-transform hover:-translate-y-0.5">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <UserRound className="h-3.5 w-3.5" />
+              Active Users
+            </p>
+            <p className="mt-1 text-xl font-semibold text-slate-900">
+              {communityMetrics.activeUsersCount}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition-transform hover:-translate-y-0.5">
+            <p className="flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+              <CalendarPlus className="h-3.5 w-3.5" />
+              New Today
+            </p>
+            <p className="mt-1 text-xl font-semibold text-slate-900">
+              {communityMetrics.newToday}
+            </p>
+          </div>
+        </section>
       </div>
 
-      <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-5">
-        <div className="w-full lg:w-[15%]">
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 lg:sticky lg:top-24">
-            <h2 className="text-xs font-semibold tracking-wide uppercase text-slate-500 mb-3">
+      <div className="mx-auto grid max-w-[1320px] grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
+        <div className="w-full">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <FolderTree className="h-3.5 w-3.5" />
               Categories
             </h2>
-            <ul className="space-y-2">
+            <ul className="space-y-0">
               <li>
                 <button
                   onClick={() => handleCategoryFilter(null)}
-                  className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
+                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
                     !selectedCategory
                       ? "bg-green-50 text-green-800 font-semibold border border-green-200"
                       : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                   }`}
                 >
-                  All Categories
+                  <span>All Categories</span>
+                  <span className="text-xs text-slate-500">
+                    {allThreads.length}
+                  </span>
                 </button>
               </li>
               {categories.map((cat) => (
                 <li key={cat}>
                   <button
                     onClick={() => handleCategoryFilter(cat)}
-                    className={`w-full text-left text-sm rounded-md px-3 py-2 transition-colors ${
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition-colors ${
                       selectedCategory === cat
                         ? "bg-green-50 text-green-800 font-semibold border border-green-200"
                         : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                     }`}
                   >
-                    {cat}
+                    <span>{cat}</span>
+                    <span className="text-xs text-slate-500">
+                      {categoryCounts[cat] || 0}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -366,7 +670,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-full lg:w-[70%]">
+        <div className="w-full min-w-0">
           {!isPremium && bannerAd && (
             <SponsoredAdCard
               ad={bannerAd}
@@ -382,99 +686,206 @@ export default function Home() {
             </p>
           )}
 
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wide">
+          <div className="sticky top-20 z-20 mb-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:flex-row md:items-center md:justify-between">
+            <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
+              <MessageCircle className="h-4 w-4" />
               Latest Discussions
             </h2>
-            <span className="text-xs text-slate-500">
-              {threads.length} topics
-            </span>
+            <div className="flex items-center gap-2">
+              {sortOptions.map((option) => {
+                const Icon = option.icon;
+                const isActive = sortMode === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => handleSortChange(option.id)}
+                    className={`inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-semibold uppercase tracking-wide transition-colors ${
+                      isActive
+                        ? "border-green-200 bg-green-50 text-green-700"
+                        : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                );
+              })}
+              <span className="text-xs text-slate-500">
+                {filteredThreads.length} topics
+              </span>
+            </div>
+          </div>
+          <div className="mb-2 flex flex-wrap gap-2">
+            {[
+              { id: "all", label: "All", icon: Tag },
+              { id: "forYou", label: "For You", icon: Sparkles },
+              { id: "unread", label: "Unread", icon: Clock3 },
+              { id: "following", label: "Following", icon: Gem },
+              { id: "solved", label: "Solved", icon: CheckCircle2 },
+              { id: "mostActive", label: "Most Active", icon: Activity },
+            ].map((option) => {
+              const Icon = option.icon;
+              const isActive = activeFilter === (option.id as ActiveFilter);
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => setActiveFilter(option.id as ActiveFilter)}
+                  className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                    isActive
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
 
-          {threads.length ? (
+          {isLoadingThreads ? (
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-20 animate-pulse rounded-lg border border-slate-200 bg-white"
+                />
+              ))}
+            </div>
+          ) : filteredThreads.length ? (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
-              <div className="hidden md:flex bg-slate-50 p-3 justify-between text-xs font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200">
+              <div className="hidden md:flex bg-slate-50 px-3 py-2 justify-between text-[11px] font-semibold uppercase tracking-wide text-slate-500 border-b border-slate-200">
                 <span className="w-2/5">Thread</span>
                 <span className="w-1/5 text-center">Replies</span>
                 <span className="w-2/5 text-right">Last Post</span>
               </div>
-              {threads.map((thread, index) => (
-                <div key={thread._id}>
-                  <div className="p-4 border-b border-slate-200 hover:bg-slate-50 transition-colors flex flex-col md:flex-row gap-3 md:gap-0 md:justify-between md:items-center">
-                    <div className="w-full md:w-2/5">
-                      <Link
-                        href={`/threads/${thread._id}`}
-                        className="text-slate-900 font-semibold hover:text-green-800"
-                      >
-                        {thread.title}
-                      </Link>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Started by{" "}
-                        <span className="font-medium">
-                          {thread.userId?.email?.split("@")[0] || "Unknown Oga"}
+              {filteredThreads.map((thread, index) => {
+                const latestReplyMeta = getLatestReplyMeta(thread);
+                const latestReplyName = getEmailHandle(latestReplyMeta?.email);
+                const isSolved = Boolean((thread as { isSolved?: boolean }).isSolved);
+                const isSticky = Boolean((thread as { isSticky?: boolean }).isSticky);
+                const isLocked = Boolean((thread as { isLocked?: boolean }).isLocked);
+                const isHot = getReplyCount(thread) >= 10;
+
+                return (
+                  <div key={thread._id}>
+                    <div className="border-b border-slate-200 px-3 py-3 transition-all hover:-translate-y-[1px] hover:bg-slate-50 flex flex-col md:flex-row gap-2 md:gap-0 md:justify-between md:items-center">
+                      <div className="w-full md:w-2/5">
+                        <div className="flex items-start gap-2">
+                          <span className="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100 text-xs font-semibold text-green-800">
+                            {getHandleInitial(thread.userId?.email || null)}
+                          </span>
+                          <div className="min-w-0">
+                            <Link
+                              href={`/threads/${thread._id}`}
+                              onClick={() => trackThreadView(thread)}
+                              className="line-clamp-2 text-slate-900 font-semibold hover:text-green-800"
+                            >
+                              {thread.title}
+                            </Link>
+                            <div className="mt-1 flex flex-wrap items-center gap-1 text-[11px] text-slate-500">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-700">
+                                {thread.category || "General"}
+                              </span>
+                              <span>Started by</span>
+                              {thread.userId?._id ? (
+                                <Link
+                                  href={`/users/${thread.userId._id}`}
+                                  className="font-medium text-blue-700 hover:underline"
+                                >
+                                  {getEmailHandle(thread.userId?.email || null)}
+                                </Link>
+                              ) : (
+                                <span className="font-medium">
+                                  {getEmailHandle(thread.userId?.email || null)}
+                                </span>
+                              )}
+                              {thread.userId?.flair && (
+                                <span
+                                  className={`inline-block rounded px-1 text-xs text-white ${
+                                    thread.userId.flair === "Oga at the Top"
+                                      ? "bg-yellow-500"
+                                      : "bg-green-500"
+                                  }`}
+                                >
+                                  {thread.userId.flair}
+                                </span>
+                              )}
+                              {isSticky && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-700">
+                                  <Pin className="h-3 w-3" />
+                                  Pinned
+                                </span>
+                              )}
+                              {isLocked && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-slate-200 px-1 text-[10px] font-semibold text-slate-700">
+                                  <ShieldAlert className="h-3 w-3" />
+                                  Locked
+                                </span>
+                              )}
+                              {isSolved && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-emerald-100 px-1 text-[10px] font-semibold text-emerald-700">
+                                  <CheckCircle2 className="h-3 w-3" />
+                                  Solved
+                                </span>
+                              )}
+                              {isHot && (
+                                <span className="inline-flex items-center gap-0.5 rounded bg-rose-100 px-1 text-[10px] font-semibold text-rose-700">
+                                  <Flame className="h-3 w-3" />
+                                  Hot
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="w-full md:w-1/5 text-left md:text-center">
+                        <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+                          {getReplyCount(thread)}
                         </span>
-                        {thread.userId?.flair && (
-                          <span
-                            className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                              thread.userId.flair === "Oga at the Top"
-                                ? "bg-yellow-500"
-                                : "bg-green-500"
-                            }`}
-                          >
-                            {thread.userId.flair}
+                      </div>
+                      <div className="w-full md:w-2/5 text-left md:text-right text-[11px] text-slate-500">
+                        {formatDate(getLatestActivity(thread).toISOString())}
+                        {getReplyCount(thread) > 0 && latestReplyMeta && (
+                          <span className="inline-flex items-center gap-1 font-medium text-slate-600 md:float-right">
+                            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-[10px] font-semibold text-emerald-800">
+                              {getHandleInitial(latestReplyMeta.email)}
+                            </span>
+                            <span>by {latestReplyName}</span>
+                            {latestReplyMeta.flair && (
+                              <span
+                                className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                                  latestReplyMeta.flair === "Oga at the Top"
+                                    ? "bg-yellow-500"
+                                    : "bg-green-500"
+                                }`}
+                              >
+                                {latestReplyMeta.flair}
+                              </span>
+                            )}
                           </span>
                         )}
-                      </p>
+                      </div>
                     </div>
-                    <div className="w-full md:w-1/5 text-left md:text-center">
-                      <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
-                        {thread.replies?.length || 0}
-                      </span>
-                    </div>
-                    <div className="w-full md:w-2/5 text-left md:text-right text-xs text-slate-500">
-                      {formatDate(getLatestActivity(thread).toString())}
-                      {thread.replies && thread.replies.length > 0 && (
-                        <span className="block text-slate-600 font-medium">
-                          by{" "}
-                          {thread.replies[
-                            thread.replies.length - 1
-                          ].userId?.email?.split("@")[0] || "Unknown"}
-                          {thread.replies[thread.replies.length - 1].userId
-                            ?.flair && (
-                            <span
-                              className={`ml-1 inline-block text-white px-1 rounded text-xs ${
-                                thread.replies[thread.replies.length - 1].userId
-                                  ?.flair === "Oga at the Top"
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
-                              }`}
-                            >
-                              {
-                                thread.replies[thread.replies.length - 1].userId
-                                  ?.flair
-                              }
-                            </span>
-                          )}
-                        </span>
-                      )}
-                    </div>
+                    {!isPremium && bannerAd && index > 0 && index % 7 === 0 && (
+                      <div className="border-b border-slate-200 p-4 bg-slate-50">
+                        <SponsoredAdCard
+                          ad={bannerAd}
+                          onClick={trackClick}
+                          compact
+                        />
+                      </div>
+                    )}
                   </div>
-                  {!isPremium && bannerAd && index > 0 && index % 7 === 0 && (
-                    <div className="border-b border-slate-200 p-4 bg-slate-50">
-                      <SponsoredAdCard
-                        ad={bannerAd}
-                        onClick={trackClick}
-                        compact
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 text-center">
               <p className="text-slate-600 mb-4 text-lg">
-                No threads yet—na you go start di party!
+                {hasAnyThreads
+                  ? "No threads match this sort/filter yet."
+                  : "No threads yet—na you go start di party!"}
               </p>
               {isLoggedIn ? (
                 <button
@@ -485,12 +896,7 @@ export default function Home() {
                   }}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center mx-auto"
                 >
-                  <span
-                    className="material-icons-outlined mr-1"
-                    style={{ fontSize: "16px" }}
-                  >
-                    add
-                  </span>
+                  <PenSquare className="mr-1 h-4 w-4" />
                   Start a New Thread
                 </button>
               ) : (
@@ -498,21 +904,58 @@ export default function Home() {
                   onClick={() => router.push("/login")}
                   className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center mx-auto"
                 >
-                  <span
-                    className="material-icons-outlined mr-1"
-                    style={{ fontSize: "16px" }}
-                  >
-                    login
-                  </span>
+                  <LogIn className="mr-1 h-4 w-4" />
                   Login to Post
                 </button>
               )}
             </div>
           )}
+          {!searchQuery.trim() && hasMoreThreads && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore || isLoadingThreads}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isLoadingMore ? "Loading more..." : "Load More Threads"}
+              </button>
+            </div>
+          )}
         </div>
 
-        <div className="w-full lg:w-[15%]">
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 lg:sticky lg:top-24">
+        <div className="w-full">
+          <div className="mb-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm transition-transform hover:-translate-y-0.5">
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Activity className="h-3.5 w-3.5" />
+              Community Pulse
+            </h2>
+            <div className="space-y-2 text-sm">
+              <p className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1 text-slate-700">
+                <span>Unanswered</span>
+                <span className="font-semibold text-slate-900">
+                  {communityMetrics.unansweredTopics}
+                </span>
+              </p>
+              <p className="flex items-center justify-between rounded-md bg-slate-50 px-2 py-1 text-slate-700">
+                <span>New Today</span>
+                <span className="font-semibold text-slate-900">
+                  {communityMetrics.newToday}
+                </span>
+              </p>
+            </div>
+            <button
+              onClick={() => handleSortChange("unanswered")}
+              className="mt-3 inline-flex w-full items-center justify-center gap-1 rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white hover:bg-green-700"
+            >
+              <MessagesSquare className="h-4 w-4" />
+              Review Unanswered
+            </button>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+            <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+              <Megaphone className="h-3.5 w-3.5" />
+              Sponsored
+            </h2>
             {!isPremium && sidebarAds.length > 0 ? (
               <div className="space-y-4">
                 {sidebarAds.map((ad) => (

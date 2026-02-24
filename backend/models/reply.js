@@ -21,11 +21,18 @@ const replySchema = new mongoose.Schema({
     ref: "Reply",
     default: null,
   },
+  likes: {
+    type: [mongoose.Schema.Types.ObjectId],
+    ref: "User",
+    default: [],
+  },
   createdAt: {
     type: Date,
     default: () =>
       new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
   },
 });
+
+replySchema.index({ threadId: 1, userId: 1, createdAt: -1 });
 
 export default mongoose.model("Reply", replySchema);

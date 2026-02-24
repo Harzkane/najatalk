@@ -4,6 +4,11 @@ import Reply from "../models/reply.js";
 import Report from "../models/report.js";
 import mongoose from "mongoose";
 import { hasAnyPermission, hasPermission } from "../utils/permissions.js";
+import {
+  richTextHtmlToPlainText,
+  sanitizePlainText,
+  sanitizeRichTextHtml,
+} from "../utils/richTextSanitizer.js";
 
 const isAdmin = (user) => hasPermission(user, "platform.admin");
 const isStaff = (user) =>
@@ -14,33 +19,152 @@ const canManageSolvedState = (user, thread) =>
   thread.userId?.toString() === user._id.toString();
 
 const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
+const REPLY_COOLDOWN_MS = 30 * 1000;
 
 const containsBannedContent = (text) => {
-  const lowerText = text.toLowerCase();
+  const lowerText = String(text || "")
+    .toLowerCase()
+    .replace(/\s+/g, " ");
   return bannedKeywords.some((keyword) => lowerText.includes(keyword));
+};
+
+const enrichThreadsWithReplyStats = async (threads) => {
+  if (!threads.length) return threads;
+
+  const threadIds = threads
+    .map((thread) => thread?._id)
+    .filter((id) => Boolean(id));
+  if (!threadIds.length) return threads;
+
+  const replyStats = await Reply.aggregate([
+    { $match: { threadId: { $in: threadIds } } },
+    { $sort: { createdAt: -1 } },
+    {
+      $group: {
+        _id: "$threadId",
+        replyCount: { $sum: 1 },
+        latestReplyAt: { $first: "$createdAt" },
+        latestReplyUserId: { $first: "$userId" },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "latestReplyUserId",
+        foreignField: "_id",
+        as: "latestReplyUser",
+      },
+    },
+    {
+      $unwind: {
+        path: "$latestReplyUser",
+        preserveNullAndEmptyArrays: true,
+      },
+    },
+    {
+      $project: {
+        replyCount: 1,
+        latestReplyAt: 1,
+        latestReplyUser: {
+          email: "$latestReplyUser.email",
+          flair: "$latestReplyUser.flair",
+        },
+      },
+    },
+  ]);
+
+  const replyStatsMap = new Map(
+    replyStats.map((row) => [String(row._id), row]),
+  );
+
+  return threads.map((thread) => {
+    const baseThread =
+      typeof thread?.toObject === "function" ? thread.toObject() : thread;
+    const stats = replyStatsMap.get(String(baseThread._id));
+    return {
+      ...baseThread,
+      replyCount: Number(stats?.replyCount || 0),
+      latestReplyAt: stats?.latestReplyAt || null,
+      latestReplyUser: stats?.latestReplyUser?.email
+        ? {
+            email: stats.latestReplyUser.email,
+            flair: stats.latestReplyUser.flair || null,
+          }
+        : null,
+    };
+  });
 };
 
 export const createThread = async (req, res) => {
   const { title, body, category } = req.body; // Add category here
   try {
-    if (!title || !body)
+    const safeTitle = sanitizePlainText(title, 100);
+    const safeBodyHtml = sanitizeRichTextHtml(body);
+    const safeBodyText = richTextHtmlToPlainText(safeBodyHtml);
+    const safeCategory = sanitizePlainText(category || "General", 40) || "General";
+
+    if (!safeTitle || !safeBodyText)
       return res.status(400).json({ message: "Title or body no dey!" });
-    if (containsBannedContent(title) || containsBannedContent(body))
+    if (containsBannedContent(safeTitle) || containsBannedContent(safeBodyText))
       return res.status(400).json({ message: "Abeg, no spam gist!" });
 
     // console.log("Creating thread with:", { title, body, category }); // Debug log
 
     const thread = new Thread({
-      title,
-      body,
+      title: safeTitle,
+      body: safeBodyHtml || safeBodyText,
       userId: req.user._id,
-      category: category || "General", // Explicit fallback
+      category: safeCategory, // Explicit fallback
     });
     await thread.save();
 
     res.status(201).json({ message: "Thread posted—gist dey hot!", thread });
   } catch (err) {
     res.status(500).json({ message: "Thread wahala: " + err.message });
+  }
+};
+
+export const updateThread = async (req, res) => {
+  const { id } = req.params;
+  const hasTitle = Object.prototype.hasOwnProperty.call(req.body || {}, "title");
+  const hasBody = Object.prototype.hasOwnProperty.call(req.body || {}, "body");
+  const hasCategory = Object.prototype.hasOwnProperty.call(req.body || {}, "category");
+
+  try {
+    const thread = await Thread.findById(id);
+    if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const isOwner = thread.userId?.toString() === req.user?._id?.toString();
+    if (!isOwner && !isStaff(req.user)) {
+      return res.status(403).json({ message: "No be your thread to edit." });
+    }
+
+    const safeTitle = hasTitle
+      ? sanitizePlainText(req.body.title, 100)
+      : thread.title;
+    const safeBodyHtml = hasBody
+      ? sanitizeRichTextHtml(req.body.body)
+      : String(thread.body || "");
+    const safeBodyText = richTextHtmlToPlainText(safeBodyHtml);
+    const safeCategory = hasCategory
+      ? sanitizePlainText(req.body.category || "General", 40) || "General"
+      : thread.category || "General";
+
+    if (!safeTitle || !safeBodyText) {
+      return res.status(400).json({ message: "Title or body no dey!" });
+    }
+    if (containsBannedContent(safeTitle) || containsBannedContent(safeBodyText)) {
+      return res.status(400).json({ message: "Abeg, no spam gist!" });
+    }
+
+    thread.title = safeTitle;
+    thread.body = safeBodyHtml || safeBodyText;
+    thread.category = safeCategory;
+    await thread.save();
+
+    return res.json({ message: "Thread updated.", thread });
+  } catch (err) {
+    return res.status(500).json({ message: "Thread update scatter: " + err.message });
   }
 };
 
@@ -54,14 +178,16 @@ export const getThreads = async (req, res) => {
       : 20;
     const skip = (page - 1) * pageSize;
 
-    const [threads, total] = await Promise.all([
+    const [rawThreads, total] = await Promise.all([
       Thread.find()
-      .populate("userId", "email flair")
+      .populate("userId", "email flair username avatarUrl")
       .sort({ isSticky: -1, createdAt: -1 })
       .skip(skip)
-      .limit(pageSize),
+      .limit(pageSize)
+      .lean(),
       Thread.countDocuments(),
     ]);
+    const threads = await enrichThreadsWithReplyStats(rawThreads);
     // console.log("Threads fetched:", threads); // Log threads
     if (!threads.length) {
       return res.json({
@@ -102,9 +228,12 @@ export const createReply = async (req, res) => {
   const { id } = req.params;
   const { body, parentReplyId } = req.body;
   try {
+    const safeBodyHtml = sanitizeRichTextHtml(body);
+    const safeBodyText = richTextHtmlToPlainText(safeBodyHtml);
+
     console.log("Creating reply:", {
       id,
-      body,
+      body: safeBodyText,
       parentReplyId,
       userId: req.user?._id,
     });
@@ -113,14 +242,34 @@ export const createReply = async (req, res) => {
         .status(401)
         .json({ message: "Abeg, login again—token scatter!" });
     }
-    if (!body) return res.status(400).json({ message: "Reply body no dey!" });
-    if (containsBannedContent(body))
+    if (!safeBodyText) return res.status(400).json({ message: "Reply body no dey!" });
+    if (containsBannedContent(safeBodyText))
       return res.status(400).json({ message: "Abeg, no spam gist!" });
 
     const thread = await Thread.findById(id).select("isLocked");
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
     if (thread.isLocked && !isStaff(req.user)) {
       return res.status(403).json({ message: "Thread locked—no new replies." });
+    }
+
+    if (!isStaff(req.user)) {
+      const lastUserReply = await Reply.findOne({
+        threadId: id,
+        userId: req.user._id,
+      })
+        .sort({ createdAt: -1 })
+        .select("createdAt");
+
+      if (lastUserReply?.createdAt) {
+        const lastReplyAt = new Date(lastUserReply.createdAt).getTime();
+        const elapsed = Date.now() - lastReplyAt;
+        if (!Number.isNaN(lastReplyAt) && elapsed >= 0 && elapsed < REPLY_COOLDOWN_MS) {
+          const waitSeconds = Math.ceil((REPLY_COOLDOWN_MS - elapsed) / 1000);
+          return res.status(429).json({
+            message: `Slow down small—wait ${waitSeconds}s before another reply.`,
+          });
+        }
+      }
     }
 
     if (parentReplyId) {
@@ -134,12 +283,13 @@ export const createReply = async (req, res) => {
     }
 
     const reply = new Reply({
-      body,
+      body: safeBodyHtml || safeBodyText,
       userId: req.user._id,
       threadId: id,
       parentReplyId: parentReplyId || null,
     });
     await reply.save();
+    await Thread.updateOne({ _id: id }, { $set: { updatedAt: new Date() } });
     console.log("Reply saved:", reply);
 
     res.status(201).json({ message: "Reply posted—gist dey grow!", reply });
@@ -153,12 +303,12 @@ export const getThreadById = async (req, res) => {
   const { id } = req.params;
   try {
     const thread = await Thread.findById(id)
-      .populate("userId", "email flair")
+      .populate("userId", "email flair username avatarUrl")
       .lean();
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
 
     const replies = await Reply.find({ threadId: id })
-      .populate("userId", "email flair")
+      .populate("userId", "email flair username avatarUrl")
       .sort({ createdAt: -1 });
     res.json({ ...thread, replies });
   } catch (err) {
@@ -173,29 +323,18 @@ export const searchThreads = async (req, res) => {
       return res
         .status(400)
         .json({ message: "Search wetin? Abeg drop query!" });
-    const threads = await Thread.find(
+    const rawThreads = await Thread.find(
       { $text: { $search: q } },
       { score: { $meta: "textScore" } }
     )
-      .populate("userId", "email flair")
+      .populate("userId", "email flair username avatarUrl")
       .sort({ score: { $meta: "textScore" } })
-      .limit(10);
-
-    // Fetch replies for each thread
-    const threadsWithReplies = await Promise.all(
-      threads.map(async (thread) => {
-        const fullThread = await Thread.findById(thread._id)
-          .populate("userId", "email flair")
-          .lean();
-        const replies = await Reply.find({ threadId: thread._id })
-          .populate("userId", "email flair")
-          .sort({ createdAt: -1 });
-        return { ...fullThread, replies };
-      })
-    );
+      .limit(10)
+      .lean();
+    const threads = await enrichThreadsWithReplyStats(rawThreads);
 
     res.json({
-      threads: threadsWithReplies,
+      threads,
       message: "Search results dey here—enjoy!",
     });
   } catch (err) {
@@ -347,7 +486,8 @@ export const getAdminThreadDetails = async (req, res) => {
         .limit(12)
         .populate("userId", "_id email flair role")
         .populate("reportedUserId", "_id email flair role")
-        .select("_id reason createdAt userId reportedUserId")
+        .populate("replyId", "_id body threadId")
+        .select("_id reason createdAt userId reportedUserId replyId")
         .lean(),
     ]);
 
@@ -419,6 +559,13 @@ export const getAdminThreadDetails = async (req, res) => {
         _id: row._id,
         reason: row.reason,
         createdAt: row.createdAt,
+        replyId: row.replyId
+          ? {
+              _id: row.replyId._id,
+              body: row.replyId.body || "",
+              threadId: row.replyId.threadId || null,
+            }
+          : null,
         reporter: row.userId
           ? {
               _id: row.userId._id,
@@ -452,6 +599,15 @@ export const reportThread = async (req, res) => {
     const thread = await Thread.findById(id);
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
 
+    const existing = await Report.findOne({
+      threadId: id,
+      userId: req.user._id,
+      replyId: null,
+    });
+    if (existing) {
+      return res.status(400).json({ message: "You don flag this gist already." });
+    }
+
     const report = new Report({
       threadId: id,
       userId: req.user._id, // Reporter
@@ -463,6 +619,39 @@ export const reportThread = async (req, res) => {
     res.status(201).json({ message: "Report sent—mods go check am!" });
   } catch (err) {
     res.status(500).json({ message: "Report scatter: " + err.message });
+  }
+};
+
+export const reportReply = async (req, res) => {
+  const { replyId } = req.params;
+  const { reason } = req.body;
+  try {
+    if (!reason) return res.status(400).json({ message: "Abeg, tell us why!" });
+
+    const reply = await Reply.findById(replyId).select("threadId userId");
+    if (!reply) return res.status(404).json({ message: "Reply no dey!" });
+
+    const existing = await Report.findOne({
+      threadId: reply.threadId,
+      replyId,
+      userId: req.user._id,
+    });
+    if (existing) {
+      return res.status(400).json({ message: "You don flag this reply already." });
+    }
+
+    const report = new Report({
+      threadId: reply.threadId,
+      replyId,
+      userId: req.user._id,
+      reportedUserId: reply.userId,
+      reason,
+    });
+    await report.save();
+
+    res.status(201).json({ message: "Reply report sent—mods go check am!" });
+  } catch (err) {
+    res.status(500).json({ message: "Reply report scatter: " + err.message });
   }
 };
 
@@ -500,6 +689,7 @@ export const getReports = async (req, res) => {
     const [reports, total] = await Promise.all([
       Report.find(query)
         .populate("threadId", "title")
+        .populate("replyId", "body threadId")
         .populate("userId", "email flair") // Reporter
         .populate("reportedUserId", "email flair") // Reported user
         .sort({ createdAt: -1 })
@@ -521,7 +711,16 @@ export const getReports = async (req, res) => {
         message: "No reports yet—clean slate!",
       });
     res.json({
-      reports,
+      reports: reports.map((report) => ({
+        ...report.toObject(),
+        replyId: report.replyId
+          ? {
+              _id: report.replyId._id,
+              threadId: report.replyId.threadId || null,
+              body: report.replyId.body || "",
+            }
+          : null,
+      })),
       pagination: {
         page,
         pageSize,
@@ -570,16 +769,36 @@ export const hasUserReportedThread = async (req, res) => {
   }
 };
 
+export const hasUserReportedReply = async (req, res) => {
+  const { replyId } = req.params;
+  try {
+    const report = await Report.findOne({
+      replyId,
+      userId: req.user._id,
+    });
+    res.json({
+      hasReported: !!report,
+      message: report
+        ? "You don flag this reply!"
+        : "You never report this reply.",
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Check scatter: " + err.message });
+  }
+};
+
 export const deleteThread = async (req, res) => {
   const { id } = req.params;
   try {
-    // Sync admin check with getReports
-    // if (req.user.email !== "harzkane@gmail.com") {
-    if (!isAdmin(req.user)) {
-      return res.status(403).json({ message: "Abeg, admins only!" });
-    }
-    const thread = await Thread.findByIdAndDelete(id);
+    const thread = await Thread.findById(id);
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
+
+    const isOwner = thread.userId?.toString() === req.user?._id?.toString();
+    if (!isOwner && !isStaff(req.user)) {
+      return res.status(403).json({ message: "No be your thread to delete." });
+    }
+
+    await Thread.deleteOne({ _id: id });
     await Reply.deleteMany({ threadId: id });
     await Report.deleteMany({ threadId: id });
     res.json({ message: "Thread don go—cleaned up!" });
@@ -611,6 +830,34 @@ export const toggleThreadLike = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ message: "Like scatter: " + err.message });
+  }
+};
+
+export const toggleReplyLike = async (req, res) => {
+  const { replyId } = req.params;
+  try {
+    const reply = await Reply.findById(replyId);
+    if (!reply) return res.status(404).json({ message: "Reply no dey!" });
+
+    const userId = req.user._id.toString();
+    const alreadyLiked = (reply.likes || []).some(
+      (likeId) => likeId.toString() === userId,
+    );
+
+    if (alreadyLiked) {
+      reply.likes = reply.likes.filter((likeId) => likeId.toString() !== userId);
+    } else {
+      reply.likes.push(req.user._id);
+    }
+
+    await reply.save();
+    res.json({
+      message: alreadyLiked ? "Like removed." : "Reply liked.",
+      liked: !alreadyLiked,
+      likesCount: reply.likes.length,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Reply like scatter: " + err.message });
   }
 };
 

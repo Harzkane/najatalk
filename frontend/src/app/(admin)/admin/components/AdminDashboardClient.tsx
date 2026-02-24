@@ -72,18 +72,29 @@ type OpsQuickCheckRow = {
   detail: string;
 };
 
+const ADMIN_AUTH_CACHE_KEY = "admin_auth_state";
+
+const readAdminAuthCache = (): boolean | null => {
+  if (typeof window === "undefined") return null;
+  const value = window.sessionStorage.getItem(ADMIN_AUTH_CACHE_KEY);
+  if (value === "admin") return true;
+  if (value === "non_admin") return false;
+  return null;
+};
+
 export default function AdminDashboardClient({
   focusSection = "all",
 }: AdminDashboardClientProps) {
   const [reports, setReports] = useState<Report[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BannedUser[]>([]);
-  const [bannedUsersSummary, setBannedUsersSummary] = useState<BannedUsersSummary>({
-    total: 0,
-    pendingAppeals: 0,
-    approvedAppeals: 0,
-    rejectedAppeals: 0,
-    suspended: 0,
-  });
+  const [bannedUsersSummary, setBannedUsersSummary] =
+    useState<BannedUsersSummary>({
+      total: 0,
+      pendingAppeals: 0,
+      approvedAppeals: 0,
+      rejectedAppeals: 0,
+      suspended: 0,
+    });
   const [bannedQuery, setBannedQuery] = useState("");
   const [bannedAppealStatusFilter, setBannedAppealStatusFilter] = useState<
     "all" | "pending" | "approved" | "rejected" | "none"
@@ -114,9 +125,9 @@ export default function AdminDashboardClient({
   const [adsStatusFilter, setAdsStatusFilter] = useState<
     "all" | "pending" | "active" | "paused" | "expired"
   >("pending");
-  const [adsTypeFilter, setAdsTypeFilter] = useState<"all" | "sidebar" | "banner" | "popup">(
-    "all",
-  );
+  const [adsTypeFilter, setAdsTypeFilter] = useState<
+    "all" | "sidebar" | "banner" | "popup"
+  >("all");
   const [adsDateFrom, setAdsDateFrom] = useState("");
   const [adsDateTo, setAdsDateTo] = useState("");
   const [adsPage, setAdsPage] = useState(1);
@@ -130,30 +141,32 @@ export default function AdminDashboardClient({
     hasPrev: false,
   });
   const [adminContests, setAdminContests] = useState<AdminContest[]>([]);
-  const [adminContestsSummary, setAdminContestsSummary] = useState<AdminContestsSummary>({
-    total: 0,
-    draft: 0,
-    live: 0,
-    closed: 0,
-    archived: 0,
-  });
+  const [adminContestsSummary, setAdminContestsSummary] =
+    useState<AdminContestsSummary>({
+      total: 0,
+      draft: 0,
+      live: 0,
+      closed: 0,
+      archived: 0,
+    });
   const [contestsQuery, setContestsQuery] = useState("");
   const [contestsStatusFilter, setContestsStatusFilter] = useState<
     "all" | "draft" | "live" | "closed" | "archived"
   >("all");
   const [contestsPage, setContestsPage] = useState(1);
   const [contestsPageSize, setContestsPageSize] = useState(25);
-  const [contestsPagination, setContestsPagination] = useState<AdminPagination>({
-    page: 1,
-    pageSize: 25,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-  });
-  const [selectedContestDetails, setSelectedContestDetails] = useState<AdminContestDetails | null>(
-    null,
+  const [contestsPagination, setContestsPagination] = useState<AdminPagination>(
+    {
+      page: 1,
+      pageSize: 25,
+      total: 0,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
   );
+  const [selectedContestDetails, setSelectedContestDetails] =
+    useState<AdminContestDetails | null>(null);
   const [isContestDetailsLoading, setIsContestDetailsLoading] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminManagedUser[]>([]);
   const [adminActions, setAdminActions] = useState<AdminActionLogRow[]>([]);
@@ -171,16 +184,19 @@ export default function AdminDashboardClient({
     hasNext: false,
     hasPrev: false,
   });
-  const [selectedUserDetails, setSelectedUserDetails] = useState<AdminUserDetails | null>(null);
+  const [selectedUserDetails, setSelectedUserDetails] =
+    useState<AdminUserDetails | null>(null);
   const [isUserDetailsLoading, setIsUserDetailsLoading] = useState(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
-  const [adminUsersSummary, setAdminUsersSummary] = useState<AdminUsersSummary>({
-    total: 0,
-    banned: 0,
-    admins: 0,
-    mods: 0,
-    premium: 0,
-  });
+  const [adminUsersSummary, setAdminUsersSummary] = useState<AdminUsersSummary>(
+    {
+      total: 0,
+      banned: 0,
+      admins: 0,
+      mods: 0,
+      premium: 0,
+    },
+  );
   const [usersQuery, setUsersQuery] = useState("");
   const [usersRoleFilter, setUsersRoleFilter] = useState<
     "all" | "user" | "mod" | "admin" | "super_admin"
@@ -197,19 +213,19 @@ export default function AdminDashboardClient({
     hasPrev: false,
   });
   const [adminThreads, setAdminThreads] = useState<AdminManagedThread[]>([]);
-  const [selectedThreadDetails, setSelectedThreadDetails] = useState<AdminThreadDetails | null>(
-    null,
-  );
+  const [selectedThreadDetails, setSelectedThreadDetails] =
+    useState<AdminThreadDetails | null>(null);
   const [isThreadDetailsLoading, setIsThreadDetailsLoading] = useState(false);
   const threadDetailsRef = useRef<HTMLElement | null>(null);
   const [selectedThreadIds, setSelectedThreadIds] = useState<string[]>([]);
-  const [adminThreadsSummary, setAdminThreadsSummary] = useState<AdminThreadsSummary>({
-    total: 0,
-    locked: 0,
-    sticky: 0,
-    solved: 0,
-    reported: 0,
-  });
+  const [adminThreadsSummary, setAdminThreadsSummary] =
+    useState<AdminThreadsSummary>({
+      total: 0,
+      locked: 0,
+      sticky: 0,
+      solved: 0,
+      reported: 0,
+    });
   const [threadsQuery, setThreadsQuery] = useState("");
   const [threadsStatusFilter, setThreadsStatusFilter] = useState<
     "all" | "locked" | "sticky" | "solved"
@@ -265,9 +281,9 @@ export default function AdminDashboardClient({
   const [rollupDateTo, setRollupDateTo] = useState("");
   const [rollupTimezone, setRollupTimezone] = useState("Africa/Lagos");
   const [rollupBuckets, setRollupBuckets] = useState<RollupBucket[]>([]);
-  const [selectedRollupBucket, setSelectedRollupBucket] = useState<string | null>(
-    null,
-  );
+  const [selectedRollupBucket, setSelectedRollupBucket] = useState<
+    string | null
+  >(null);
   const [selectedRollupBucketDetails, setSelectedRollupBucketDetails] =
     useState<RollupBucketDetails | null>(null);
   const [isRollupBucketDetailsLoading, setIsRollupBucketDetailsLoading] =
@@ -293,25 +309,30 @@ export default function AdminDashboardClient({
   const [mismatchDateTo, setMismatchDateTo] = useState("");
   const [mismatchPage, setMismatchPage] = useState(1);
   const [mismatchPageSize, setMismatchPageSize] = useState(25);
-  const [mismatchPagination, setMismatchPagination] = useState<AdminPagination>({
-    page: 1,
-    pageSize: 25,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-  });
+  const [mismatchPagination, setMismatchPagination] = useState<AdminPagination>(
+    {
+      page: 1,
+      pageSize: 25,
+      total: 0,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  );
   const [selectedMismatchDetails, setSelectedMismatchDetails] =
     useState<WalletMismatchDetails | null>(null);
-  const [isMismatchDetailsLoading, setIsMismatchDetailsLoading] = useState(false);
-  const [userRiskSummary, setUserRiskSummary] = useState<UserRiskSignalSummary>({
-    totalFlagged: 0,
-    high: 0,
-    medium: 0,
-    low: 0,
-    windowDays: 14,
-    since: new Date(0).toISOString(),
-  });
+  const [isMismatchDetailsLoading, setIsMismatchDetailsLoading] =
+    useState(false);
+  const [userRiskSummary, setUserRiskSummary] = useState<UserRiskSignalSummary>(
+    {
+      totalFlagged: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+      windowDays: 14,
+      since: new Date(0).toISOString(),
+    },
+  );
   const [userRiskRows, setUserRiskRows] = useState<UserRiskSignalRow[]>([]);
   const [userRiskSeverityFilter, setUserRiskSeverityFilter] = useState<
     "all" | "low" | "medium" | "high"
@@ -320,21 +341,26 @@ export default function AdminDashboardClient({
   const [userRiskQuery, setUserRiskQuery] = useState("");
   const [userRiskPage, setUserRiskPage] = useState(1);
   const [userRiskPageSize, setUserRiskPageSize] = useState(25);
-  const [userRiskPagination, setUserRiskPagination] = useState<AdminPagination>({
-    page: 1,
-    pageSize: 25,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-  });
-  const [contestRiskSummary, setContestRiskSummary] = useState<ContestRiskSignalSummary>({
-    totalFlagged: 0,
-    high: 0,
-    medium: 0,
-    low: 0,
-  });
-  const [contestRiskRows, setContestRiskRows] = useState<ContestRiskSignalRow[]>([]);
+  const [userRiskPagination, setUserRiskPagination] = useState<AdminPagination>(
+    {
+      page: 1,
+      pageSize: 25,
+      total: 0,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  );
+  const [contestRiskSummary, setContestRiskSummary] =
+    useState<ContestRiskSignalSummary>({
+      totalFlagged: 0,
+      high: 0,
+      medium: 0,
+      low: 0,
+    });
+  const [contestRiskRows, setContestRiskRows] = useState<
+    ContestRiskSignalRow[]
+  >([]);
   const [contestRiskSeverityFilter, setContestRiskSeverityFilter] = useState<
     "all" | "low" | "medium" | "high"
   >("all");
@@ -344,53 +370,62 @@ export default function AdminDashboardClient({
   const [contestRiskQuery, setContestRiskQuery] = useState("");
   const [contestRiskPage, setContestRiskPage] = useState(1);
   const [contestRiskPageSize, setContestRiskPageSize] = useState(25);
-  const [contestRiskPagination, setContestRiskPagination] = useState<AdminPagination>({
-    page: 1,
-    pageSize: 25,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-  });
-  const [platformWalletOverview, setPlatformWalletOverview] = useState<PlatformWalletOverview>({
-    wallet: { balance: 0, lastUpdated: null },
-    summary: {
+  const [contestRiskPagination, setContestRiskPagination] =
+    useState<AdminPagination>({
+      page: 1,
+      pageSize: 25,
+      total: 0,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
+  const [platformWalletOverview, setPlatformWalletOverview] =
+    useState<PlatformWalletOverview>({
+      wallet: { balance: 0, lastUpdated: null },
+      summary: {
+        totalCredits: 0,
+        totalCreditsCount: 0,
+        totalDebits: 0,
+        totalDebitsCount: 0,
+        netFlow: 0,
+      },
+      dateRange: { dateFrom: null, dateTo: null },
+    });
+  const [platformWalletSummary, setPlatformWalletSummary] =
+    useState<PlatformWalletSummary>({
       totalCredits: 0,
-      totalCreditsCount: 0,
       totalDebits: 0,
-      totalDebitsCount: 0,
-      netFlow: 0,
-    },
-    dateRange: { dateFrom: null, dateTo: null },
-  });
-  const [platformWalletSummary, setPlatformWalletSummary] = useState<PlatformWalletSummary>({
-    totalCredits: 0,
-    totalDebits: 0,
-  });
-  const [platformWalletEntries, setPlatformWalletEntries] = useState<PlatformWalletEntry[]>([]);
+    });
+  const [platformWalletEntries, setPlatformWalletEntries] = useState<
+    PlatformWalletEntry[]
+  >([]);
   const [platformWalletQuery, setPlatformWalletQuery] = useState("");
   const [platformWalletStatusFilter, setPlatformWalletStatusFilter] = useState<
     "all" | "pending" | "completed" | "failed"
   >("all");
-  const [platformWalletEntryKindFilter, setPlatformWalletEntryKindFilter] = useState<
-    "all" | "platform_fee" | "contest_prize_paid"
-  >("all");
+  const [platformWalletEntryKindFilter, setPlatformWalletEntryKindFilter] =
+    useState<"all" | "platform_fee" | "contest_prize_paid">("all");
   const [platformWalletDateFrom, setPlatformWalletDateFrom] = useState("");
   const [platformWalletDateTo, setPlatformWalletDateTo] = useState("");
   const [platformWalletPage, setPlatformWalletPage] = useState(1);
   const [platformWalletPageSize, setPlatformWalletPageSize] = useState(25);
-  const [platformWalletPagination, setPlatformWalletPagination] = useState<AdminPagination>({
-    page: 1,
-    pageSize: 25,
-    total: 0,
-    totalPages: 1,
-    hasNext: false,
-    hasPrev: false,
-  });
-  const [selectedPlatformWalletEntryDetails, setSelectedPlatformWalletEntryDetails] =
-    useState<PlatformWalletEntryDetails | null>(null);
-  const [isPlatformWalletEntryDetailsLoading, setIsPlatformWalletEntryDetailsLoading] =
-    useState(false);
+  const [platformWalletPagination, setPlatformWalletPagination] =
+    useState<AdminPagination>({
+      page: 1,
+      pageSize: 25,
+      total: 0,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    });
+  const [
+    selectedPlatformWalletEntryDetails,
+    setSelectedPlatformWalletEntryDetails,
+  ] = useState<PlatformWalletEntryDetails | null>(null);
+  const [
+    isPlatformWalletEntryDetailsLoading,
+    setIsPlatformWalletEntryDetailsLoading,
+  ] = useState(false);
   const [premiumAuditRows, setPremiumAuditRows] = useState<PremiumAuditRow[]>(
     [],
   );
@@ -440,7 +475,9 @@ export default function AdminDashboardClient({
     hasPrev: false,
   });
   const [message, setMessage] = useState<string>("");
-  const [opsQuickCheckRows, setOpsQuickCheckRows] = useState<OpsQuickCheckRow[]>([]);
+  const [opsQuickCheckRows, setOpsQuickCheckRows] = useState<
+    OpsQuickCheckRow[]
+  >([]);
   const [opsQuickCheckLastRunAt, setOpsQuickCheckLastRunAt] = useState("");
   const [isOpsQuickCheckRunning, setIsOpsQuickCheckRunning] = useState(false);
   const [slaApiHealthStatus, setSlaApiHealthStatus] = useState("unknown");
@@ -448,9 +485,19 @@ export default function AdminDashboardClient({
   const [slaDatabaseStatus, setSlaDatabaseStatus] = useState("unknown");
   const [slaUptimeHours, setSlaUptimeHours] = useState(0);
   const [slaLastHealthCheckAt, setSlaLastHealthCheckAt] = useState("");
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
-  const [isAccessChecking, setIsAccessChecking] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return Boolean(window.localStorage.getItem("token"));
+  });
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(
+    () => readAdminAuthCache() === true,
+  );
+  const [isAccessChecking, setIsAccessChecking] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const token = window.localStorage.getItem("token");
+    if (!token) return false;
+    return readAdminAuthCache() === null;
+  });
   const router = useRouter();
   const oldestPendingPayoutHours = useMemo(() => {
     const pendingTimes = payouts
@@ -463,7 +510,9 @@ export default function AdminDashboardClient({
   }, [payouts]);
   const oldestPremiumInFlightHours = useMemo(() => {
     const inFlightTimes = premiumAuditRows
-      .filter((row) => row.status === "initiated" || row.status === "processing")
+      .filter(
+        (row) => row.status === "initiated" || row.status === "processing",
+      )
       .map((row) => new Date(row.createdAt).getTime())
       .filter((ts) => Number.isFinite(ts));
     if (!inFlightTimes.length) return 0;
@@ -478,7 +527,8 @@ export default function AdminDashboardClient({
     if (!premiumAuditSummary.total) return 0;
     return (premiumAuditSummary.failedCount / premiumAuditSummary.total) * 100;
   }, [premiumAuditSummary.failedCount, premiumAuditSummary.total]);
-  const premiumInFlightCount = premiumAuditSummary.initiatedCount + premiumAuditSummary.processingCount;
+  const premiumInFlightCount =
+    premiumAuditSummary.initiatedCount + premiumAuditSummary.processingCount;
   const getErrorMessage = (err: unknown, fallback: string) => {
     if (isAxiosError<{ message?: string }>(err)) {
       return err.response?.data?.message || fallback;
@@ -487,31 +537,38 @@ export default function AdminDashboardClient({
   };
 
   const fetchSlaSnapshot = useCallback(async () => {
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     const serviceBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
     try {
       const fetchReadiness = async () => {
         try {
-          return await api.get<{ status?: string; checks?: { database?: { status?: string } } }>(
-            `${serviceBaseUrl}/ready`,
-          );
+          return await api.get<{
+            status?: string;
+            checks?: { database?: { status?: string } };
+          }>(`${serviceBaseUrl}/ready`);
         } catch (err) {
           if (isAxiosError(err) && err.response?.status === 404) {
-            return api.get<{ status?: string; checks?: { database?: { status?: string } } }>(
-              `${serviceBaseUrl}/health/readiness`,
-            );
+            return api.get<{
+              status?: string;
+              checks?: { database?: { status?: string } };
+            }>(`${serviceBaseUrl}/health/readiness`);
           }
           throw err;
         }
       };
       const [healthRes, readinessRes] = await Promise.all([
-        api.get<{ status?: string; uptimeSeconds?: number }>(`${serviceBaseUrl}/health`),
+        api.get<{ status?: string; uptimeSeconds?: number }>(
+          `${serviceBaseUrl}/health`,
+        ),
         fetchReadiness(),
       ]);
       const uptimeSeconds = Number(healthRes.data?.uptimeSeconds || 0);
       setSlaApiHealthStatus(String(healthRes.data?.status || "unknown"));
       setSlaReadinessStatus(String(readinessRes.data?.status || "unknown"));
-      setSlaDatabaseStatus(String(readinessRes.data?.checks?.database?.status || "unknown"));
+      setSlaDatabaseStatus(
+        String(readinessRes.data?.checks?.database?.status || "unknown"),
+      );
       setSlaUptimeHours(uptimeSeconds > 0 ? uptimeSeconds / 3600 : 0);
       setSlaLastHealthCheckAt(new Date().toISOString());
     } catch (err) {
@@ -529,7 +586,8 @@ export default function AdminDashboardClient({
       setMessage("Please login again before running quick checks.");
       return;
     }
-    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+    const apiBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
     const serviceBaseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
     const authHeaders = { Authorization: `Bearer ${token}` };
     const rows: OpsQuickCheckRow[] = [];
@@ -551,20 +609,39 @@ export default function AdminDashboardClient({
       const startedAt = performance.now();
       try {
         await fn();
-        pushResult(id, label, "pass", Math.round(performance.now() - startedAt), "ok");
+        pushResult(
+          id,
+          label,
+          "pass",
+          Math.round(performance.now() - startedAt),
+          "ok",
+        );
       } catch (err: unknown) {
         const detail = isAxiosError<{ message?: string }>(err)
-          ? err.response?.data?.message || `http_${err.response?.status || "error"}`
+          ? err.response?.data?.message ||
+            `http_${err.response?.status || "error"}`
           : "unexpected_error";
-        pushResult(id, label, "fail", Math.round(performance.now() - startedAt), detail);
+        pushResult(
+          id,
+          label,
+          "fail",
+          Math.round(performance.now() - startedAt),
+          detail,
+        );
       }
     };
 
     setIsOpsQuickCheckRunning(true);
     try {
       await runCheck("backend.health", "Backend Health", async () => {
-        const res = await api.get<{ status?: string }>(`${serviceBaseUrl}/health`);
-        if (!String(res.data?.status || "").toLowerCase().includes("ok")) {
+        const res = await api.get<{ status?: string }>(
+          `${serviceBaseUrl}/health`,
+        );
+        if (
+          !String(res.data?.status || "")
+            .toLowerCase()
+            .includes("ok")
+        ) {
           throw new Error("health_not_ok");
         }
       });
@@ -574,12 +651,18 @@ export default function AdminDashboardClient({
           res = await api.get<{ status?: string }>(`${serviceBaseUrl}/ready`);
         } catch (err) {
           if (isAxiosError(err) && err.response?.status === 404) {
-            res = await api.get<{ status?: string }>(`${serviceBaseUrl}/health/readiness`);
+            res = await api.get<{ status?: string }>(
+              `${serviceBaseUrl}/health/readiness`,
+            );
           } else {
             throw err;
           }
         }
-        if (!String(res.data?.status || "").toLowerCase().includes("ready")) {
+        if (
+          !String(res.data?.status || "")
+            .toLowerCase()
+            .includes("ready")
+        ) {
           throw new Error("readiness_not_ready");
         }
       });
@@ -618,7 +701,7 @@ export default function AdminDashboardClient({
       }>(
         "/users/admin/sla-alerts/dispatch",
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (Array.isArray(res.data?.sent) && res.data.sent.length > 0) {
         setMessage(res.data.message || "SLA alerts dispatched.");
@@ -703,7 +786,13 @@ export default function AdminDashboardClient({
       });
       setAdminUsers(res.data.users || []);
       setAdminUsersSummary(
-        res.data.summary || { total: 0, banned: 0, admins: 0, mods: 0, premium: 0 },
+        res.data.summary || {
+          total: 0,
+          banned: 0,
+          admins: 0,
+          mods: 0,
+          premium: 0,
+        },
       );
       setUsersPagination(
         res.data.pagination || {
@@ -725,20 +814,20 @@ export default function AdminDashboardClient({
   const fetchAdminActions = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await api.get<{ actions: AdminActionLogRow[]; pagination?: AdminPagination }>(
-        "/users/admin/actions",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            q: actionsQuery || undefined,
-            action: actionsFilter,
-            dateFrom: actionsDateFrom || undefined,
-            dateTo: actionsDateTo || undefined,
-            page: actionsPage,
-            pageSize: actionsPageSize,
-          },
+      const res = await api.get<{
+        actions: AdminActionLogRow[];
+        pagination?: AdminPagination;
+      }>("/users/admin/actions", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          q: actionsQuery || undefined,
+          action: actionsFilter,
+          dateFrom: actionsDateFrom || undefined,
+          dateTo: actionsDateTo || undefined,
+          page: actionsPage,
+          pageSize: actionsPageSize,
         },
-      );
+      });
       setAdminActions(res.data.actions || []);
       setActionsPagination(
         res.data.pagination || {
@@ -825,7 +914,13 @@ export default function AdminDashboardClient({
       });
       setAdminContests(res.data.contests || []);
       setAdminContestsSummary(
-        res.data.summary || { total: 0, draft: 0, live: 0, closed: 0, archived: 0 },
+        res.data.summary || {
+          total: 0,
+          draft: 0,
+          live: 0,
+          closed: 0,
+          archived: 0,
+        },
       );
       setContestsPagination(
         res.data.pagination || {
@@ -845,7 +940,9 @@ export default function AdminDashboardClient({
   }, [contestsQuery, contestsStatusFilter, contestsPage, contestsPageSize]);
 
   useEffect(() => {
-    setSelectedUserIds((prev) => prev.filter((id) => adminUsers.some((user) => user._id === id)));
+    setSelectedUserIds((prev) =>
+      prev.filter((id) => adminUsers.some((user) => user._id === id)),
+    );
   }, [adminUsers]);
 
   useEffect(() => {
@@ -864,7 +961,13 @@ export default function AdminDashboardClient({
 
   useEffect(() => {
     setActionsPage(1);
-  }, [actionsQuery, actionsFilter, actionsDateFrom, actionsDateTo, actionsPageSize]);
+  }, [
+    actionsQuery,
+    actionsFilter,
+    actionsDateFrom,
+    actionsDateTo,
+    actionsPageSize,
+  ]);
 
   useEffect(() => {
     setReportsPage(1);
@@ -883,7 +986,14 @@ export default function AdminDashboardClient({
 
   useEffect(() => {
     setAdsPage(1);
-  }, [adsQuery, adsStatusFilter, adsTypeFilter, adsDateFrom, adsDateTo, adsPageSize]);
+  }, [
+    adsQuery,
+    adsStatusFilter,
+    adsTypeFilter,
+    adsDateFrom,
+    adsDateTo,
+    adsPageSize,
+  ]);
 
   useEffect(() => {
     setContestsPage(1);
@@ -891,16 +1001,28 @@ export default function AdminDashboardClient({
 
   useEffect(() => {
     if (!selectedThreadDetails) return;
-    threadDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    threadDetailsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [selectedThreadDetails]);
 
   useEffect(() => {
     setPayoutPage(1);
-  }, [payoutQuery, payoutStatusFilter, payoutDateFrom, payoutDateTo, payoutPageSize]);
+  }, [
+    payoutQuery,
+    payoutStatusFilter,
+    payoutDateFrom,
+    payoutDateTo,
+    payoutPageSize,
+  ]);
 
   useEffect(() => {
     if (!selectedPayoutDetails) return;
-    payoutDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    payoutDetailsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [selectedPayoutDetails]);
 
   useEffect(() => {
@@ -928,11 +1050,21 @@ export default function AdminDashboardClient({
 
   useEffect(() => {
     setUserRiskPage(1);
-  }, [userRiskQuery, userRiskSeverityFilter, userRiskWindowDays, userRiskPageSize]);
+  }, [
+    userRiskQuery,
+    userRiskSeverityFilter,
+    userRiskWindowDays,
+    userRiskPageSize,
+  ]);
 
   useEffect(() => {
     setContestRiskPage(1);
-  }, [contestRiskQuery, contestRiskSeverityFilter, contestRiskStatusFilter, contestRiskPageSize]);
+  }, [
+    contestRiskQuery,
+    contestRiskSeverityFilter,
+    contestRiskStatusFilter,
+    contestRiskPageSize,
+  ]);
 
   useEffect(() => {
     setPlatformWalletPage(1);
@@ -953,11 +1085,20 @@ export default function AdminDashboardClient({
     setSelectedRollupBucket(null);
     setSelectedRollupBucketDetails(null);
     setRollupBucketPage(1);
-  }, [rollupPeriod, rollupStatusFilter, rollupDateFrom, rollupDateTo, rollupTimezone]);
+  }, [
+    rollupPeriod,
+    rollupStatusFilter,
+    rollupDateFrom,
+    rollupDateTo,
+    rollupTimezone,
+  ]);
 
   useEffect(() => {
     if (!selectedPremiumDetails) return;
-    premiumDetailsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    premiumDetailsRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
   }, [selectedPremiumDetails]);
 
   const fetchPendingPayouts = useCallback(async () => {
@@ -1006,7 +1147,14 @@ export default function AdminDashboardClient({
       console.error("Fetch payouts error:", err);
       setMessage("Payout queue fetch scatter o!");
     }
-  }, [payoutQuery, payoutStatusFilter, payoutDateFrom, payoutDateTo, payoutPage, payoutPageSize]);
+  }, [
+    payoutQuery,
+    payoutStatusFilter,
+    payoutDateFrom,
+    payoutDateTo,
+    payoutPage,
+    payoutPageSize,
+  ]);
 
   const fetchPayoutRollups = useCallback(async () => {
     try {
@@ -1016,25 +1164,28 @@ export default function AdminDashboardClient({
         period: "daily" | "monthly";
         timezone: string;
         message: string;
-      }>(
-        "/users/admin/payouts/rollups",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            period: rollupPeriod,
-            status: rollupStatusFilter,
-            timezone: rollupTimezone || undefined,
-            dateFrom: rollupDateFrom || undefined,
-            dateTo: rollupDateTo || undefined,
-          },
+      }>("/users/admin/payouts/rollups", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          period: rollupPeriod,
+          status: rollupStatusFilter,
+          timezone: rollupTimezone || undefined,
+          dateFrom: rollupDateFrom || undefined,
+          dateTo: rollupDateTo || undefined,
         },
-      );
+      });
       setRollupBuckets(res.data.buckets || []);
     } catch (err) {
       console.error("Fetch payout rollups error:", err);
       setMessage("Payout rollups fetch scatter o!");
     }
-  }, [rollupPeriod, rollupStatusFilter, rollupTimezone, rollupDateFrom, rollupDateTo]);
+  }, [
+    rollupPeriod,
+    rollupStatusFilter,
+    rollupTimezone,
+    rollupDateFrom,
+    rollupDateTo,
+  ]);
 
   const fetchWalletMismatches = useCallback(async () => {
     try {
@@ -1075,7 +1226,10 @@ export default function AdminDashboardClient({
         res.data.pagination || {
           page: mismatchPage,
           pageSize: mismatchPageSize,
-          total: res.data.summary?.mismatchedUsers || res.data.mismatches?.length || 0,
+          total:
+            res.data.summary?.mismatchedUsers ||
+            res.data.mismatches?.length ||
+            0,
           totalPages: 1,
           hasNext: false,
           hasPrev: mismatchPage > 1,
@@ -1212,13 +1366,16 @@ export default function AdminDashboardClient({
   const fetchPlatformWalletOverview = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await api.get<PlatformWalletOverview>("/users/admin/platform-wallet/overview", {
-        headers: { Authorization: `Bearer ${token}` },
-        params: {
-          dateFrom: platformWalletDateFrom || undefined,
-          dateTo: platformWalletDateTo || undefined,
+      const res = await api.get<PlatformWalletOverview>(
+        "/users/admin/platform-wallet/overview",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          params: {
+            dateFrom: platformWalletDateFrom || undefined,
+            dateTo: platformWalletDateTo || undefined,
+          },
         },
-      });
+      );
       setPlatformWalletOverview(
         res.data || {
           wallet: { balance: 0, lastUpdated: null },
@@ -1303,14 +1460,20 @@ export default function AdminDashboardClient({
       setSelectedPlatformWalletEntryDetails(res.data);
       setMessage("Platform wallet entry details loaded.");
     } catch (err: unknown) {
-      setMessage(getErrorMessage(err, "Platform wallet entry details fetch scatter o!"));
+      setMessage(
+        getErrorMessage(err, "Platform wallet entry details fetch scatter o!"),
+      );
     } finally {
       setIsPlatformWalletEntryDetailsLoading(false);
     }
   };
 
   const handleViewRollupBucketDetails = useCallback(
-    async (bucket: string, page = rollupBucketPage, pageSize = rollupBucketPageSize) => {
+    async (
+      bucket: string,
+      page = rollupBucketPage,
+      pageSize = rollupBucketPageSize,
+    ) => {
       try {
         setIsRollupBucketDetailsLoading(true);
         const token = localStorage.getItem("token");
@@ -1335,7 +1498,9 @@ export default function AdminDashboardClient({
         setRollupBucketPageSize(res.data.pagination?.pageSize || pageSize);
         setMessage(`Rollup bucket ${bucket} loaded.`);
       } catch (err: unknown) {
-        setMessage(getErrorMessage(err, "Rollup bucket details fetch scatter o!"));
+        setMessage(
+          getErrorMessage(err, "Rollup bucket details fetch scatter o!"),
+        );
       } finally {
         setIsRollupBucketDetailsLoading(false);
       }
@@ -1353,8 +1518,17 @@ export default function AdminDashboardClient({
 
   useEffect(() => {
     if (!selectedRollupBucket) return;
-    handleViewRollupBucketDetails(selectedRollupBucket, rollupBucketPage, rollupBucketPageSize);
-  }, [selectedRollupBucket, rollupBucketPage, rollupBucketPageSize, handleViewRollupBucketDetails]);
+    handleViewRollupBucketDetails(
+      selectedRollupBucket,
+      rollupBucketPage,
+      rollupBucketPageSize,
+    );
+  }, [
+    selectedRollupBucket,
+    rollupBucketPage,
+    rollupBucketPageSize,
+    handleViewRollupBucketDetails,
+  ]);
 
   const handleViewMismatchDetails = useCallback(
     async (userId: string) => {
@@ -1374,7 +1548,9 @@ export default function AdminDashboardClient({
         setSelectedMismatchDetails(res.data);
         setMessage("Wallet mismatch details loaded.");
       } catch (err: unknown) {
-        setMessage(getErrorMessage(err, "Wallet mismatch details fetch scatter o!"));
+        setMessage(
+          getErrorMessage(err, "Wallet mismatch details fetch scatter o!"),
+        );
       } finally {
         setIsMismatchDetailsLoading(false);
       }
@@ -1442,13 +1618,18 @@ export default function AdminDashboardClient({
     try {
       setIsPremiumDetailsLoading(true);
       const token = localStorage.getItem("token");
-      const res = await api.get<PremiumAuditDetails>(`/premium/admin/payments/${paymentId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get<PremiumAuditDetails>(
+        `/premium/admin/payments/${paymentId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setSelectedPremiumDetails(res.data);
       setMessage("Premium payment details loaded.");
     } catch (err: unknown) {
-      setMessage(getErrorMessage(err, "Premium payment details fetch scatter o!"));
+      setMessage(
+        getErrorMessage(err, "Premium payment details fetch scatter o!"),
+      );
     } finally {
       setIsPremiumDetailsLoading(false);
     }
@@ -1477,9 +1658,12 @@ export default function AdminDashboardClient({
     try {
       setIsPayoutDetailsLoading(true);
       const token = localStorage.getItem("token");
-      const res = await api.get<AdminPayoutDetails>(`/users/admin/payouts/${payoutId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get<AdminPayoutDetails>(
+        `/users/admin/payouts/${payoutId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setSelectedPayoutDetails(res.data);
       setMessage("Payout details loaded.");
     } catch (err: unknown) {
@@ -1526,18 +1710,15 @@ export default function AdminDashboardClient({
         reports: Report[];
         pagination?: AdminPagination;
         message: string;
-      }>(
-        "/threads/reports",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-          params: {
-            page: reportsPage,
-            pageSize: reportsPageSize,
-            dateFrom: reportsDateFrom || undefined,
-            dateTo: reportsDateTo || undefined,
-          },
+      }>("/threads/reports", {
+        headers: { Authorization: `Bearer ${token}` },
+        params: {
+          page: reportsPage,
+          pageSize: reportsPageSize,
+          dateFrom: reportsDateFrom || undefined,
+          dateTo: reportsDateTo || undefined,
         },
-      );
+      });
       setReports(res.data.reports || []);
       setReportsPagination(
         res.data.pagination || {
@@ -1630,8 +1811,14 @@ export default function AdminDashboardClient({
       const token = localStorage.getItem("token");
       setIsLoggedIn(!!token);
       if (!token) {
+        window.sessionStorage.removeItem(ADMIN_AUTH_CACHE_KEY);
         setIsAccessChecking(false);
         return;
+      }
+      const cachedAuthState = readAdminAuthCache();
+      if (cachedAuthState === true) {
+        setIsAdminAuthorized(true);
+        setIsAccessChecking(false);
       }
       try {
         const me = await api.get<{ role?: string }>("/users/me", {
@@ -1640,30 +1827,45 @@ export default function AdminDashboardClient({
         const role = String(me.data?.role || "");
         const isAllowed = role === "admin" || role === "super_admin";
         setIsAdminAuthorized(isAllowed);
+        window.sessionStorage.setItem(
+          ADMIN_AUTH_CACHE_KEY,
+          isAllowed ? "admin" : "non_admin",
+        );
         if (!isAllowed) {
           setMessage("You no get admin access.");
           router.push("/threads");
           return;
         }
-        fetchReports();
-        fetchBannedUsers();
-        fetchPendingAds();
-        fetchAdminUsers();
-        fetchAdminActions();
-        fetchAdminThreads();
-        fetchAdminContests();
-        fetchPendingPayouts();
-        fetchPayoutRollups();
-        fetchWalletMismatches();
-        fetchUserRiskSignals();
-        fetchContestRiskSignals();
-        fetchPlatformWalletOverview();
-        fetchPlatformWalletEntries();
-        fetchPremiumPaymentsAudit();
-        fetchSlaSnapshot();
-        triggerExternalSlaAlerts();
+        const isOverviewScope = focusSection === "all" || focusSection === "overview";
+        const shouldLoad = (section: AdminSectionId) =>
+          isOverviewScope || focusSection === section;
+
+        if (shouldLoad("reports")) fetchReports();
+        if (shouldLoad("banned")) fetchBannedUsers();
+        if (shouldLoad("ads")) fetchPendingAds();
+        if (shouldLoad("users")) fetchAdminUsers();
+        if (shouldLoad("actions")) fetchAdminActions();
+        if (shouldLoad("threads")) fetchAdminThreads();
+        if (shouldLoad("contests")) fetchAdminContests();
+        if (shouldLoad("payouts")) fetchPendingPayouts();
+        if (shouldLoad("rollups")) fetchPayoutRollups();
+        if (shouldLoad("mismatches")) fetchWalletMismatches();
+        if (shouldLoad("riskSignals")) {
+          fetchUserRiskSignals();
+          fetchContestRiskSignals();
+        }
+        if (shouldLoad("platformWallet")) {
+          fetchPlatformWalletOverview();
+          fetchPlatformWalletEntries();
+        }
+        if (shouldLoad("premium")) fetchPremiumPaymentsAudit();
+        if (isOverviewScope) {
+          fetchSlaSnapshot();
+          triggerExternalSlaAlerts();
+        }
       } catch {
         localStorage.removeItem("token");
+        window.sessionStorage.removeItem(ADMIN_AUTH_CACHE_KEY);
         setIsLoggedIn(false);
         router.push("/login");
       } finally {
@@ -1690,6 +1892,7 @@ export default function AdminDashboardClient({
     fetchPremiumPaymentsAudit,
     fetchSlaSnapshot,
     triggerExternalSlaAlerts,
+    focusSection,
   ]);
 
   const exportPayoutsCsv = () => {
@@ -1907,7 +2110,8 @@ export default function AdminDashboardClient({
       )
     )
       return;
-    const reason = window.prompt("Reason for this decision (optional):", "") || "";
+    const reason =
+      window.prompt("Reason for this decision (optional):", "") || "";
     try {
       const token = localStorage.getItem("token");
       const res = await api.put<{ message: string }>(
@@ -1926,7 +2130,9 @@ export default function AdminDashboardClient({
     userId: string,
     role: "user" | "mod" | "admin" | "super_admin",
   ) => {
-    const reason = window.prompt("Optional reason for role update (for audit log):", "") || "";
+    const reason =
+      window.prompt("Optional reason for role update (for audit log):", "") ||
+      "";
     try {
       const token = localStorage.getItem("token");
       const res = await api.put<{ message: string }>(
@@ -1945,9 +2151,12 @@ export default function AdminDashboardClient({
     try {
       setIsUserDetailsLoading(true);
       const token = localStorage.getItem("token");
-      const res = await api.get<AdminUserDetails>(`/users/admin/users/${userId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get<AdminUserDetails>(
+        `/users/admin/users/${userId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setSelectedUserDetails(res.data);
       setMessage("User details loaded.");
     } catch (err: unknown) {
@@ -1958,14 +2167,18 @@ export default function AdminDashboardClient({
   };
 
   const handleSuspendUser = async (userId: string, email: string) => {
-    const hoursRaw = window.prompt(`Suspend ${email} for how many hours? (1-2160)`, "24");
+    const hoursRaw = window.prompt(
+      `Suspend ${email} for how many hours? (1-2160)`,
+      "24",
+    );
     if (!hoursRaw) return;
     const durationHours = Number.parseInt(hoursRaw, 10);
     if (!Number.isFinite(durationHours) || durationHours < 1) {
       setMessage("Invalid suspension duration.");
       return;
     }
-    const reason = window.prompt("Reason for suspension (recommended):", "") || "";
+    const reason =
+      window.prompt("Reason for suspension (recommended):", "") || "";
     try {
       const token = localStorage.getItem("token");
       const res = await api.put<{ message: string }>(
@@ -2015,9 +2228,12 @@ export default function AdminDashboardClient({
     try {
       setIsThreadDetailsLoading(true);
       const token = localStorage.getItem("token");
-      const res = await api.get<AdminThreadDetails>(`/threads/admin/${threadId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get<AdminThreadDetails>(
+        `/threads/admin/${threadId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setSelectedThreadDetails(res.data);
       setMessage("Thread details loaded.");
     } catch (err: unknown) {
@@ -2065,14 +2281,18 @@ export default function AdminDashboardClient({
 
   const toggleUserSelection = (userId: string) => {
     setSelectedUserIds((prev) =>
-      prev.includes(userId) ? prev.filter((id) => id !== userId) : [...prev, userId],
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
     );
   };
 
   const toggleSelectAllUsers = () => {
     if (adminUsers.length === 0) return;
     setSelectedUserIds((prev) =>
-      prev.length === adminUsers.length ? [] : adminUsers.map((user) => user._id),
+      prev.length === adminUsers.length
+        ? []
+        : adminUsers.map((user) => user._id),
     );
   };
 
@@ -2081,11 +2301,20 @@ export default function AdminDashboardClient({
     fn: (userId: string) => Promise<unknown>,
   ) => {
     if (selectedUserIds.length === 0) return;
-    if (!confirm(`Run ${actionLabel} for ${selectedUserIds.length} selected users?`)) return;
-    const results = await Promise.allSettled(selectedUserIds.map((userId) => fn(userId)));
+    if (
+      !confirm(
+        `Run ${actionLabel} for ${selectedUserIds.length} selected users?`,
+      )
+    )
+      return;
+    const results = await Promise.allSettled(
+      selectedUserIds.map((userId) => fn(userId)),
+    );
     const successCount = results.filter((r) => r.status === "fulfilled").length;
     const failedCount = results.length - successCount;
-    setMessage(`${actionLabel}: ${successCount} success, ${failedCount} failed.`);
+    setMessage(
+      `${actionLabel}: ${successCount} success, ${failedCount} failed.`,
+    );
     fetchAdminUsers();
     fetchBannedUsers();
     fetchReports();
@@ -2115,9 +2344,15 @@ export default function AdminDashboardClient({
     );
   };
 
-  const bulkUpdateUserRole = async (role: "user" | "mod" | "admin" | "super_admin") => {
+  const bulkUpdateUserRole = async (
+    role: "user" | "mod" | "admin" | "super_admin",
+  ) => {
     const token = localStorage.getItem("token");
-    const reason = window.prompt("Optional reason for bulk role update (for audit log):", "") || "";
+    const reason =
+      window.prompt(
+        "Optional reason for bulk role update (for audit log):",
+        "",
+      ) || "";
     await runBulkUserAction(`Bulk set role to ${role}`, async (userId) =>
       api.put(
         `/users/admin/users/${userId}/role`,
@@ -2129,14 +2364,18 @@ export default function AdminDashboardClient({
 
   const toggleThreadSelection = (threadId: string) => {
     setSelectedThreadIds((prev) =>
-      prev.includes(threadId) ? prev.filter((id) => id !== threadId) : [...prev, threadId],
+      prev.includes(threadId)
+        ? prev.filter((id) => id !== threadId)
+        : [...prev, threadId],
     );
   };
 
   const toggleSelectAllThreads = () => {
     if (adminThreads.length === 0) return;
     setSelectedThreadIds((prev) =>
-      prev.length === adminThreads.length ? [] : adminThreads.map((thread) => thread._id),
+      prev.length === adminThreads.length
+        ? []
+        : adminThreads.map((thread) => thread._id),
     );
   };
 
@@ -2145,11 +2384,20 @@ export default function AdminDashboardClient({
     fn: (threadId: string) => Promise<unknown>,
   ) => {
     if (selectedThreadIds.length === 0) return;
-    if (!confirm(`Run ${actionLabel} for ${selectedThreadIds.length} selected threads?`)) return;
-    const results = await Promise.allSettled(selectedThreadIds.map((threadId) => fn(threadId)));
+    if (
+      !confirm(
+        `Run ${actionLabel} for ${selectedThreadIds.length} selected threads?`,
+      )
+    )
+      return;
+    const results = await Promise.allSettled(
+      selectedThreadIds.map((threadId) => fn(threadId)),
+    );
     const successCount = results.filter((r) => r.status === "fulfilled").length;
     const failedCount = results.length - successCount;
-    setMessage(`${actionLabel}: ${successCount} success, ${failedCount} failed.`);
+    setMessage(
+      `${actionLabel}: ${successCount} success, ${failedCount} failed.`,
+    );
     fetchAdminThreads();
     fetchReports();
   };
@@ -2157,14 +2405,20 @@ export default function AdminDashboardClient({
   const bulkDeleteThreads = async () => {
     const token = localStorage.getItem("token");
     await runBulkThreadAction("Bulk delete", async (threadId) =>
-      api.delete(`/threads/${threadId}`, { headers: { Authorization: `Bearer ${token}` } }),
+      api.delete(`/threads/${threadId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      }),
     );
   };
 
   const bulkToggleLockThreads = async () => {
     const token = localStorage.getItem("token");
     await runBulkThreadAction("Bulk lock toggle", async (threadId) =>
-      api.post(`/threads/${threadId}/lock`, {}, { headers: { Authorization: `Bearer ${token}` } }),
+      api.post(
+        `/threads/${threadId}/lock`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } },
+      ),
     );
   };
 
@@ -2182,7 +2436,10 @@ export default function AdminDashboardClient({
   const handleCreateContest = async () => {
     const title = window.prompt("Contest title:", "");
     if (!title?.trim()) return;
-    const prizeRaw = window.prompt("Prize amount in kobo (e.g. 5000000 for ₦50,000):", "5000000");
+    const prizeRaw = window.prompt(
+      "Prize amount in kobo (e.g. 5000000 for ₦50,000):",
+      "5000000",
+    );
     if (!prizeRaw) return;
     const prize = Number(prizeRaw);
     if (!Number.isFinite(prize) || prize <= 0) {
@@ -2195,13 +2452,20 @@ export default function AdminDashboardClient({
     const description = window.prompt("Description:", "") || "";
     const rules = window.prompt("Rules (optional):", "") || "";
     const termsVersion =
-      window.prompt("Terms version label (e.g. 2026-02-21):", "2026-02-21") || "2026-02-21";
-    const termsUrl = window.prompt("Terms URL path:", "/contests/terms") || "/contests/terms";
-    const policyUrl = window.prompt("Policy URL path:", "/contests/policy") || "/contests/policy";
+      window.prompt("Terms version label (e.g. 2026-02-21):", "2026-02-21") ||
+      "2026-02-21";
+    const termsUrl =
+      window.prompt("Terms URL path:", "/contests/terms") || "/contests/terms";
+    const policyUrl =
+      window.prompt("Policy URL path:", "/contests/policy") ||
+      "/contests/policy";
     const requireTermsRaw =
       window.prompt("Require terms acceptance? yes/no", "yes") || "yes";
-    const requireTermsAcceptance = requireTermsRaw.trim().toLowerCase() !== "no";
-    const status = (window.prompt("Status: draft/live/closed/archived", "draft") || "draft").toLowerCase();
+    const requireTermsAcceptance =
+      requireTermsRaw.trim().toLowerCase() !== "no";
+    const status = (
+      window.prompt("Status: draft/live/closed/archived", "draft") || "draft"
+    ).toLowerCase();
     try {
       const token = localStorage.getItem("token");
       const res = await api.post<{ message: string }>(
@@ -2253,9 +2517,12 @@ export default function AdminDashboardClient({
     try {
       setIsContestDetailsLoading(true);
       const token = localStorage.getItem("token");
-      const res = await api.get<AdminContestDetails>(`/contests/admin/${contestId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await api.get<AdminContestDetails>(
+        `/contests/admin/${contestId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setSelectedContestDetails(res.data);
       setMessage("Contest details loaded.");
     } catch (err: unknown) {
@@ -2272,7 +2539,10 @@ export default function AdminDashboardClient({
   ) => {
     const reviewNote = window.prompt("Optional review note:", "") || "";
     const scoreRaw = window.prompt("Optional score (number):", "");
-    const score = scoreRaw && Number.isFinite(Number(scoreRaw)) ? Number(scoreRaw) : undefined;
+    const score =
+      scoreRaw && Number.isFinite(Number(scoreRaw))
+        ? Number(scoreRaw)
+        : undefined;
     try {
       const token = localStorage.getItem("token");
       const res = await api.put<{ message: string }>(
@@ -2288,7 +2558,10 @@ export default function AdminDashboardClient({
     }
   };
 
-  const handleReviewContestPrizeClaim = async (submissionId: string, approve: boolean) => {
+  const handleReviewContestPrizeClaim = async (
+    submissionId: string,
+    approve: boolean,
+  ) => {
     const reviewNote =
       window.prompt(
         approve
@@ -2433,9 +2706,10 @@ export default function AdminDashboardClient({
   );
   const forcedActiveSectionId = isAllSectionsView ? undefined : focusSection;
 
-  if (isAccessChecking) return <p className="text-center p-10">Checking admin access...</p>;
-  if (!isLoggedIn) return <p className="text-center p-10">Abeg login first!</p>;
-  if (!isAdminAuthorized) return <p className="text-center p-10">Admins only.</p>;
+  if (!isLoggedIn && !isAccessChecking)
+    return <p className="text-center p-10">Abeg login first!</p>;
+  if (!isAdminAuthorized && !isAccessChecking)
+    return <p className="text-center p-10">Admins only.</p>;
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -2457,12 +2731,12 @@ export default function AdminDashboardClient({
               </p>
             </div>
             <div className="flex items-center justify-center gap-2 md:justify-end">
-              {!isAllSectionsView ? (
+              {!isAllSectionsView && focusSection !== "overview" ? (
                 <Link
                   href="/admin"
                   className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-sm text-slate-700 hover:bg-slate-50"
                 >
-                  Full Dashboard
+                  Admin Home
                 </Link>
               ) : null}
               <button
@@ -2500,18 +2774,23 @@ export default function AdminDashboardClient({
                     Close
                   </button>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-800 md:grid-cols-4">
                   <p>Role: {selectedUserDetails.user.role}</p>
                   <p>Threads: {selectedUserDetails.stats.threads}</p>
                   <p>Listings: {selectedUserDetails.stats.listings}</p>
                   <p>Sold: {selectedUserDetails.stats.soldListings}</p>
-                  <p>Reports Against: {selectedUserDetails.stats.reportsAgainst}</p>
+                  <p>
+                    Reports Against: {selectedUserDetails.stats.reportsAgainst}
+                  </p>
                   <p>Reports Filed: {selectedUserDetails.stats.reportsFiled}</p>
                   <p>Payouts: {selectedUserDetails.stats.payouts}</p>
-                  <p>Pending Payouts: {selectedUserDetails.stats.pendingPayouts}</p>
+                  <p>
+                    Pending Payouts: {selectedUserDetails.stats.pendingPayouts}
+                  </p>
                 </div>
                 <p className="mt-2 text-sm text-slate-600">
-                  Status: {selectedUserDetails.user.isBanned ? "Banned" : "Active"}
+                  Status:{" "}
+                  {selectedUserDetails.user.isBanned ? "Banned" : "Active"}
                   {selectedUserDetails.user.suspendedUntil
                     ? ` • Suspended until ${new Date(
                         selectedUserDetails.user.suspendedUntil,
@@ -2523,21 +2802,36 @@ export default function AdminDashboardClient({
                     <table className="w-full text-left text-xs">
                       <thead className="bg-slate-50">
                         <tr>
-                          <th className="p-2 font-semibold text-slate-700">When</th>
-                          <th className="p-2 font-semibold text-slate-700">Action</th>
-                          <th className="p-2 font-semibold text-slate-700">Actor</th>
-                          <th className="p-2 font-semibold text-slate-700">Reason</th>
+                          <th className="p-2 font-semibold text-slate-700">
+                            When
+                          </th>
+                          <th className="p-2 font-semibold text-slate-700">
+                            Action
+                          </th>
+                          <th className="p-2 font-semibold text-slate-700">
+                            Actor
+                          </th>
+                          <th className="p-2 font-semibold text-slate-700">
+                            Reason
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedUserDetails.recentActions.map((row) => (
-                          <tr key={row._id} className="border-t border-slate-100">
+                          <tr
+                            key={row._id}
+                            className="border-t border-slate-100"
+                          >
                             <td className="p-2 text-slate-600">
                               {new Date(row.createdAt).toLocaleString()}
                             </td>
                             <td className="p-2 text-slate-800">{row.action}</td>
-                            <td className="p-2 text-slate-700">{row.actor?.email || "Unknown"}</td>
-                            <td className="p-2 text-slate-600">{row.reason || "-"}</td>
+                            <td className="p-2 text-slate-700">
+                              {row.actor?.email || "Unknown"}
+                            </td>
+                            <td className="p-2 text-slate-600">
+                              {row.reason || "-"}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -2584,7 +2878,9 @@ export default function AdminDashboardClient({
                   fetchSlaSnapshot();
                   triggerExternalSlaAlerts();
                 }}
-                riskSignalsCount={userRiskSummary.totalFlagged + contestRiskSummary.totalFlagged}
+                riskSignalsCount={
+                  userRiskSummary.totalFlagged + contestRiskSummary.totalFlagged
+                }
                 apiHealthStatus={slaApiHealthStatus}
                 readinessStatus={slaReadinessStatus}
                 databaseStatus={slaDatabaseStatus}
@@ -2684,23 +2980,33 @@ export default function AdminDashboardClient({
                       </Link>
                       <button
                         onClick={() =>
-                          handleAdminThreadLockToggle(selectedThreadDetails.thread._id)
+                          handleAdminThreadLockToggle(
+                            selectedThreadDetails.thread._id,
+                          )
                         }
                         className="rounded-md bg-amber-600 px-2 py-1 text-xs font-medium text-white hover:bg-amber-700"
                       >
-                        {selectedThreadDetails.thread.isLocked ? "Unlock" : "Lock"}
+                        {selectedThreadDetails.thread.isLocked
+                          ? "Unlock"
+                          : "Lock"}
                       </button>
                       <button
                         onClick={() =>
-                          handleAdminThreadStickyToggle(selectedThreadDetails.thread._id)
+                          handleAdminThreadStickyToggle(
+                            selectedThreadDetails.thread._id,
+                          )
                         }
                         className="rounded-md bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700"
                       >
-                        {selectedThreadDetails.thread.isSticky ? "Unpin" : "Pin"}
+                        {selectedThreadDetails.thread.isSticky
+                          ? "Unpin"
+                          : "Pin"}
                       </button>
                       <button
                         onClick={() =>
-                          handleAdminThreadDelete(selectedThreadDetails.thread._id)
+                          handleAdminThreadDelete(
+                            selectedThreadDetails.thread._id,
+                          )
                         }
                         className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
                       >
@@ -2708,7 +3014,9 @@ export default function AdminDashboardClient({
                       </button>
                       <button
                         onClick={() =>
-                          handleViewAdminThreadDetails(selectedThreadDetails.thread._id)
+                          handleViewAdminThreadDetails(
+                            selectedThreadDetails.thread._id,
+                          )
                         }
                         className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
@@ -2718,7 +3026,8 @@ export default function AdminDashboardClient({
                     <div className="mt-3 grid grid-cols-2 gap-2 text-sm md:grid-cols-4">
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Author:</span>{" "}
-                        {selectedThreadDetails.thread.author?.email || "Unknown"}
+                        {selectedThreadDetails.thread.author?.email ||
+                          "Unknown"}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Category:</span>{" "}
@@ -2742,7 +3051,9 @@ export default function AdminDashboardClient({
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Created:</span>{" "}
-                        {new Date(selectedThreadDetails.thread.createdAt).toLocaleString()}
+                        {new Date(
+                          selectedThreadDetails.thread.createdAt,
+                        ).toLocaleString()}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Status:</span>
@@ -2758,18 +3069,29 @@ export default function AdminDashboardClient({
                     </div>
                     {selectedThreadDetails.recentReplies.length > 0 ? (
                       <div className="mt-3 overflow-x-auto">
-                        <p className="mb-2 text-sm font-semibold text-slate-900">Recent Replies</p>
+                        <p className="mb-2 text-sm font-semibold text-slate-900">
+                          Recent Replies
+                        </p>
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-50">
                             <tr>
-                              <th className="p-2 font-semibold text-slate-700">When</th>
-                              <th className="p-2 font-semibold text-slate-700">Author</th>
-                              <th className="p-2 font-semibold text-slate-700">Body</th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                When
+                              </th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                Author
+                              </th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                Body
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {selectedThreadDetails.recentReplies.map((row) => (
-                              <tr key={row._id} className="border-t border-slate-100">
+                              <tr
+                                key={row._id}
+                                className="border-t border-slate-100"
+                              >
                                 <td className="p-2 text-slate-700">
                                   {new Date(row.createdAt).toLocaleString()}
                                 </td>
@@ -2789,18 +3111,29 @@ export default function AdminDashboardClient({
                     ) : null}
                     {selectedThreadDetails.recentReports.length > 0 ? (
                       <div className="mt-3 overflow-x-auto">
-                        <p className="mb-2 text-sm font-semibold text-slate-900">Recent Reports</p>
+                        <p className="mb-2 text-sm font-semibold text-slate-900">
+                          Recent Reports
+                        </p>
                         <table className="w-full text-left text-xs">
                           <thead className="bg-rose-50">
                             <tr>
-                              <th className="p-2 font-semibold text-rose-900">When</th>
-                              <th className="p-2 font-semibold text-rose-900">Reporter</th>
-                              <th className="p-2 font-semibold text-rose-900">Reason</th>
+                              <th className="p-2 font-semibold text-rose-900">
+                                When
+                              </th>
+                              <th className="p-2 font-semibold text-rose-900">
+                                Reporter
+                              </th>
+                              <th className="p-2 font-semibold text-rose-900">
+                                Reason
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {selectedThreadDetails.recentReports.map((row) => (
-                              <tr key={row._id} className="border-t border-slate-100">
+                              <tr
+                                key={row._id}
+                                className="border-t border-slate-100"
+                              >
                                 <td className="p-2 text-slate-700">
                                   {new Date(row.createdAt).toLocaleString()}
                                 </td>
@@ -2924,7 +3257,9 @@ export default function AdminDashboardClient({
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-lg font-semibold text-slate-900">
-                        Payout 360: {selectedPayoutDetails.payout.reference || selectedPayoutDetails.payout._id}
+                        Payout 360:{" "}
+                        {selectedPayoutDetails.payout.reference ||
+                          selectedPayoutDetails.payout._id}
                       </h3>
                       <button
                         onClick={() => setSelectedPayoutDetails(null)}
@@ -2935,7 +3270,11 @@ export default function AdminDashboardClient({
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
-                        onClick={() => handleViewPayoutDetails(selectedPayoutDetails.payout._id)}
+                        onClick={() =>
+                          handleViewPayoutDetails(
+                            selectedPayoutDetails.payout._id,
+                          )
+                        }
                         className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
                         Refresh
@@ -2943,7 +3282,8 @@ export default function AdminDashboardClient({
                       {selectedPayoutDetails.payout.user?._id ? (
                         <button
                           onClick={() => {
-                            const userId = selectedPayoutDetails.payout.user?._id;
+                            const userId =
+                              selectedPayoutDetails.payout.user?._id;
                             if (userId) handleViewAdminUserDetails(userId);
                           }}
                           className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
@@ -2954,13 +3294,23 @@ export default function AdminDashboardClient({
                       {selectedPayoutDetails.payout.status === "pending" ? (
                         <>
                           <button
-                            onClick={() => decidePayout(selectedPayoutDetails.payout._id, true)}
+                            onClick={() =>
+                              decidePayout(
+                                selectedPayoutDetails.payout._id,
+                                true,
+                              )
+                            }
                             className="rounded-md bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700"
                           >
                             Approve
                           </button>
                           <button
-                            onClick={() => decidePayout(selectedPayoutDetails.payout._id, false)}
+                            onClick={() =>
+                              decidePayout(
+                                selectedPayoutDetails.payout._id,
+                                false,
+                              )
+                            }
                             className="rounded-md bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700"
                           >
                             Reject
@@ -2975,10 +3325,13 @@ export default function AdminDashboardClient({
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Amount:</span> ₦
-                        {(selectedPayoutDetails.payout.amount / 100).toLocaleString("en-NG")}
+                        {(
+                          selectedPayoutDetails.payout.amount / 100
+                        ).toLocaleString("en-NG")}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
-                        <span className="font-semibold">Status:</span> {selectedPayoutDetails.payout.status}
+                        <span className="font-semibold">Status:</span>{" "}
+                        {selectedPayoutDetails.payout.status}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Destination:</span>{" "}
@@ -2986,46 +3339,73 @@ export default function AdminDashboardClient({
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Wallet Bal:</span> ₦
-                        {(selectedPayoutDetails.wallet.balance / 100).toLocaleString("en-NG")}
+                        {(
+                          selectedPayoutDetails.wallet.balance / 100
+                        ).toLocaleString("en-NG")}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Available:</span> ₦
-                        {(selectedPayoutDetails.wallet.availableBalance / 100).toLocaleString("en-NG")}
+                        {(
+                          selectedPayoutDetails.wallet.availableBalance / 100
+                        ).toLocaleString("en-NG")}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Held:</span> ₦
-                        {(selectedPayoutDetails.wallet.heldBalance / 100).toLocaleString("en-NG")}
+                        {(
+                          selectedPayoutDetails.wallet.heldBalance / 100
+                        ).toLocaleString("en-NG")}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Created:</span>{" "}
-                        {new Date(selectedPayoutDetails.payout.createdAt).toLocaleString()}
+                        {new Date(
+                          selectedPayoutDetails.payout.createdAt,
+                        ).toLocaleString()}
                       </p>
                     </div>
 
                     {selectedPayoutDetails.payoutLedger.length > 0 ? (
                       <div className="mt-3 overflow-x-auto">
-                        <p className="mb-2 text-sm font-semibold text-slate-900">Ledger Trail</p>
+                        <p className="mb-2 text-sm font-semibold text-slate-900">
+                          Ledger Trail
+                        </p>
                         <table className="w-full text-left text-xs">
                           <thead className="bg-slate-50">
                             <tr>
-                              <th className="p-2 font-semibold text-slate-700">When</th>
-                              <th className="p-2 font-semibold text-slate-700">Entry</th>
-                              <th className="p-2 font-semibold text-slate-700">Effect</th>
-                              <th className="p-2 font-semibold text-slate-700">Status</th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                When
+                              </th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                Entry
+                              </th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                Effect
+                              </th>
+                              <th className="p-2 font-semibold text-slate-700">
+                                Status
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {selectedPayoutDetails.payoutLedger.map((row) => (
-                              <tr key={row._id} className="border-t border-slate-100">
+                              <tr
+                                key={row._id}
+                                className="border-t border-slate-100"
+                              >
                                 <td className="p-2 text-slate-700">
                                   {new Date(row.createdAt).toLocaleString()}
                                 </td>
-                                <td className="p-2 text-slate-900">{row.entryKind}</td>
+                                <td className="p-2 text-slate-900">
+                                  {row.entryKind}
+                                </td>
                                 <td className="p-2 text-slate-900">
                                   {row.walletEffect >= 0 ? "+" : "-"}₦
-                                  {(Math.abs(row.walletEffect) / 100).toLocaleString("en-NG")}
+                                  {(
+                                    Math.abs(row.walletEffect) / 100
+                                  ).toLocaleString("en-NG")}
                                 </td>
-                                <td className="p-2 text-slate-700">{row.status}</td>
+                                <td className="p-2 text-slate-700">
+                                  {row.status}
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -3073,7 +3453,8 @@ export default function AdminDashboardClient({
                   >
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <h3 className="text-lg font-semibold text-slate-900">
-                        Premium Payment 360: {selectedPremiumDetails.payment.reference}
+                        Premium Payment 360:{" "}
+                        {selectedPremiumDetails.payment.reference}
                       </h3>
                       <button
                         onClick={() => setSelectedPremiumDetails(null)}
@@ -3085,7 +3466,9 @@ export default function AdminDashboardClient({
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <button
                         onClick={() =>
-                          handleViewPremiumPaymentDetails(selectedPremiumDetails.payment._id)
+                          handleViewPremiumPaymentDetails(
+                            selectedPremiumDetails.payment._id,
+                          )
                         }
                         className="rounded-md border border-slate-300 bg-white px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50"
                       >
@@ -3111,7 +3494,9 @@ export default function AdminDashboardClient({
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Amount:</span>{" "}
                         {selectedPremiumDetails.payment.currency}{" "}
-                        {(selectedPremiumDetails.payment.amount / 100).toLocaleString("en-NG")}
+                        {(
+                          selectedPremiumDetails.payment.amount / 100
+                        ).toLocaleString("en-NG")}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Status:</span>{" "}
@@ -3119,11 +3504,13 @@ export default function AdminDashboardClient({
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Verify Source:</span>{" "}
-                        {selectedPremiumDetails.payment.verificationSource || "-"}
+                        {selectedPremiumDetails.payment.verificationSource ||
+                          "-"}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Gateway Tx:</span>{" "}
-                        {selectedPremiumDetails.payment.gatewayTransactionId || "-"}
+                        {selectedPremiumDetails.payment.gatewayTransactionId ||
+                          "-"}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Attempts:</span>{" "}
@@ -3131,7 +3518,9 @@ export default function AdminDashboardClient({
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Created:</span>{" "}
-                        {new Date(selectedPremiumDetails.payment.createdAt).toLocaleString()}
+                        {new Date(
+                          selectedPremiumDetails.payment.createdAt,
+                        ).toLocaleString()}
                       </p>
                       <p className="rounded-md bg-slate-50 px-2 py-1 text-slate-900">
                         <span className="font-semibold">Mismatch:</span>{" "}
@@ -3181,7 +3570,9 @@ export default function AdminDashboardClient({
                 onDateFromChange={setRollupDateFrom}
                 onDateToChange={setRollupDateTo}
                 onTimezoneChange={setRollupTimezone}
-                onViewBucket={(bucket) => handleViewRollupBucketDetails(bucket, 1, rollupBucketPageSize)}
+                onViewBucket={(bucket) =>
+                  handleViewRollupBucketDetails(bucket, 1, rollupBucketPageSize)
+                }
                 onExportCsv={exportRollupsCsv}
                 onRefreshRollups={fetchPayoutRollups}
                 selectedBucketDetails={selectedRollupBucketDetails}
@@ -3280,7 +3671,9 @@ export default function AdminDashboardClient({
                   fetchPlatformWalletEntries();
                 }}
                 onViewDetails={handleViewPlatformWalletEntryDetails}
-                onCloseDetails={() => setSelectedPlatformWalletEntryDetails(null)}
+                onCloseDetails={() =>
+                  setSelectedPlatformWalletEntryDetails(null)
+                }
                 onOpenUser360={(userId) => handleViewAdminUserDetails(userId)}
               />
             ) : null}

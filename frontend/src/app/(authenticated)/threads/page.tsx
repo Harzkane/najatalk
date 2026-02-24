@@ -17,9 +17,16 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null;
+  userId: {
+    _id: string;
+    email: string;
+    flair?: string;
+    username?: string;
+    avatarUrl?: string | null;
+  } | null;
   category: string;
   createdAt: string;
+  replyCount?: number;
   replies?: Reply[];
   likes?: string[];
   bookmarks?: string[];
@@ -52,13 +59,20 @@ type Ad = {
   status: "pending" | "active" | "expired";
 };
 
+const getReplyCount = (thread: Thread) =>
+  typeof thread.replyCount === "number" ? thread.replyCount : thread.replies?.length || 0;
+
+const hasUserInIdList = (ids: unknown[] | undefined, userId: string) => {
+  if (!ids?.length) return false;
+  return ids.some((id) => String(id) === String(userId));
+};
+
 function ThreadsContent() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [selectedThread, setSelectedThread] = useState<Thread | null>(null);
   const [bannerAd, setBannerAd] = useState<Ad | null>(null);
   const [sidebarAd, setSidebarAd] = useState<Ad | null>(null);
   const [isPremium, setIsPremium] = useState(false);
-  const [replyBody, setReplyBody] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -70,8 +84,8 @@ function ThreadsContent() {
   const [activeFilter, setActiveFilter] = useState<
     "all" | "unanswered" | "solved" | "bookmarked"
   >("all");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
+  const [showRepliesExpanded, setShowRepliesExpanded] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
@@ -81,6 +95,10 @@ function ThreadsContent() {
   const returnTo = searchParams.get("returnTo") || "/contests";
 
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    setShowRepliesExpanded(false);
+  }, [selectedThread?._id]);
 
   const trendingTopics = [
     "Suya joints",
@@ -267,23 +285,21 @@ function ThreadsContent() {
 
   const fetchThreads = async () => {
     try {
-      const res = await api.get<{ threads: Thread[]; message: string }>(
+      const res = await api.get<{
+        threads: Thread[];
+        message: string;
+        pagination?: {
+          page: number;
+          pageSize: number;
+          total: number;
+          totalPages: number;
+          hasNext: boolean;
+          hasPrev: boolean;
+        };
+      }>(
         "/threads"
       );
-      const threadsWithReplies = await Promise.all(
-        res.data.threads.map(async (thread) => {
-          try {
-            const replyRes = await api.get<Thread>(
-              `/threads/${thread._id}`
-            );
-            return replyRes.data;
-          } catch (err) {
-            console.error(`Failed to fetch thread ${thread._id}:`, err);
-            return { ...thread, replies: [] };
-          }
-        })
-      );
-      setThreads(threadsWithReplies);
+      setThreads(res.data.threads || []);
       setMessage(res.data.message || "");
       setSelectedThread(null);
     } catch (err: unknown) {
@@ -341,50 +357,6 @@ function ThreadsContent() {
     }
   };
 
-  const handleReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isLoggedIn) {
-      setMessage("Abeg login first!");
-      return;
-    }
-
-    if (!replyBody.trim() || !selectedThread) {
-      setMessage("Reply cannot be empty!");
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const token = localStorage.getItem("token");
-      const res = await api.post<{ message: string; reply: Reply }>(
-        `/threads/${selectedThread._id}/replies`,
-        { body: replyBody },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessage(res.data.message || "Reply posted—gist dey grow!");
-      setReplyBody("");
-      setSelectedThread((prev) =>
-        prev
-          ? { ...prev, replies: [res.data.reply, ...(prev.replies || [])] }
-          : null
-      );
-    } catch (err: unknown) {
-      if (isAxiosError<{ message?: string }>(err)) {
-        setMessage(err.response?.data?.message || "Reply scatter o!");
-        if (err.response?.status === 401) {
-          setMessage("Token don expire—abeg login again!");
-          localStorage.removeItem("token");
-          setTimeout(() => router.push("/login"), 1000);
-        }
-      } else {
-        setMessage("Reply scatter o!");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleLogout = () => {
     localStorage.removeItem("token");
     setIsLoggedIn(false);
@@ -395,20 +367,14 @@ function ThreadsContent() {
 
   const filteredThreads = threads.filter((thread) => {
     if (activeFilter === "all") return true;
-    if (activeFilter === "unanswered") return (thread.replies?.length || 0) === 0;
+    if (activeFilter === "unanswered") return getReplyCount(thread) === 0;
     if (activeFilter === "solved") return Boolean(thread.isSolved);
     if (activeFilter === "bookmarked") {
       if (!currentUserId) return false;
-      return (thread.bookmarks || []).includes(currentUserId);
+      return hasUserInIdList(thread.bookmarks as unknown[] | undefined, currentUserId);
     }
     return true;
   });
-  const canReplySelectedThread = Boolean(
-    !selectedThread?.isLocked ||
-    currentUserRole === "mod" ||
-    currentUserRole === "admin" || currentUserRole === "super_admin"
-  );
-
   return (
     <>
       <Head>
@@ -519,36 +485,15 @@ function ThreadsContent() {
                     thread={selectedThread}
                     formatDate={formatDate}
                     showReplies={true}
+                    showRepliesExpanded={showRepliesExpanded}
+                    onToggleRepliesExpanded={() =>
+                      setShowRepliesExpanded((prev) => !prev)
+                    }
                     onReplyAdded={() => fetchSingleThread(selectedThread._id)}
                     currentUserId={currentUserId}
                     currentUserRole={currentUserRole}
                     onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
                   />
-
-                  {isLoggedIn && canReplySelectedThread && (
-                    <form onSubmit={handleReply} className="mb-6">
-                      <textarea
-                        id="replyForm"
-                        placeholder="Drop your reply..."
-                        value={replyBody}
-                        onChange={(e) => setReplyBody(e.target.value)}
-                        className="w-full p-3 mb-4 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 h-24 text-gray-800"
-                      />
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
-                      >
-                        {isSubmitting ? "Posting..." : "Reply am!"}
-                      </button>
-                    </form>
-                  )}
-
-                  {isLoggedIn && !canReplySelectedThread && (
-                    <p className="mb-6 rounded-lg border border-slate-300 bg-slate-50 p-3 text-center text-sm text-slate-600">
-                      This thread is locked. Only moderators/admins can reply.
-                    </p>
-                  )}
 
                   {selectedThread.replies &&
                     selectedThread.replies.length === 0 ? (
@@ -576,7 +521,7 @@ function ThreadsContent() {
                         <ThreadCard
                           thread={thread}
                           formatDate={formatDate}
-                          showReplies={true}
+                          showReplies={false}
                           onReplyAdded={fetchThreads}
                           currentUserId={currentUserId}
                           currentUserRole={currentUserRole}

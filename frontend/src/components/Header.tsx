@@ -9,6 +9,7 @@ interface HeaderProps {
   title: string;
   isLoggedIn?: boolean; // Optional, for pages needing logout
   onLogout?: () => void; // Optional, for logout action
+  compact?: boolean;
   secondaryLink?: {
     href: string;
     label: string;
@@ -19,6 +20,7 @@ export default function Header({
   title,
   isLoggedIn,
   onLogout,
+  compact = false,
   secondaryLink = { href: "/premium", label: "Premium" },
 }: HeaderProps) {
   const router = useRouter();
@@ -63,9 +65,17 @@ export default function Header({
   };
 
   return (
-    <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-md">
+    <div
+      className={`bg-green-800 text-white shadow-md ${
+        compact ? "rounded-lg px-4 py-3" : "rounded-t-lg p-4"
+      }`}
+    >
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-center md:text-left break-words">
+        <h1
+          className={`font-bold text-center md:text-left break-words ${
+            compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"
+          }`}
+        >
           {title}
         </h1>
         <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
@@ -73,7 +83,9 @@ export default function Header({
             <Link
               key={link.href}
               href={link.href}
-              className="text-green-100 hover:text-white text-sm font-medium"
+              className={`text-green-100 hover:text-white font-medium ${
+                compact ? "text-xs md:text-sm" : "text-sm"
+              }`}
             >
               {link.label}
             </Link>

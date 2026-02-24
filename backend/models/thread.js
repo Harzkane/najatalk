@@ -27,6 +27,10 @@ const threadSchema = new mongoose.Schema({
     default: () =>
       new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
   },
+  updatedAt: {
+    type: Date,
+    default: Date.now,
+  },
   likes: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -81,5 +85,10 @@ const threadSchema = new mongoose.Schema({
 });
 
 threadSchema.index({ title: "text", body: "text" });
+
+threadSchema.pre("save", function setUpdatedAt(next) {
+  this.updatedAt = new Date();
+  next();
+});
 
 export default mongoose.model("Thread", threadSchema);

@@ -12,21 +12,29 @@
     "e2e:ui:headed": "playwright test --headed"
   },
   "dependencies": {
+    "@tiptap/extension-link": "^2.11.5",
+    "@tiptap/extension-placeholder": "^2.11.5",
+    "@tiptap/react": "^2.11.5",
+    "@tiptap/starter-kit": "^2.11.5",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/turndown": "^5.0.5",
     "autoprefixer": "^10.4.20",
     "axios": "^1.7.9",
+    "lucide-react": "^0.575.0",
+    "marked": "^17.0.0",
     "next": "15.1.11",
     "postcss": "^8",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19"
+    "turndown": "^7.2.1",
+    "typescript": "^5"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.2",
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.54.2",
     "eslint": "^9",
     "eslint-config-next": "15.1.11"
   }

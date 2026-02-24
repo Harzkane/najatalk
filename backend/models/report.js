@@ -6,6 +6,11 @@ const reportSchema = new mongoose.Schema({
     ref: "Thread",
     required: true,
   },
+  replyId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Reply",
+    default: null,
+  },
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -27,5 +32,7 @@ const reportSchema = new mongoose.Schema({
       new Date().toLocaleString("en-US", { timeZone: "Africa/Lagos" }),
   },
 });
+
+reportSchema.index({ threadId: 1, userId: 1, replyId: 1 });
 
 export default mongoose.model("Report", reportSchema);

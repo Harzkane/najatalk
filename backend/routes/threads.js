@@ -12,12 +12,16 @@ import {
   getReports,
   dismissReport,
   hasUserReportedThread,
+  hasUserReportedReply,
   deleteThread,
+  updateThread,
   toggleThreadLike,
+  toggleReplyLike,
   toggleThreadBookmark,
   toggleThreadSolved,
   toggleThreadSticky,
   toggleThreadLock,
+  reportReply,
 } from "../controllers/threads.js";
 import { authMiddleware } from "../middleware/auth.js";
 import { reportActionLimiter, writeActionLimiter } from "../middleware/rateLimit.js";
@@ -32,8 +36,12 @@ router.get("/admin/all", authMiddleware, listThreadsForAdmin);
 router.get("/admin/:id", authMiddleware, getAdminThreadDetails);
 
 router.delete("/reports/:id", authMiddleware, dismissReport);
+router.post("/replies/:replyId/report", authMiddleware, reportActionLimiter, reportReply);
+router.get("/replies/:replyId/hasReported", authMiddleware, hasUserReportedReply);
+router.post("/replies/:replyId/like", authMiddleware, toggleReplyLike);
 
 router.get("/:id", getThreadById);
+router.put("/:id", authMiddleware, writeActionLimiter, updateThread);
 router.delete("/:id", authMiddleware, deleteThread);
 
 router.post("/:id/replies", authMiddleware, writeActionLimiter, createReply);

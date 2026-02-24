@@ -12,6 +12,7 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import Listing from "../models/listing.js";
 import Thread from "../models/thread.js";
+import Reply from "../models/reply.js";
 import Report from "../models/report.js";
 import AdminActionLog from "../models/adminActionLog.js";
 import Contest from "../models/contests.js";
@@ -1573,9 +1574,22 @@ export const getUserProfilePublic = async (req, res) => {
     const { changed } = syncPremiumAccessState(user);
     if (changed) await user.save();
 
-    const listings = await Listing.find({ userId, status: { $ne: "deleted" } })
-      .select("title description price category status imageUrls createdAt updatedAt userId")
-      .sort({ updatedAt: -1 });
+    const [listings, recentThreads, recentReplies] = await Promise.all([
+      Listing.find({ userId, status: { $ne: "deleted" } })
+        .select("title description price category status imageUrls createdAt updatedAt userId")
+        .sort({ updatedAt: -1 }),
+      Thread.find({ userId })
+        .select("_id title body category createdAt isSolved isSticky isLocked")
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .lean(),
+      Reply.find({ userId })
+        .select("_id threadId body createdAt parentReplyId")
+        .sort({ createdAt: -1 })
+        .limit(20)
+        .populate("threadId", "_id title")
+        .lean(),
+    ]);
 
     const sellerStats = await buildSellerStats(userId);
 
@@ -1598,6 +1612,19 @@ export const getUserProfilePublic = async (req, res) => {
       },
       sellerStats,
       listings,
+      threads: recentThreads,
+      replies: recentReplies.map((reply) => ({
+        _id: reply._id,
+        body: reply.body || "",
+        createdAt: reply.createdAt,
+        parentReplyId: reply.parentReplyId || null,
+        thread: reply.threadId
+          ? {
+              _id: reply.threadId._id,
+              title: reply.threadId.title || "Thread",
+            }
+          : null,
+      })),
       message: "User profile dey here—check am!",
     });
   } catch (err) {
