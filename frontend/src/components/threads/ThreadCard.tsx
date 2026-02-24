@@ -59,6 +59,10 @@ interface ThreadCardProps {
   focusReplyId?: string | null;
   focusReplyPathIds?: ReadonlySet<string>;
   isLastSibling?: boolean;
+  activeReplyComposerId?: string | null;
+  onSetActiveReplyComposerId?: (id: string | null) => void;
+  activeReportFormId?: string | null;
+  onSetActiveReportFormId?: (id: string | null) => void;
 }
 
 const MAX_VISUAL_REPLY_DEPTH = 2;
@@ -90,15 +94,19 @@ const ThreadCard: FC<ThreadCardProps> = ({
   focusReplyId = null,
   focusReplyPathIds,
   isLastSibling = false,
+  activeReplyComposerId = null,
+  onSetActiveReplyComposerId,
+  activeReportFormId = null,
+  onSetActiveReportFormId,
 }) => {
-  const [showReplyDialog, setShowReplyDialog] = useState(false);
+  const [localShowReplyDialog, setLocalShowReplyDialog] = useState(false);
   const [replyHtml, setReplyHtml] = useState("<p></p>");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
   const [localShowRepliesExpanded, setLocalShowRepliesExpanded] = useState(false);
   const [visibleRepliesCount, setVisibleRepliesCount] =
     useState(REPLIES_PAGE_SIZE);
-  const [isReporting, setIsReporting] = useState(false);
+  const [localIsReporting, setLocalIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
   const [isPidgin, setIsPidgin] = useState(true);
@@ -196,6 +204,15 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const containerClass = isReply
     ? `relative mb-1 rounded-md ${replyBgToneClass}`
     : "mb-2 rounded-lg border border-gray-200 bg-white shadow-sm";
+  const isReplyComposerControlled =
+    typeof onSetActiveReplyComposerId === "function";
+  const showReplyDialog = isReplyComposerControlled
+    ? activeReplyComposerId === thread._id
+    : localShowReplyDialog;
+  const isReportFormControlled = typeof onSetActiveReportFormId === "function";
+  const isReporting = isReportFormControlled
+    ? activeReportFormId === thread._id
+    : localIsReporting;
   const repliesExpanded =
     typeof controlledShowRepliesExpanded === "boolean"
       ? controlledShowRepliesExpanded
@@ -239,6 +256,37 @@ const ThreadCard: FC<ThreadCardProps> = ({
     if (Number.isNaN(createdAtMs) || Number.isNaN(updatedAtMs)) return false;
     return updatedAtMs > createdAtMs + 1000;
   })();
+  const setReplyComposerOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (isReplyComposerControlled) {
+        onSetActiveReplyComposerId?.(nextOpen ? thread._id : null);
+        return;
+      }
+      setLocalShowReplyDialog(nextOpen);
+    },
+    [isReplyComposerControlled, onSetActiveReplyComposerId, thread._id],
+  );
+  const setReportFormOpen = useCallback(
+    (nextOpen: boolean) => {
+      if (isReportFormControlled) {
+        onSetActiveReportFormId?.(nextOpen ? thread._id : null);
+        return;
+      }
+      setLocalIsReporting(nextOpen);
+    },
+    [isReportFormControlled, onSetActiveReportFormId, thread._id],
+  );
+  const toggleReplyComposer = useCallback(() => {
+    const nextOpen = !showReplyDialog;
+    setReplyComposerOpen(nextOpen);
+    if (nextOpen) {
+      setReportFormOpen(false);
+    }
+  }, [showReplyDialog, setReplyComposerOpen, setReportFormOpen]);
+  const openReportForm = useCallback(() => {
+    setReportFormOpen(true);
+    setReplyComposerOpen(false);
+  }, [setReplyComposerOpen, setReportFormOpen]);
 
   const handleReplyClick = () => {
     if (!canReplyToThread) {
@@ -250,12 +298,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
       router.push("/login");
       return;
     }
-    // if (isReply) {
-    //   router.push(`/threads/${thread._id}`);
-    // } else {
-    //   setShowReplyDialog(!showReplyDialog);
-    // }
-    setShowReplyDialog(!showReplyDialog); // No redirect for replies
+    setReplyError("");
+    toggleReplyComposer();
   };
 
   const handleShare = () => {
@@ -321,7 +365,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
         headers: { Authorization: `Bearer ${token}` },
       });
       setReplyHtml("<p></p>");
-      setShowReplyDialog(false);
+      setReplyComposerOpen(false);
       if (onReplyAdded) await onReplyAdded();
     } catch (error) {
       console.error("Failed to submit reply:", error);
@@ -367,6 +411,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
   useEffect(() => {
     setVisibleRepliesCount(REPLIES_PAGE_SIZE);
+  }, [thread._id]);
+
+  useEffect(() => {
+    setLocalShowReplyDialog(false);
+    setLocalIsReporting(false);
   }, [thread._id]);
 
   useEffect(() => {
@@ -567,13 +616,14 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
   };
 
-  const handleReport = async () => {
+  const handleReport = () => {
     const token = localStorage.getItem("token");
     if (!token) {
       router.push("/login");
       return;
     }
-    setIsReporting(true);
+    setReplyError("");
+    openReportForm();
   };
 
   const submitReport = async () => {
@@ -595,7 +645,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
         { headers: { Authorization: `Bearer ${token}` } },
       );
       setReportReason("");
-      setIsReporting(false);
+      setReportFormOpen(false);
       setIsReported(true);
     } catch (err) {
       console.error("Report failed:", err);
@@ -986,7 +1036,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               <button
                 className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
                 onClick={() => {
-                  setIsReporting(false);
+                  setReportFormOpen(false);
                   setReportReason("");
                   setReplyError("");
                 }}
@@ -1022,7 +1072,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               <button
                 className="px-3 py-1 bg-gray-200 rounded-md text-xs hover:bg-gray-300"
                 onClick={() => {
-                  setShowReplyDialog(false);
+                  setReplyComposerOpen(false);
                   setReplyError("");
                 }}
                 disabled={isSubmitting}
@@ -1146,6 +1196,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
                 index === visibleNestedReplies.length - 1 &&
                 !hasMoreNestedReplies
               }
+              activeReplyComposerId={activeReplyComposerId}
+              onSetActiveReplyComposerId={onSetActiveReplyComposerId}
+              activeReportFormId={activeReportFormId}
+              onSetActiveReportFormId={onSetActiveReportFormId}
             />
           ))}
           {hasMoreNestedReplies && (

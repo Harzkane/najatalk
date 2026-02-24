@@ -86,6 +86,8 @@ function ThreadsContent() {
   >("all");
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
   const [showRepliesExpanded, setShowRepliesExpanded] = useState(true);
+  const [activeReplyComposerId, setActiveReplyComposerId] = useState<string | null>(null);
+  const [activeReportFormId, setActiveReportFormId] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
@@ -99,6 +101,8 @@ function ThreadsContent() {
 
   useEffect(() => {
     setShowRepliesExpanded(true);
+    setActiveReplyComposerId(null);
+    setActiveReportFormId(null);
   }, [selectedThread?._id, replyId]);
 
   const trendingTopics = [
@@ -495,6 +499,10 @@ function ThreadsContent() {
                     currentUserId={currentUserId}
                     currentUserRole={currentUserRole}
                     onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
+                    activeReplyComposerId={activeReplyComposerId}
+                    onSetActiveReplyComposerId={setActiveReplyComposerId}
+                    activeReportFormId={activeReportFormId}
+                    onSetActiveReportFormId={setActiveReportFormId}
                   />
 
                   {selectedThread.replies &&
