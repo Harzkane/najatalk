@@ -1,7 +1,7 @@
 // frontend/src/app/page.tsx
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
 import api from "../utils/api";
@@ -123,7 +123,7 @@ const hasUserInIdList = (ids: unknown[] | undefined, userId: string) => {
   return ids.some((id) => String(id) === userId);
 };
 
-export default function Home() {
+function HomeContent() {
   const [threads, setThreads] = useState<Thread[]>([]);
   const [allThreads, setAllThreads] = useState<Thread[]>([]);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
@@ -984,5 +984,17 @@ export default function Home() {
         buttonRef={newThreadButtonRef}
       />
     </div>
+  );
+}
+
+function HomeLoading() {
+  return <div className="min-h-screen bg-slate-100 p-6">Loading homepage...</div>;
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <HomeContent />
+    </Suspense>
   );
 }
