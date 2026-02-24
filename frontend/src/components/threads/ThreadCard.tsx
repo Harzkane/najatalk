@@ -1,7 +1,7 @@
 // // frontend/src/components/threads/ThreadCard.tsx
 "use client";
 
-import { FC, useState, useEffect, useCallback } from "react";
+import { FC, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -55,7 +55,19 @@ interface ThreadCardProps {
   currentUserId?: string | null;
   currentUserRole?: "user" | "mod" | "admin" | "super_admin" | null;
   onThreadUpdated?: () => Promise<void> | void;
+  replyingToEmail?: string | null;
+  focusReplyId?: string | null;
+  focusReplyPathIds?: ReadonlySet<string>;
 }
+
+const MAX_VISUAL_REPLY_DEPTH = 2;
+const REPLIES_PAGE_SIZE = 10;
+
+const emailToHandle = (email?: string | null) => {
+  if (!email) return "unknown";
+  const handle = email.split("@")[0]?.trim();
+  return handle || "unknown";
+};
 
 const ThreadCard: FC<ThreadCardProps> = ({
   thread,
@@ -73,12 +85,19 @@ const ThreadCard: FC<ThreadCardProps> = ({
   currentUserId = null,
   currentUserRole = null,
   onThreadUpdated,
+  replyingToEmail = null,
+  focusReplyId = null,
+  focusReplyPathIds,
 }) => {
   const [showReplyDialog, setShowReplyDialog] = useState(false);
   const [replyHtml, setReplyHtml] = useState("<p></p>");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [replyError, setReplyError] = useState("");
-  const [localShowRepliesExpanded, setLocalShowRepliesExpanded] = useState(isReply);
+  const [localShowRepliesExpanded, setLocalShowRepliesExpanded] = useState(
+    isReply && depth <= 1,
+  );
+  const [visibleRepliesCount, setVisibleRepliesCount] =
+    useState(REPLIES_PAGE_SIZE);
   const [isReporting, setIsReporting] = useState(false);
   const [reportReason, setReportReason] = useState("");
   const [isReported, setIsReported] = useState(false);
@@ -99,6 +118,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const [isLocked, setIsLocked] = useState(false);
   const [isStickyLoading, setIsStickyLoading] = useState(false);
   const [isLockLoading, setIsLockLoading] = useState(false);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
 
@@ -112,17 +132,60 @@ const ThreadCard: FC<ThreadCardProps> = ({
     : isThread(thread)
       ? thread.title
       : "Reply";
-  const threadReplies = isThread(thread) ? thread.replies || [] : allThreadReplies;
+  const threadReplies = isThread(thread)
+    ? thread.replies || []
+    : allThreadReplies;
   const repliesCount = isThread(thread)
     ? typeof thread.replyCount === "number"
       ? thread.replyCount
       : threadReplies.length
-    : threadReplies.filter((reply) => reply.parentReplyId === thread._id).length;
+    : threadReplies.filter((reply) => reply.parentReplyId === thread._id)
+        .length;
   const nestedReplies = threadReplies.filter((reply) =>
-    isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId
+    isReply ? reply.parentReplyId === thread._id : !reply.parentReplyId,
+  );
+  const visibleNestedReplies = nestedReplies.slice(0, visibleRepliesCount);
+  const hasMoreNestedReplies = nestedReplies.length > visibleRepliesCount;
+  const hiddenRepliesCount = Math.max(
+    nestedReplies.length - visibleRepliesCount,
+    0,
   );
   const hasReplies = repliesCount > 0;
+  const visualDepth = Math.min(depth, MAX_VISUAL_REPLY_DEPTH);
+  const isCompactNode = depth >= 2;
+  const depthClass =
+    visualDepth === 0
+      ? ""
+      : visualDepth === 1
+        ? "ml-2 border-l-2 border-l-slate-200"
+        : "ml-3 border-l-2 border-l-slate-200";
+  const isFlattenedReply = isReply && depth > MAX_VISUAL_REPLY_DEPTH;
+  const replyingToHandle = emailToHandle(replyingToEmail);
   const rootThreadId = isReply ? threadId : thread._id;
+  const computedFocusPathIds = useMemo(() => {
+    if (!focusReplyId || !threadReplies.length) return new Set<string>();
+    const parentByReplyId = new Map<string, string | null>();
+    for (const reply of threadReplies) {
+      parentByReplyId.set(reply._id, reply.parentReplyId || null);
+    }
+    if (!parentByReplyId.has(focusReplyId)) return new Set<string>();
+    const pathIds = new Set<string>();
+    let cursor: string | null = focusReplyId;
+    while (cursor) {
+      pathIds.add(cursor);
+      cursor = parentByReplyId.get(cursor) || null;
+    }
+    return pathIds;
+  }, [focusReplyId, threadReplies]);
+  const resolvedFocusPathIds = focusReplyPathIds || computedFocusPathIds;
+  const isFocusedReply =
+    isReply && Boolean(focusReplyId && thread._id === focusReplyId);
+  const isFocusBranch = isReply
+    ? resolvedFocusPathIds.has(thread._id)
+    : Boolean(focusReplyId && resolvedFocusPathIds.size > 0);
+  const containerClass = isReply
+    ? "mb-1 rounded-md border-l-2 border-l-slate-300 bg-white"
+    : "mb-2 rounded-lg border border-gray-200 bg-white shadow-sm";
   const repliesExpanded =
     typeof controlledShowRepliesExpanded === "boolean"
       ? controlledShowRepliesExpanded
@@ -142,21 +205,20 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const isCurrentThreadLocked = isThread(thread)
     ? Boolean(thread.isLocked)
     : threadLocked;
-  const isAdminLike = currentUserRole === "admin" || currentUserRole === "super_admin";
+  const isAdminLike =
+    currentUserRole === "admin" || currentUserRole === "super_admin";
   const canToggleSolved = Boolean(
     isThread(thread) &&
     currentUserId &&
     (thread.userId?._id === currentUserId ||
       currentUserRole === "mod" ||
-      isAdminLike)
+      isAdminLike),
   );
   const canModerateThread = Boolean(
-    !isReply && (currentUserRole === "mod" || isAdminLike)
+    !isReply && (currentUserRole === "mod" || isAdminLike),
   );
   const canReplyToThread = Boolean(
-    !isCurrentThreadLocked ||
-    currentUserRole === "mod" ||
-    isAdminLike
+    !isCurrentThreadLocked || currentUserRole === "mod" || isAdminLike,
   );
   const threadUpdatedAt = isThread(thread) ? thread.updatedAt : undefined;
   const showUpdatedAt = (() => {
@@ -194,12 +256,18 @@ const ThreadCard: FC<ThreadCardProps> = ({
   };
 
   const handleRepliesCountClick = () => {
-    if (isReply || !hasReplies) return;
+    if (!hasReplies) return;
     if (showReplies) {
       toggleRepliesExpanded();
       return;
     }
-    router.push(`/threads/${rootThreadId || thread._id}`);
+    if (rootThreadId) {
+      router.push(`/threads/${rootThreadId}`);
+      return;
+    }
+    if (!isReply) {
+      router.push(`/threads/${thread._id}`);
+    }
   };
 
   const handleSubmitReply = async () => {
@@ -231,11 +299,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
         return;
       }
 
-      console.log(
-        "Posting reply:",
-        `/threads/${targetId}/replies`,
-        payload
-      );
+      console.log("Posting reply:", `/threads/${targetId}/replies`, payload);
 
       await api.post(`/threads/${targetId}/replies`, payload, {
         headers: { Authorization: `Bearer ${token}` },
@@ -246,7 +310,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
     } catch (error) {
       console.error("Failed to submit reply:", error);
       if (isAxiosError<{ message?: string }>(error)) {
-        setReplyError(error.response?.data?.message || "Failed to submit reply. Try again!");
+        setReplyError(
+          error.response?.data?.message || "Failed to submit reply. Try again!",
+        );
       } else {
         setReplyError("Failed to submit reply. Try again!");
       }
@@ -261,18 +327,17 @@ const ThreadCard: FC<ThreadCardProps> = ({
       if (!token) return;
       try {
         const tipPromise = api.get<{ hasTipped: boolean }>(
-          `/users/hasTipped?${isReply ? "replyId" : "threadId"}=${thread._id
-          }`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          `/users/hasTipped?${isReply ? "replyId" : "threadId"}=${thread._id}`,
+          { headers: { Authorization: `Bearer ${token}` } },
         );
 
         const reportPath = isReply
           ? `/threads/replies/${thread._id}/hasReported`
           : `/threads/${thread._id}/hasReported`;
-        const reportRes = await api.get<{ hasReported: boolean; message: string }>(
-          reportPath,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        const reportRes = await api.get<{
+          hasReported: boolean;
+          message: string;
+        }>(reportPath, { headers: { Authorization: `Bearer ${token}` } });
         setIsReported(reportRes.data.hasReported);
 
         const tipRes = await tipPromise;
@@ -285,12 +350,39 @@ const ThreadCard: FC<ThreadCardProps> = ({
   }, [thread._id, isReply]);
 
   useEffect(() => {
+    setVisibleRepliesCount(REPLIES_PAGE_SIZE);
+  }, [thread._id]);
+
+  useEffect(() => {
+    if (!isFocusBranch) return;
+    if (typeof controlledShowRepliesExpanded === "boolean") return;
+    setLocalShowRepliesExpanded(true);
+  }, [isFocusBranch, controlledShowRepliesExpanded]);
+
+  useEffect(() => {
+    if (!isFocusBranch || !focusReplyId || !nestedReplies.length) return;
+    const revealIndex = nestedReplies.findIndex((reply) =>
+      resolvedFocusPathIds.has(reply._id),
+    );
+    if (revealIndex >= 0) {
+      setVisibleRepliesCount((prev) =>
+        Math.max(prev, revealIndex + 1, REPLIES_PAGE_SIZE),
+      );
+    }
+  }, [isFocusBranch, focusReplyId, nestedReplies, resolvedFocusPathIds]);
+
+  useEffect(() => {
+    if (!isFocusedReply || !cardRef.current) return;
+    cardRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [isFocusedReply]);
+
+  useEffect(() => {
     const likes = (thread as Thread | Reply).likes || [];
     setLikesCount(likes.length);
     setIsLiked(
       Boolean(
         currentUserId &&
-          likes.some((likeId) => String(likeId) === String(currentUserId)),
+        likes.some((likeId) => String(likeId) === String(currentUserId)),
       ),
     );
 
@@ -311,9 +403,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
     setIsBookmarked(
       Boolean(
         currentUserId &&
-          bookmarks.some(
-            (bookmarkId) => String(bookmarkId) === String(currentUserId),
-          ),
+        bookmarks.some(
+          (bookmarkId) => String(bookmarkId) === String(currentUserId),
+        ),
       ),
     );
   }, [thread, currentUserId, isThread, threadLocked]);
@@ -338,7 +430,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await api.post<{ liked: boolean; likesCount: number }>(
         likePath,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsLiked(res.data.liked);
       setLikesCount(res.data.likesCount);
@@ -366,7 +458,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await api.post<{ isSticky: boolean }>(
         `/threads/${thread._id}/sticky`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsSticky(res.data.isSticky);
       if (onThreadUpdated) await onThreadUpdated();
@@ -393,7 +485,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await api.post<{ isLocked: boolean }>(
         `/threads/${thread._id}/lock`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsLocked(res.data.isLocked);
       if (onThreadUpdated) await onThreadUpdated();
@@ -415,10 +507,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
     setIsBookmarkLoading(true);
     try {
-      const res = await api.post<{ bookmarked: boolean; bookmarksCount: number }>(
+      const res = await api.post<{
+        bookmarked: boolean;
+        bookmarksCount: number;
+      }>(
         `/threads/${thread._id}/bookmark`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsBookmarked(res.data.bookmarked);
       setBookmarksCount(res.data.bookmarksCount);
@@ -444,7 +539,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       const res = await api.post<{ isSolved: boolean }>(
         `/threads/${thread._id}/solved`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setIsSolved(res.data.isSolved);
       if (onThreadUpdated) await onThreadUpdated();
@@ -481,7 +576,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
       await api.post(
         reportPath,
         { reason: reportReason },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setReportReason("");
       setIsReporting(false);
@@ -515,7 +610,10 @@ const ThreadCard: FC<ThreadCardProps> = ({
       window.location.href = res.data.paymentLink;
     } catch (err: unknown) {
       console.error("Tip Error:", err);
-      if (isAxiosError<{ message?: string }>(err) && err.response?.data?.message) {
+      if (
+        isAxiosError<{ message?: string }>(err) &&
+        err.response?.data?.message
+      ) {
         setReplyError(err.response.data.message); // Show "You no fit tip yourself, bros!"
       } else {
         setReplyError("Tip scatter o!");
@@ -526,21 +624,24 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
   return (
     <div
-      className={`bg-white border border-gray-200 rounded-lg shadow-sm mb-2 ${depth > 0 ? "ml-4 border-l-4 border-l-slate-200" : ""
-        }`}
+      ref={cardRef}
+      className={`${containerClass} ${depthClass} ${isFocusedReply ? "ring-2 ring-blue-400 ring-offset-1" : ""}`}
     >
-      <div className="p-3 bg-gray-200 pb-2">
+      <div
+        className={`${isCompactNode ? "p-2" : "p-3"} ${isReply ? "bg-white" : "bg-gray-200"} pb-2`}
+      >
         <div className="flex flex-wrap items-baseline gap-x-1 justify-between">
-          <Link
-            href={titleHref || "#"}
-            onClick={(e) => {
-              if (!titleHref) e.preventDefault();
-            }}
-            className={`${isReply ? "text-blue-900" : "text-green-800"
-              } font-bold text-base hover:underline`}
-          >
-            {displayTitle}
-          </Link>
+          {!isReply && (
+            <Link
+              href={titleHref || "#"}
+              onClick={(e) => {
+                if (!titleHref) e.preventDefault();
+              }}
+              className="font-bold text-base text-green-800 hover:underline"
+            >
+              {displayTitle}
+            </Link>
+          )}
           {!isReply && isSolved && (
             <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
               Solved
@@ -567,7 +668,12 @@ const ThreadCard: FC<ThreadCardProps> = ({
             </button>
           )}
           <div className="flex items-center gap-2">
-            <span className="text-xs text-gray-600">
+            <span className="text-xs text-gray-600 break-words">
+              {isFlattenedReply && (
+                <span className="mr-1 inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                  Replying to @{replyingToHandle}
+                </span>
+              )}
               by{" "}
               {thread.userId?._id ? (
                 <Link
@@ -583,10 +689,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
               )}
               {thread.userId?.flair && (
                 <span
-                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${thread.userId.flair === "Oga at the Top"
+                  className={`ml-1 inline-block text-white px-1 rounded text-xs ${
+                    thread.userId.flair === "Oga at the Top"
                       ? "bg-yellow-500"
                       : "bg-green-500"
-                    }`}
+                  }`}
                 >
                   {thread.userId.flair}
                 </span>
@@ -597,7 +704,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               )}
               {!isReply && isThread(thread) && `• ${thread.category}`}
             </span>
-            {!isReply && hasReplies && (
+            {hasReplies && (
               <button
                 onClick={handleRepliesCountClick}
                 className="text-blue-600 hover:text-blue-800"
@@ -622,7 +729,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
         </div>
       </div>
 
-      <div className="px-4 py-3 text-sm bg-gray-50 text-gray-800 sm:px-5">
+      <div
+        className={`${isCompactNode ? "px-3 py-2" : "px-4 py-3 sm:px-5"} text-sm text-gray-800 ${isReply ? "bg-white" : "bg-gray-50"}`}
+      >
         <div
           className="max-w-none text-sm text-gray-800 [&_h1]:my-2 [&_h1]:text-xl [&_h1]:font-bold [&_h2]:my-2 [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:my-2 [&_h3]:text-base [&_h3]:font-semibold [&_h4]:my-2 [&_h4]:text-[15px] [&_h4]:font-semibold [&_h5]:my-2 [&_h5]:text-sm [&_h5]:font-semibold [&_h6]:my-2 [&_h6]:text-sm [&_h6]:font-semibold [&_p]:my-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-1 [&_blockquote]:my-2 [&_blockquote]:border-l-4 [&_blockquote]:border-slate-300 [&_blockquote]:pl-3 [&_blockquote]:text-slate-600 [&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded [&_pre]:bg-slate-900 [&_pre]:p-2 [&_pre]:text-slate-100 [&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_a]:text-blue-700 [&_a]:underline"
           dangerouslySetInnerHTML={{
@@ -630,11 +739,14 @@ const ThreadCard: FC<ThreadCardProps> = ({
           }}
         />
 
-        <div className="mt-3 pt-2 border-t border-gray-200 flex gap-1 text-xs text-gray-500">
+        <div
+          className={`mt-3 pt-2 flex flex-wrap gap-2 text-xs text-gray-500 ${isReply ? "border-t border-slate-100" : "border-t border-gray-200"}`}
+        >
           <button
             onClick={handleReplyClick}
-            className={`flex items-center gap-1 text-xs ${canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
-              }`}
+            className={`flex items-center gap-1 text-xs ${
+              canReplyToThread ? "hover:text-blue-600" : "text-gray-400"
+            }`}
             disabled={!canReplyToThread}
           >
             <span
@@ -648,8 +760,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${isSticky ? "text-amber-600" : "hover:text-amber-600"
-                }`}
+              className={`hidden sm:flex items-center gap-1 text-xs ${
+                isSticky ? "text-amber-600" : "hover:text-amber-600"
+              }`}
               onClick={handleStickyToggle}
               disabled={isStickyLoading}
             >
@@ -665,8 +778,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {canModerateThread && (
             <button
-              className={`flex items-center gap-1 text-xs ${isLocked ? "text-slate-600" : "hover:text-slate-700"
-                }`}
+              className={`hidden sm:flex items-center gap-1 text-xs ${
+                isLocked ? "text-slate-600" : "hover:text-slate-700"
+              }`}
               onClick={handleLockToggle}
               disabled={isLockLoading}
             >
@@ -682,14 +796,15 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           <button
             onClick={handleReport}
-            className={`flex items-center gap-1 text-xs ${isReply
+            className={`flex items-center gap-1 text-xs ${
+              isReply
                 ? isReported
                   ? "text-gray-400"
                   : "hover:text-red-600"
                 : isReported
                   ? "text-gray-400"
                   : "hover:text-red-600"
-              }`}
+            }`}
             disabled={isReported}
             title="Report"
           >
@@ -718,13 +833,16 @@ const ThreadCard: FC<ThreadCardProps> = ({
             >
               thumb_up
             </span>
-            <span className="text-xs">Like {likesCount > 0 ? `(${likesCount})` : ""}</span>
+            <span className="text-xs">
+              Like {likesCount > 0 ? `(${likesCount})` : ""}
+            </span>
           </button>
 
           {!isReply && (
             <button
-              className={`flex items-center gap-1 text-xs ${isBookmarked ? "text-blue-600" : "hover:text-blue-600"
-                }`}
+              className={`hidden sm:flex items-center gap-1 text-xs ${
+                isBookmarked ? "text-blue-600" : "hover:text-blue-600"
+              }`}
               onClick={handleBookmarkToggle}
               disabled={isBookmarkLoading}
             >
@@ -742,8 +860,9 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           {!isReply && canToggleSolved && (
             <button
-              className={`flex items-center gap-1 text-xs ${isSolved ? "text-emerald-600" : "hover:text-emerald-600"
-                }`}
+              className={`hidden sm:flex items-center gap-1 text-xs ${
+                isSolved ? "text-emerald-600" : "hover:text-emerald-600"
+              }`}
               onClick={handleSolvedToggle}
               disabled={isSolvedLoading}
             >
@@ -753,13 +872,16 @@ const ThreadCard: FC<ThreadCardProps> = ({
               >
                 task_alt
               </span>
-              <span className="text-xs">{isSolved ? "Solved" : "Mark solved"}</span>
+              <span className="text-xs">
+                {isSolved ? "Solved" : "Mark solved"}
+              </span>
             </button>
           )}
 
           <button
-            className={`flex items-center gap-1 text-xs ${hasTipped ? "text-gray-400" : "hover:text-yellow-600"
-              }`}
+            className={`hidden sm:flex items-center gap-1 text-xs ${
+              hasTipped ? "text-gray-400" : "hover:text-yellow-600"
+            }`}
             onClick={() => !hasTipped && setShowTipModal(true)}
             disabled={hasTipped}
           >
@@ -775,7 +897,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           <button
-            className="hover:text-purple-600 flex items-center gap-1 text-xs"
+            className="hidden sm:flex hover:text-purple-600 items-center gap-1 text-xs"
             onClick={handleShare}
           >
             <span
@@ -789,7 +911,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
 
           <button
             onClick={() => setIsPidgin(!isPidgin)}
-            className="hover:text-green-600 flex items-center gap-1 text-xs ml-auto"
+            className="hidden sm:flex hover:text-green-600 items-center gap-1 text-xs ml-auto"
           >
             <span className="text-xs">{isPidgin ? "English" : "Pidgin"}</span>
           </button>
@@ -895,10 +1017,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
                   <button
                     key={amt}
                     onClick={() => setTipAmount(amt)}
-                    className={`px-3 py-1 rounded-md text-sm ${tipAmount === amt
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      tipAmount === amt
                         ? "bg-green-600 text-white"
                         : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                      }`}
+                    }`}
                   >
                     ₦{amt}
                   </button>
@@ -941,12 +1064,13 @@ const ThreadCard: FC<ThreadCardProps> = ({
             </div>
           </div>
         )}
-
       </div>
 
       {showReplies && repliesExpanded && hasReplies && (
-        <div className="mx-3 mt-2 space-y-2 border-t border-gray-100 py-3">
-          {nestedReplies.map((reply) => (
+        <div
+          className={`${isReply ? "ml-2 mt-1" : "mx-3 mt-2"} space-y-2 border-t border-gray-100 py-2`}
+        >
+          {visibleNestedReplies.map((reply) => (
             <ThreadCard
               key={reply._id}
               thread={reply}
@@ -962,11 +1086,26 @@ const ThreadCard: FC<ThreadCardProps> = ({
               currentUserId={currentUserId}
               currentUserRole={currentUserRole}
               onThreadUpdated={onThreadUpdated}
+              replyingToEmail={thread.userId?.email || null}
+              focusReplyId={focusReplyId}
+              focusReplyPathIds={resolvedFocusPathIds}
             />
           ))}
+          {hasMoreNestedReplies && (
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() =>
+                  setVisibleRepliesCount((prev) => prev + REPLIES_PAGE_SIZE)
+                }
+                className="text-xs font-semibold text-blue-700 hover:text-blue-900 hover:underline"
+              >
+                Show more replies ({hiddenRepliesCount} more)
+              </button>
+            </div>
+          )}
         </div>
       )}
-
     </div>
   );
 };

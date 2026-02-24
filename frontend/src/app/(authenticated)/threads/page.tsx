@@ -89,6 +89,7 @@ function ThreadsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
+  const replyId = searchParams.get("replyId");
   const composeMode = searchParams.get("compose") === "1";
   const contestId = searchParams.get("contestId");
   const contestTitle = searchParams.get("contestTitle");
@@ -97,8 +98,8 @@ function ThreadsContent() {
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    setShowRepliesExpanded(false);
-  }, [selectedThread?._id]);
+    setShowRepliesExpanded(Boolean(replyId));
+  }, [selectedThread?._id, replyId]);
 
   const trendingTopics = [
     "Suya joints",
@@ -489,6 +490,7 @@ function ThreadsContent() {
                     onToggleRepliesExpanded={() =>
                       setShowRepliesExpanded((prev) => !prev)
                     }
+                    focusReplyId={replyId}
                     onReplyAdded={() => fetchSingleThread(selectedThread._id)}
                     currentUserId={currentUserId}
                     currentUserRole={currentUserRole}
