@@ -5,6 +5,7 @@ import { useState, FormEvent } from "react";
 import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
+import { setStoredAuth } from "@/utils/authStorage";
 
 export default function Login() {
   const [email, setEmail] = useState<string>("");
@@ -23,8 +24,7 @@ export default function Login() {
         message: string;
       }>("/auth/login", { email, password });
       setMessage(res.data.message);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("userId", res.data.userId); // Store userId
+      setStoredAuth(res.data.token, res.data.userId);
       console.log("Logged in User ID:", res.data.userId);
       setEmail("");
       setPassword("");

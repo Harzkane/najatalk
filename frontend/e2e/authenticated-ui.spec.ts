@@ -122,6 +122,22 @@ test("authenticated user can open compose panel on threads", async ({ context, p
   await expect(titleInput).toBeVisible({ timeout: 30_000 });
 });
 
+test("authenticated user sees logout in header", async ({ context, page }) => {
+  test.skip(
+    !userEmail || !userPassword,
+    "E2E_UI_USER_EMAIL/PASSWORD (or E2E_USER_EMAIL/PASSWORD) not configured"
+  );
+
+  const session = await login(userEmail, userPassword);
+  await ensureProfileComplete(session.token, session.userId, userEmail);
+  await seedSessionInBrowser(context, page, session);
+
+  await page.goto(`${uiBaseUrl}/marketplace`);
+  await expect(page.getByRole("button", { name: /^logout$/i })).toBeVisible({
+    timeout: 30_000,
+  });
+});
+
 test("authenticated admin can open admin dashboard", async ({ context, page }) => {
   test.skip(
     !adminEmail || !adminPassword,

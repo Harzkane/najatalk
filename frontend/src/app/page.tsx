@@ -576,10 +576,39 @@ function HomeContent() {
           title="NaijaTalk Forum"
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
-          loginHref="/login"
           compact
           secondaryLink={{ href: "/premium", label: "Premium" }}
         />
+        {!isLoggedIn && (
+          <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-emerald-900">
+                  New to NaijaTalk?
+                </p>
+                <p className="mt-1 text-sm text-emerald-800">
+                  Join to post threads, save marketplace listings, enter contests, and access wallet tools.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Login
+                </Link>
+                <Link
+                  href="/signup"
+                  className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
+                >
+                  <PenSquare className="h-4 w-4" />
+                  Sign Up
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="mt-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <SearchBar
             onSearch={handleSearch}

@@ -3,6 +3,7 @@
 import { ReactNode, useEffect } from "react";
 import axios from "axios";
 import { usePathname, useRouter } from "next/navigation";
+import { clearStoredAuth } from "@/utils/authStorage";
 
 const EXEMPT_PATHS = ["/login", "/signup", "/appeal", "/onboarding/profile"];
 
@@ -34,8 +35,7 @@ export default function ProfileCompletionGate({ children }: { children: ReactNod
         }
       } catch (err) {
         if (axios.isAxiosError(err) && err.response?.status === 401) {
-          localStorage.removeItem("token");
-          localStorage.removeItem("userId");
+          clearStoredAuth();
           router.replace("/login");
         }
       }

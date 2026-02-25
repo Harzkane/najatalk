@@ -2,9 +2,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 type HeaderLink = {
   href: string;
@@ -43,18 +42,9 @@ export default function Header({
   rightActions,
   secondaryLink = { href: "/premium", label: "Premium" },
 }: HeaderProps) {
-  const router = useRouter();
-  const [myProfileHref, setMyProfileHref] = useState<string | null>(null);
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userId = localStorage.getItem("userId");
-    if (token && userId) {
-      setMyProfileHref(`/users/${userId}`);
-      return;
-    }
-    setMyProfileHref(null);
-  }, []);
+  const auth = useAuth();
+  const effectiveIsLoggedIn = isLoggedIn ?? auth.isLoggedIn;
+  const myProfileHref = auth.userId ? `/users/${auth.userId}` : null;
 
   const baseLinks = [
     { href: "/", label: "Home" },
@@ -82,11 +72,11 @@ export default function Header({
   const navLinks = links ?? dedupedAutoLinks;
 
   const handleLogout = () => {
-    if (onLogout) onLogout();
-    else {
-      localStorage.removeItem("token");
-      router.push("/login");
+    if (onLogout) {
+      onLogout();
+      return;
     }
+    auth.logout("/login");
   };
 
   return (
@@ -119,7 +109,7 @@ export default function Header({
             </Link>
           ))}
           {rightActions}
-          {isLoggedIn && (
+          {effectiveIsLoggedIn && (
             <button
               onClick={handleLogout}
               className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
@@ -127,7 +117,7 @@ export default function Header({
               Logout
             </button>
           )}
-          {!isLoggedIn && loginHref && (
+          {!effectiveIsLoggedIn && loginHref && (
             <Link
               href={loginHref}
               className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm"

@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import PopupAdWrapper from "../components/home/PopupAdWrapper"; // New client component
 import ProfileCompletionGate from "../components/auth/ProfileCompletionGate";
+import { AuthProvider } from "../components/auth/AuthProvider";
 import SiteFooter from "../components/SiteFooter";
 
 const geistSans = Geist({
@@ -37,14 +38,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ProfileCompletionGate>
-          <PopupAdWrapper>
-            <div className="flex min-h-screen flex-col">
-              <div className="flex-1">{children}</div>
-              <SiteFooter />
-            </div>
-          </PopupAdWrapper>
-        </ProfileCompletionGate>
+        <AuthProvider>
+          <ProfileCompletionGate>
+            <PopupAdWrapper>
+              <div className="flex min-h-screen flex-col">
+                <div className="flex-1">{children}</div>
+                <SiteFooter />
+              </div>
+            </PopupAdWrapper>
+          </ProfileCompletionGate>
+        </AuthProvider>
       </body>
     </html>
   );
