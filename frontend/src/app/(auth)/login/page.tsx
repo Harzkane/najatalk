@@ -1,7 +1,7 @@
 // frontend/src/app/(auth)/login/page.tsx
 "use client";
 
-import { useState, FormEvent } from "react";
+import { Suspense, useState, FormEvent } from "react";
 import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -10,7 +10,7 @@ import { trackEvent } from "@/utils/analytics";
 import { getAuthErrorMessage, getAuthErrorStatus } from "@/utils/authErrorMessage";
 import Link from "next/link";
 
-export default function Login() {
+function LoginContent() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -164,5 +164,24 @@ export default function Login() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-100">
+          <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
+            <h1 className="text-3xl font-bold text-green-800 mb-6">
+              Login to NaijaTalk
+            </h1>
+            <p className="text-sm text-slate-600">Loading login...</p>
+          </div>
+        </div>
+      }
+    >
+      <LoginContent />
+    </Suspense>
   );
 }
