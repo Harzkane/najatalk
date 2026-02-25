@@ -5,6 +5,7 @@ import { isAxiosError } from "axios";
 import api from "@/utils/api";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import Header from "@/components/Header";
 
 function ContestsContent() {
   const router = useRouter();
@@ -27,6 +28,7 @@ function ContestsContent() {
   const [votingSubmissionId, setVotingSubmissionId] = useState(null);
   const [votePulseSubmissionId, setVotePulseSubmissionId] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const hasSelectedAsset = Boolean(threadId.trim() || listingId.trim());
 
   const getToken = () => localStorage.getItem("token");
@@ -220,6 +222,14 @@ function ContestsContent() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setCurrentUserId(null);
+    setIsLoggedIn(false);
+    router.push("/login");
+  };
+
   useEffect(() => {
     fetchContests();
   }, [fetchContests]);
@@ -232,8 +242,10 @@ function ContestsContent() {
     const token = getToken();
     if (!token) {
       setCurrentUserId(null);
+      setIsLoggedIn(false);
       return;
     }
+    setIsLoggedIn(true);
     const loadMe = async () => {
       try {
         const res = await api.get("/users/me", {
@@ -242,6 +254,7 @@ function ContestsContent() {
         setCurrentUserId(res.data?._id || null);
       } catch {
         setCurrentUserId(null);
+        setIsLoggedIn(false);
       }
     };
     loadMe();
@@ -282,9 +295,16 @@ function ContestsContent() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-6">
-      <div className="mx-auto max-w-7xl">
-        <h1 className="mb-4 text-3xl font-bold text-green-800">NaijaTalk Contests</h1>
-        <div className="mb-3 flex flex-wrap items-center gap-2">
+      <div className="mx-auto max-w-7.5xl">
+        <Header
+          title="NaijaTalk Contests"
+          subtitle="Discover live contests, submit entries, and vote on top community work."
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          loginHref="/login"
+          compact
+        />
+        <div className="mb-3 mt-3 flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}

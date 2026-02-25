@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import Header from "@/components/Header";
 import ListingCard from "@/components/marketplace/ListingCard";
 import TrustBadge from "@/components/marketplace/TrustBadge";
 import RichTextEditor from "@/components/threads/RichTextEditor";
@@ -35,6 +36,7 @@ export default function UserProfile() {
   const [activeTab, setActiveTab] = useState("all");
   const [activeSection, setActiveSection] = useState("overview");
   const [isOwnerProfile, setIsOwnerProfile] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newThreadDraft, setNewThreadDraft] = useState({
     title: "",
@@ -47,6 +49,7 @@ export default function UserProfile() {
   const [deletingThreadId, setDeletingThreadId] = useState(null);
 
   const { id } = useParams();
+  const router = useRouter();
 
   useEffect(() => {
     fetchProfile();
@@ -54,9 +57,18 @@ export default function UserProfile() {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      setIsLoggedIn(Boolean(localStorage.getItem("token")));
       setIsOwnerProfile(localStorage.getItem("userId") === id);
     }
   }, [id]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setIsLoggedIn(false);
+    setIsOwnerProfile(false);
+    router.push("/login");
+  };
 
   const fetchProfile = async () => {
     setLoading(true);
@@ -271,7 +283,7 @@ export default function UserProfile() {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-100 p-6">
-        <div className="mx-auto max-w-7xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
           Loading profile...
         </div>
       </div>
@@ -281,7 +293,7 @@ export default function UserProfile() {
   if (!user) {
     return (
       <div className="min-h-screen bg-slate-100 p-6">
-        <div className="mx-auto max-w-7xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
           {message || "Profile unavailable."}
         </div>
       </div>
@@ -290,10 +302,22 @@ export default function UserProfile() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 pb-20 md:p-6">
-      <div className="mx-auto mb-4 max-w-7xl">
+      <div className="mx-auto mb-4 max-w-7.5xl">
+        <Header
+          title={user.displayName || "User Profile"}
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          loginHref="/login"
+          links={[
+            { href: "/", label: "Home" },
+            { href: "/marketplace", label: "Marketplace" },
+            ...(isOwnerProfile ? [{ href: `/users/${id}/wallet`, label: "My Wallet" }] : []),
+          ]}
+          compact
+        />
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4">
               <div className="flex items-start gap-3">
                 {user.avatarUrl ? (
                   <img
@@ -329,29 +353,6 @@ export default function UserProfile() {
                   )}
                 </div>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Link
-                  href="/"
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/marketplace"
-                  className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                >
-                  Marketplace
-                </Link>
-                {isOwnerProfile && (
-                  <Link
-                    href={`/users/${id}/wallet`}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    My Wallet
-                  </Link>
-                )}
-              </div>
             </div>
           </div>
 
@@ -378,7 +379,7 @@ export default function UserProfile() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7.5xl">
         {message && (
           <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
             {message}

@@ -5,6 +5,7 @@ import api from "@/utils/api";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ConfirmModal";
+import Header from "@/components/Header";
 
 const toId = (value) => {
   if (!value) return null;
@@ -64,6 +65,7 @@ const normalizeDeliveryAddress = (input = {}) => ({
 export default function ListingDetailPage() {
   const [listing, setListing] = useState(null);
   const [message, setMessage] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [savedListingIds, setSavedListingIds] = useState([]);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -95,13 +97,17 @@ export default function ListingDetailPage() {
   const router = useRouter();
 
   useEffect(() => {
+    setIsLoggedIn(Boolean(localStorage.getItem("token")));
     fetchListing();
     fetchCurrentUser();
   }, [id]);
 
   const fetchCurrentUser = async () => {
     const token = localStorage.getItem("token");
-    if (!token) return;
+    if (!token) {
+      setIsLoggedIn(false);
+      return;
+    }
 
     try {
       const [userRes, savedRes, policyRes] = await Promise.all([
@@ -117,16 +123,31 @@ export default function ListingDetailPage() {
       ]);
 
       setCurrentUserId(userRes.data._id);
+      setIsLoggedIn(true);
       setDefaultDeliveryAddress(
         userRes.data.defaultDeliveryAddress
           ? normalizeDeliveryAddress(userRes.data.defaultDeliveryAddress)
-          : null
+          : null,
       );
-      setSavedListingIds((savedRes.data.savedListingIds || []).map((x) => x.toString()));
+      setSavedListingIds(
+        (savedRes.data.savedListingIds || []).map((x) => x.toString()),
+      );
       setMarketplacePolicy(policyRes.data || null);
     } catch (err) {
-      console.error("Current user load error:", err.response?.data || err.message);
+      setIsLoggedIn(false);
+      console.error(
+        "Current user load error:",
+        err.response?.data || err.message,
+      );
     }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    setIsLoggedIn(false);
+    setCurrentUserId(null);
+    router.push("/login");
   };
 
   const fetchListing = async () => {
@@ -206,7 +227,7 @@ export default function ListingDetailPage() {
       const res = await api.post(
         `/marketplace/buy/${listing._id}`,
         { orderDetails },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (saveDeliveryAsDefault) {
         const normalizedAddress = normalizeDeliveryAddress(orderDetails);
@@ -214,12 +235,12 @@ export default function ListingDetailPage() {
           await api.patch(
             "/users/me/profile",
             { defaultDeliveryAddress: normalizedAddress },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${token}` } },
           );
         } catch (saveErr) {
           console.error(
             "Save default delivery address error:",
-            saveErr.response?.data || saveErr.message
+            saveErr.response?.data || saveErr.message,
           );
         }
         setDefaultDeliveryAddress(normalizedAddress);
@@ -247,9 +268,11 @@ export default function ListingDetailPage() {
       const res = await api.post(
         `/marketplace/favorites/${listing._id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      setSavedListingIds((res.data.savedListings || []).map((x) => x.toString()));
+      setSavedListingIds(
+        (res.data.savedListings || []).map((x) => x.toString()),
+      );
     } catch (err) {
       setMessage(err.response?.data?.message || "Save listing scatter o!");
     }
@@ -267,7 +290,7 @@ export default function ListingDetailPage() {
       const res = await api.post(
         `/marketplace/release/${listing._id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setMessage(res.data.message);
       fetchListing();
@@ -288,7 +311,7 @@ export default function ListingDetailPage() {
       const res = await api.post(
         `/marketplace/ship/${listing._id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setMessage(res.data.message || "Order marked as shipped.");
       fetchListing();
@@ -346,10 +369,14 @@ export default function ListingDetailPage() {
       const res = await api.post(
         `/marketplace/listings/${listing._id}/boost`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setMessage(res.data.message || "Listing boosted.");
-      await Promise.all([fetchListing(), fetchCurrentUser(), fetchWalletData()]);
+      await Promise.all([
+        fetchListing(),
+        fetchCurrentUser(),
+        fetchWalletData(),
+      ]);
       setWalletModalOpen(false);
       setShowBoostSuccessModal(true);
       setTimeout(() => setShowBoostSuccessModal(false), 1200);
@@ -394,7 +421,8 @@ export default function ListingDetailPage() {
   const isOwner = ownerId === currentUserId;
   const canDelete = isOwner;
   const isBuyer = buyerId === currentUserId;
-  const isBuyerPending = listing.status === "pending" && buyerId === currentUserId;
+  const isBuyerPending =
+    listing.status === "pending" && buyerId === currentUserId;
   const isSellerPending = listing.status === "pending" && isOwner;
   const isOrderShipped = listing.fulfillmentStatus === "shipped";
   const canSellerShip = isSellerPending && !isOrderShipped;
@@ -402,40 +430,42 @@ export default function ListingDetailPage() {
   const isSaved = savedListingIds.includes(listing._id?.toString());
   const walletAvailable = Number(walletData?.availableBalance || 0);
   const walletHeld = Number(walletData?.heldBalance || 0);
-  const walletTotal = Number(walletData?.balance || walletAvailable + walletHeld);
+  const walletTotal = Number(
+    walletData?.balance || walletAvailable + walletHeld,
+  );
   const boostCostKobo = Number(marketplacePolicy?.boostCostKobo || 0);
   const hasEnoughForBoost = walletAvailable >= boostCostKobo;
-  const walletEntries = Array.isArray(walletData?.entries) ? walletData.entries.slice(0, 8) : [];
-  const boostExpiryMs = listing?.boostExpiresAt ? new Date(listing.boostExpiresAt).getTime() : 0;
-  const isBoostCurrentlyActive = Number.isFinite(boostExpiryMs) && boostExpiryMs > Date.now();
+  const walletEntries = Array.isArray(walletData?.entries)
+    ? walletData.entries.slice(0, 8)
+    : [];
+  const boostExpiryMs = listing?.boostExpiresAt
+    ? new Date(listing.boostExpiresAt).getTime()
+    : 0;
+  const isBoostCurrentlyActive =
+    Number.isFinite(boostExpiryMs) && boostExpiryMs > Date.now();
   const boostLevel = Number(listing?.boostLevel || 0);
   const boostsPurchased = Number(listing?.boostsPurchased || 0);
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-      <div className="mx-auto max-w-6xl space-y-4">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h1 className="text-2xl font-bold text-slate-900">Listing Detail</h1>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/marketplace"
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Back to Marketplace
-              </Link>
-              <Link
-                href={`/users/${ownerId}`}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-              >
-                Seller Profile
-              </Link>
-            </div>
-          </div>
-        </div>
+      <div className="mx-auto max-w-7.5xl space-y-4">
+        <Header
+          title="Listing Detail"
+          subtitle={listing.title}
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          loginHref="/login"
+          links={[
+            { href: "/", label: "Home" },
+            { href: "/marketplace", label: "Marketplace" },
+            { href: `/users/${ownerId}`, label: "Seller Profile" },
+          ]}
+        />
 
         {message && (
-          <p className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">{message}</p>
+          <p className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
+            {message}
+          </p>
         )}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -448,7 +478,9 @@ export default function ListingDetailPage() {
                   className="h-80 w-full object-cover"
                 />
               ) : (
-                <div className="flex h-80 items-center justify-center text-slate-400">No image</div>
+                <div className="flex h-80 items-center justify-center text-slate-400">
+                  No image
+                </div>
               )}
             </div>
 
@@ -458,8 +490,11 @@ export default function ListingDetailPage() {
                   <button
                     key={`${img}-${idx}`}
                     onClick={() => setSelectedImage(idx)}
-                    className={`overflow-hidden rounded border ${selectedImage === idx ? "border-green-500" : "border-slate-200"
-                      }`}
+                    className={`overflow-hidden rounded border ${
+                      selectedImage === idx
+                        ? "border-green-500"
+                        : "border-slate-200"
+                    }`}
                   >
                     <img
                       src={getImageSrc(img)}
@@ -472,53 +507,72 @@ export default function ListingDetailPage() {
             )}
 
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <h2 className="text-xl font-semibold text-slate-900">{listing.title}</h2>
+              <h2 className="text-xl font-semibold text-slate-900">
+                {listing.title}
+              </h2>
               <span
-                className={`rounded-full px-2 py-1 text-xs font-semibold ${listing.status === "active"
+                className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                  listing.status === "active"
                     ? "bg-emerald-100 text-emerald-700"
                     : listing.status === "pending"
                       ? "bg-amber-100 text-amber-700"
                       : "bg-slate-200 text-slate-700"
-                  }`}
+                }`}
               >
                 {listing.status[0].toUpperCase() + listing.status.slice(1)}
               </span>
             </div>
 
-            <p className="mb-4 text-3xl font-bold text-slate-900">₦{(listing.price / 100).toLocaleString()}</p>
+            <p className="mb-4 text-3xl font-bold text-slate-900">
+              ₦{(listing.price / 100).toLocaleString()}
+            </p>
 
             <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <p className="text-sm leading-relaxed text-slate-700">{listing.description}</p>
+              <p className="text-sm leading-relaxed text-slate-700">
+                {listing.description}
+              </p>
             </div>
 
             <div className="grid grid-cols-1 gap-2 text-sm text-slate-600 md:grid-cols-2">
               <p>
-                <span className="font-medium text-slate-800">Category:</span> {listing.category}
+                <span className="font-medium text-slate-800">Category:</span>{" "}
+                {listing.category}
               </p>
               <p>
-                <span className="font-medium text-slate-800">Posted:</span> {formatDate(listing.createdAt)}
+                <span className="font-medium text-slate-800">Posted:</span>{" "}
+                {formatDate(listing.createdAt)}
               </p>
               <p>
-                <span className="font-medium text-slate-800">Updated:</span> {formatDate(listing.updatedAt)}
+                <span className="font-medium text-slate-800">Updated:</span>{" "}
+                {formatDate(listing.updatedAt)}
               </p>
               <p>
-                <span className="font-medium text-slate-800">Delivery Flow:</span> Escrow protected
+                <span className="font-medium text-slate-800">
+                  Delivery Flow:
+                </span>{" "}
+                Escrow protected
               </p>
               {listing.status === "pending" && (
                 <p>
-                  <span className="font-medium text-slate-800">Order stage:</span>{" "}
+                  <span className="font-medium text-slate-800">
+                    Order stage:
+                  </span>{" "}
                   {isOrderShipped ? "Shipped" : "Awaiting seller shipment"}
                 </p>
               )}
               {isOwner && (
                 <>
                   <p>
-                    <span className="font-medium text-slate-800">Boost Status:</span>{" "}
+                    <span className="font-medium text-slate-800">
+                      Boost Status:
+                    </span>{" "}
                     {isBoostCurrentlyActive ? "Active" : "Inactive"}
                   </p>
                   {listing?.boostExpiresAt && (
                     <p>
-                      <span className="font-medium text-slate-800">Boost Expires:</span>{" "}
+                      <span className="font-medium text-slate-800">
+                        Boost Expires:
+                      </span>{" "}
                       {formatBoostDate(listing.boostExpiresAt)}
                     </p>
                   )}
@@ -528,7 +582,9 @@ export default function ListingDetailPage() {
           </div>
 
           <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">Seller Trust</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-500">
+              Seller Trust
+            </h3>
             <p className="text-sm text-slate-700">
               <span className="font-medium">Seller:</span>{" "}
               {listing.userId?.username || maskEmail(listing.userId?.email)}
@@ -569,11 +625,14 @@ export default function ListingDetailPage() {
                 </p>
                 <p>
                   Commission {marketplacePolicy.commissionPercent}% • Boost{" "}
-                  {marketplacePolicy.boostCostLabel}/{marketplacePolicy.boostHours}h
+                  {marketplacePolicy.boostCostLabel}/
+                  {marketplacePolicy.boostHours}h
                 </p>
                 <p>
-                  Boost level {Math.max(boostLevel, isBoostCurrentlyActive ? 1 : 0)} • purchased{" "}
-                  {boostsPurchased} time{boostsPurchased === 1 ? "" : "s"}
+                  Boost level{" "}
+                  {Math.max(boostLevel, isBoostCurrentlyActive ? 1 : 0)} •
+                  purchased {boostsPurchased} time
+                  {boostsPurchased === 1 ? "" : "s"}
                 </p>
               </div>
             )}
@@ -581,10 +640,11 @@ export default function ListingDetailPage() {
             <div className="mt-4 space-y-2">
               <button
                 onClick={handleToggleFavorite}
-                className={`w-full rounded-md px-3 py-2 text-sm font-medium ${isSaved
+                className={`w-full rounded-md px-3 py-2 text-sm font-medium ${
+                  isSaved
                     ? "bg-slate-800 text-white hover:bg-slate-900"
                     : "border border-slate-300 text-slate-700 hover:bg-slate-50"
-                  }`}
+                }`}
               >
                 {isSaved ? "Saved" : "Save Listing"}
               </button>
@@ -613,7 +673,9 @@ export default function ListingDetailPage() {
                   disabled={!isOrderShipped}
                   className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700"
                 >
-                  {isOrderShipped ? "Confirm Delivery" : "Waiting for Seller Shipment"}
+                  {isOrderShipped
+                    ? "Confirm Delivery"
+                    : "Waiting for Seller Shipment"}
                 </button>
               )}
               {canSellerShip && (
@@ -680,13 +742,17 @@ export default function ListingDetailPage() {
               )}
               {listing.shippedAt && (
                 <p>
-                  <span className="font-medium text-slate-800">Shipped At:</span>{" "}
+                  <span className="font-medium text-slate-800">
+                    Shipped At:
+                  </span>{" "}
                   {new Date(listing.shippedAt).toLocaleString("en-NG")}
                 </p>
               )}
               {listing.buyerConfirmedAt && (
                 <p>
-                  <span className="font-medium text-slate-800">Delivered At:</span>{" "}
+                  <span className="font-medium text-slate-800">
+                    Delivered At:
+                  </span>{" "}
                   {new Date(listing.buyerConfirmedAt).toLocaleString("en-NG")}
                 </p>
               )}
@@ -726,7 +792,9 @@ export default function ListingDetailPage() {
       {showBuyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
-            <h3 className="text-lg font-semibold text-slate-900">Checkout Delivery Details</h3>
+            <h3 className="text-lg font-semibold text-slate-900">
+              Checkout Delivery Details
+            </h3>
             <p className="mt-1 text-sm text-slate-600">
               Payment moves to escrow now, and seller ships to this address.
             </p>
@@ -749,14 +817,18 @@ export default function ListingDetailPage() {
                 type="text"
                 placeholder="Address line 1 *"
                 value={orderDetails.addressLine1}
-                onChange={(e) => updateOrderDetail("addressLine1", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("addressLine1", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <input
                 type="text"
                 placeholder="Address line 2"
                 value={orderDetails.addressLine2}
-                onChange={(e) => updateOrderDetail("addressLine2", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("addressLine2", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <input
@@ -777,13 +849,17 @@ export default function ListingDetailPage() {
                 type="text"
                 placeholder="Postal code"
                 value={orderDetails.postalCode}
-                onChange={(e) => updateOrderDetail("postalCode", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("postalCode", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800"
               />
               <textarea
                 placeholder="Delivery note"
                 value={orderDetails.deliveryNote}
-                onChange={(e) => updateOrderDetail("deliveryNote", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("deliveryNote", e.target.value)
+                }
                 className="h-20 rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
@@ -813,7 +889,9 @@ export default function ListingDetailPage() {
                 disabled={isSubmittingBuyOrder}
                 className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmittingBuyOrder ? "Placing Order..." : "Place Order with Escrow"}
+                {isSubmittingBuyOrder
+                  ? "Placing Order..."
+                  : "Place Order with Escrow"}
               </button>
             </div>
           </div>
@@ -825,7 +903,9 @@ export default function ListingDetailPage() {
           <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-slate-900">Boost via Wallet</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Boost via Wallet
+                </h3>
                 <p className="text-sm text-slate-600">
                   Pay from wallet and stay on listing detail page.
                 </p>
@@ -844,38 +924,57 @@ export default function ListingDetailPage() {
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
-                <p className="text-base font-semibold text-slate-900">{formatKobo(walletTotal)}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Total
+                </p>
+                <p className="text-base font-semibold text-slate-900">
+                  {formatKobo(walletTotal)}
+                </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Available</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Available
+                </p>
                 <p className="text-base font-semibold text-emerald-700">
                   {formatKobo(walletAvailable)}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Held</p>
-                <p className="text-base font-semibold text-amber-700">{formatKobo(walletHeld)}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Held
+                </p>
+                <p className="text-base font-semibold text-amber-700">
+                  {formatKobo(walletHeld)}
+                </p>
               </div>
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-sm text-slate-700">
-                Charge now: <span className="font-semibold">{formatKobo(boostCostKobo)}</span>
+                Charge now:{" "}
+                <span className="font-semibold">
+                  {formatKobo(boostCostKobo)}
+                </span>
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Multiple boosts extend your boost duration by {marketplacePolicy?.boostHours || 72}h each.
+                Multiple boosts extend your boost duration by{" "}
+                {marketplacePolicy?.boostHours || 72}h each.
               </p>
               {!hasEnoughForBoost && (
                 <p className="mt-1 text-xs text-red-700">
-                  Insufficient available balance. Fund your wallet and try again.
+                  Insufficient available balance. Fund your wallet and try
+                  again.
                 </p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={executeBoostFromWallet}
-                  disabled={isWalletActionLoading || isWalletLoading || !hasEnoughForBoost}
+                  disabled={
+                    isWalletActionLoading ||
+                    isWalletLoading ||
+                    !hasEnoughForBoost
+                  }
                   className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {isWalletActionLoading
@@ -892,18 +991,27 @@ export default function ListingDetailPage() {
             </div>
 
             <div className="mt-4">
-              <h4 className="text-sm font-semibold text-slate-900">Recent Wallet Activity</h4>
+              <h4 className="text-sm font-semibold text-slate-900">
+                Recent Wallet Activity
+              </h4>
               <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
                 {isWalletLoading ? (
-                  <p className="p-3 text-sm text-slate-500">Loading wallet activity...</p>
+                  <p className="p-3 text-sm text-slate-500">
+                    Loading wallet activity...
+                  </p>
                 ) : walletEntries.length === 0 ? (
-                  <p className="p-3 text-sm text-slate-500">No wallet activity yet.</p>
+                  <p className="p-3 text-sm text-slate-500">
+                    No wallet activity yet.
+                  </p>
                 ) : (
                   <div className="divide-y divide-slate-200">
                     {walletEntries.map((entry) => {
                       const effect = Number(entry.walletEffect || 0);
                       return (
-                        <div key={entry._id || entry.reference} className="p-3 text-sm">
+                        <div
+                          key={entry._id || entry.reference}
+                          className="p-3 text-sm"
+                        >
                           <div className="flex items-center justify-between gap-3">
                             <p className="font-medium text-slate-800">
                               {entry.entryKind || entry.type || "activity"}
@@ -920,7 +1028,9 @@ export default function ListingDetailPage() {
                             </p>
                           </div>
                           <p className="mt-0.5 text-xs text-slate-500">
-                            {new Date(entry.date || Date.now()).toLocaleString("en-NG")}
+                            {new Date(entry.date || Date.now()).toLocaleString(
+                              "en-NG",
+                            )}
                           </p>
                         </div>
                       );
@@ -937,8 +1047,12 @@ export default function ListingDetailPage() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
           <div className="w-full max-w-xs rounded-xl border border-emerald-200 bg-white p-6 text-center shadow-xl">
             <div className="mx-auto mb-3 h-12 w-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
-            <p className="text-sm font-semibold text-emerald-700">Boost Activated</p>
-            <p className="mt-1 text-xs text-slate-500">Updating listing visibility...</p>
+            <p className="text-sm font-semibold text-emerald-700">
+              Boost Activated
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Updating listing visibility...
+            </p>
           </div>
         </div>
       )}

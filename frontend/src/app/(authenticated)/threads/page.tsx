@@ -12,6 +12,7 @@ import SearchBar from "../../../components/threads/SearchBar";
 import NewThreadButton from "../../../components/threads/NewThreadButton";
 import formatDate from "../../../utils/formatDate";
 import SponsoredAdCard from "../../../components/ads/SponsoredAdCard";
+import Header from "../../../components/Header";
 
 type Thread = {
   _id: string;
@@ -60,7 +61,9 @@ type Ad = {
 };
 
 const getReplyCount = (thread: Thread) =>
-  typeof thread.replyCount === "number" ? thread.replyCount : thread.replies?.length || 0;
+  typeof thread.replyCount === "number"
+    ? thread.replyCount
+    : thread.replies?.length || 0;
 
 const hasUserInIdList = (ids: unknown[] | undefined, userId: string) => {
   if (!ids?.length) return false;
@@ -86,8 +89,12 @@ function ThreadsContent() {
   >("all");
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
   const [showRepliesExpanded, setShowRepliesExpanded] = useState(true);
-  const [activeReplyComposerId, setActiveReplyComposerId] = useState<string | null>(null);
-  const [activeReportFormId, setActiveReportFormId] = useState<string | null>(null);
+  const [activeReplyComposerId, setActiveReplyComposerId] = useState<
+    string | null
+  >(null);
+  const [activeReportFormId, setActiveReportFormId] = useState<string | null>(
+    null,
+  );
   const router = useRouter();
   const searchParams = useSearchParams();
   const threadId = searchParams.get("id");
@@ -122,7 +129,7 @@ function ThreadsContent() {
         const res = await api.post(
           "/users/verifyTip",
           { reference, receiverId },
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setMessage(res.data.message || "Tip don land—gist too sweet!");
         if (!threadId) await fetchThreads();
@@ -147,7 +154,7 @@ function ThreadsContent() {
         setIsVerifyingTip(false);
       }
     },
-    [router, threadId]
+    [router, threadId],
   );
 
   useEffect(() => {
@@ -178,7 +185,8 @@ function ThreadsContent() {
         });
         setCurrentUserId(userRes.data._id || null);
         setCurrentUserRole(
-          (userRes.data.role as "user" | "mod" | "admin" | "super_admin") || null
+          (userRes.data.role as "user" | "mod" | "admin" | "super_admin") ||
+            null,
         );
         setIsPremium(userRes.data.isPremium);
         if (!userRes.data.isPremium) {
@@ -201,7 +209,7 @@ function ThreadsContent() {
         params: { status: "active", type: "banner" },
       });
       const activeBanners = res.data.ads.filter(
-        (ad: Ad) => ad.budget >= ad.cpc
+        (ad: Ad) => ad.budget >= ad.cpc,
       );
       if (activeBanners.length > 0) {
         const randomBanner =
@@ -220,7 +228,7 @@ function ThreadsContent() {
         params: { status: "active", type: "sidebar" },
       });
       const activeSidebars = res.data.ads.filter(
-        (ad: Ad) => ad.budget >= ad.cpc
+        (ad: Ad) => ad.budget >= ad.cpc,
       );
       if (activeSidebars.length > 0) {
         const randomSidebar =
@@ -259,9 +267,7 @@ function ThreadsContent() {
     async (query: string) => {
       setSearchQuery(query);
       try {
-        const res = await api.get<SearchResponse>(
-          `/threads/search?q=${query}`
-        );
+        const res = await api.get<SearchResponse>(`/threads/search?q=${query}`);
         setThreads(res.data.threads);
         setMessage(res.data.message);
         setSelectedThread(null);
@@ -274,7 +280,7 @@ function ThreadsContent() {
           setRecentSearches(updatedSearches);
           localStorage.setItem(
             "recentSearches",
-            JSON.stringify(updatedSearches)
+            JSON.stringify(updatedSearches),
           );
         }
       } catch (err: unknown) {
@@ -285,7 +291,7 @@ function ThreadsContent() {
         }
       }
     },
-    [recentSearches]
+    [recentSearches],
   );
 
   const fetchThreads = async () => {
@@ -301,9 +307,7 @@ function ThreadsContent() {
           hasNext: boolean;
           hasPrev: boolean;
         };
-      }>(
-        "/threads"
-      );
+      }>("/threads");
       setThreads(res.data.threads || []);
       setMessage(res.data.message || "");
       setSelectedThread(null);
@@ -319,7 +323,7 @@ function ThreadsContent() {
   const handleSubmitThread = async (
     title: string,
     body: string,
-    category: string
+    category: string,
   ): Promise<{ _id?: string; title?: string } | void> => {
     if (!isLoggedIn) {
       setMessage("Abeg login first!");
@@ -332,7 +336,7 @@ function ThreadsContent() {
       const res = await api.post<{ message: string; thread: Thread }>(
         "/threads",
         { title, body, category },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       setMessage(res.data.message);
       if (!selectedThread) await fetchThreads();
@@ -376,7 +380,10 @@ function ThreadsContent() {
     if (activeFilter === "solved") return Boolean(thread.isSolved);
     if (activeFilter === "bookmarked") {
       if (!currentUserId) return false;
-      return hasUserInIdList(thread.bookmarks as unknown[] | undefined, currentUserId);
+      return hasUserInIdList(
+        thread.bookmarks as unknown[] | undefined,
+        currentUserId,
+      );
     }
     return true;
   });
@@ -389,47 +396,26 @@ function ThreadsContent() {
         />
       </Head>
       <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-        <div className="max-w-7xl mx-auto mb-4">
-          <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
-            <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-50 text-center md:text-left break-words">
-                {selectedThread
-                  ? selectedThread.title
-                  : "NaijaTalk Threads—Drop Your Gist!"}
-              </h1>
-              <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
-                <Link
-                  href="/"
-                  className="text-green-100 hover:text-white text-sm font-medium"
-                >
-                  Home
-                </Link>
-                <Link
-                  href="/premium"
-                  className="text-green-100 hover:text-white text-sm font-medium"
-                >
-                  Premium
-                </Link>
-                <Link
-                  href="/marketplace"
-                  className="text-green-100 hover:text-white text-sm font-medium"
-                >
-                  Marketplace
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="bg-red-600 text-white px-3 py-1 rounded-lg hover:bg-red-700 text-sm"
-                >
-                  Logout
-                </button>
-              </div>
-            </div>
-          </div>
+        <div className="max-w-7.5xl mx-auto mb-4">
+          <Header
+            title={
+              selectedThread
+                ? selectedThread.title
+                : "NaijaTalk Threads—Drop Your Gist!"
+            }
+            isLoggedIn={isLoggedIn}
+            onLogout={handleLogout}
+            loginHref="/login"
+          />
         </div>
 
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7.5xl mx-auto">
           {!isPremium && bannerAd && (
-            <SponsoredAdCard ad={bannerAd} onClick={trackClick} className="mb-4" />
+            <SponsoredAdCard
+              ad={bannerAd}
+              onClick={trackClick}
+              className="mb-4"
+            />
           )}
 
           {!selectedThread && (
@@ -455,16 +441,17 @@ function ThreadsContent() {
                   onClick={() =>
                     setActiveFilter(
                       filterOption.id as
-                      | "all"
-                      | "unanswered"
-                      | "solved"
-                      | "bookmarked"
+                        | "all"
+                        | "unanswered"
+                        | "solved"
+                        | "bookmarked",
                     )
                   }
-                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${activeFilter === filterOption.id
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                    activeFilter === filterOption.id
                       ? "border-green-600 bg-green-600 text-white"
                       : "border-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
-                    }`}
+                  }`}
                 >
                   {filterOption.label}
                 </button>
@@ -481,8 +468,9 @@ function ThreadsContent() {
 
           <div className="flex flex-col lg:flex-row gap-4">
             <div
-              className={`w-full ${!isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
-                }`}
+              className={`w-full ${
+                !isPremium && sidebarAd ? "lg:w-3/4" : "lg:w-full"
+              }`}
             >
               {selectedThread ? (
                 <div className="space-y-4">
@@ -498,7 +486,9 @@ function ThreadsContent() {
                     onReplyAdded={() => fetchSingleThread(selectedThread._id)}
                     currentUserId={currentUserId}
                     currentUserRole={currentUserRole}
-                    onThreadUpdated={() => fetchSingleThread(selectedThread._id)}
+                    onThreadUpdated={() =>
+                      fetchSingleThread(selectedThread._id)
+                    }
                     activeReplyComposerId={activeReplyComposerId}
                     onSetActiveReplyComposerId={setActiveReplyComposerId}
                     activeReportFormId={activeReportFormId}
@@ -506,7 +496,7 @@ function ThreadsContent() {
                   />
 
                   {selectedThread.replies &&
-                    selectedThread.replies.length === 0 ? (
+                  selectedThread.replies.length === 0 ? (
                     <div className="bg-white border border-slate-200 p-4 rounded-md text-center mt-4">
                       <p className="text-slate-600">
                         No replies yet—be the first!
@@ -537,9 +527,16 @@ function ThreadsContent() {
                           currentUserRole={currentUserRole}
                           onThreadUpdated={fetchThreads}
                         />
-                        {!isPremium && bannerAd && index > 0 && index % 6 === 0 && (
-                          <SponsoredAdCard ad={bannerAd} onClick={trackClick} compact />
-                        )}
+                        {!isPremium &&
+                          bannerAd &&
+                          index > 0 &&
+                          index % 6 === 0 && (
+                            <SponsoredAdCard
+                              ad={bannerAd}
+                              onClick={trackClick}
+                              compact
+                            />
+                          )}
                       </div>
                     ))
                   ) : (
@@ -587,7 +584,11 @@ function ThreadsContent() {
             {!isPremium && sidebarAd && (
               <div className="w-full lg:w-1/4">
                 <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
-                  <SponsoredAdCard ad={sidebarAd} onClick={trackClick} compact />
+                  <SponsoredAdCard
+                    ad={sidebarAd}
+                    onClick={trackClick}
+                    compact
+                  />
                 </div>
               </div>
             )}
@@ -599,7 +600,9 @@ function ThreadsContent() {
           onSubmit={handleSubmitThread}
           buttonRef={newThreadButtonRef}
           initialOpen={composeMode}
-          initialTitle={contestTitle ? `${contestTitle} - My Contest Entry` : ""}
+          initialTitle={
+            contestTitle ? `${contestTitle} - My Contest Entry` : ""
+          }
           initialBody={
             contestTitle
               ? `Contest Entry for "${contestTitle}"\n\nMy submission:\n1. \n2. \n3. `

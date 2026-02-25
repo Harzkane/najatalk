@@ -571,11 +571,12 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-slate-100 px-3 pb-20 pt-3 md:px-5 md:pt-5">
-      <div className="mx-auto mb-4 max-w-[1320px]">
+      <div className="mx-auto mb-4 max-w-7.5xl">
         <Header
           title="NaijaTalk Forum"
           isLoggedIn={isLoggedIn}
           onLogout={handleLogout}
+          loginHref="/login"
           compact
           secondaryLink={{ href: "/premium", label: "Premium" }}
         />
@@ -626,7 +627,7 @@ function HomeContent() {
         </section>
       </div>
 
-      <div className="mx-auto grid max-w-[1320px] grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
+      <div className="mx-auto grid max-w-7.5xl grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
         <div className="w-full">
           <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
             <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">

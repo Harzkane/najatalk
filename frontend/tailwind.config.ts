@@ -34,6 +34,9 @@ const config: Config = {
         2000: "2s",
         4000: "4s",
       },
+      maxWidth: {
+        "7.5xl": "84rem",
+      },
     },
   },
   plugins: [],

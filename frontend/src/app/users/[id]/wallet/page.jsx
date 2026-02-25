@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import api from "@/utils/api";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
+import Header from "../../../../components/Header";
 import WalletBalanceCards from "../../../../components/wallet/WalletBalanceCards";
 import WalletActivityList from "../../../../components/wallet/WalletActivityList";
 
@@ -334,39 +334,28 @@ export default function SellerWallet() {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userId");
+    router.push("/login");
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 p-6">
-      <div className="max-w-7xl mx-auto mb-3">
-        <div className="bg-green-800 text-white p-4 rounded-t-lg shadow-sm">
-          <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-center md:text-left break-words">
-              Seller Wallet
-            </h1>
-            <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
-              <Link
-                href="/"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Home
-              </Link>
-              <Link
-                href="/marketplace"
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Marketplace
-              </Link>
-              <Link
-                href={`/users/${id}`}
-                className="text-green-100 hover:text-white text-sm font-medium"
-              >
-                Profile
-              </Link>
-            </div>
-          </div>
-        </div>
+      <div className="max-w-7.5xl mx-auto mb-3">
+        <Header
+          title="Seller Wallet"
+          isLoggedIn
+          onLogout={handleLogout}
+          links={[
+            { href: "/", label: "Home" },
+            { href: "/marketplace", label: "Marketplace" },
+            { href: `/users/${id}`, label: "Profile" },
+          ]}
+        />
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7.5xl mx-auto">
         {message && (
           <p className="text-center text-sm text-gray-600 mb-4 bg-white border border-slate-200 p-2 rounded-lg">
             {message}

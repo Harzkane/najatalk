@@ -63,12 +63,16 @@ export default function ListingCard({
     listing?.status === "pending" &&
     Boolean(currentUserId && buyerId === currentUserId);
   const isSellerPending =
-    listing?.status === "pending" &&
-    Boolean(currentUserId && isOwner);
-  const canSellerShip = isSellerPending && listing?.fulfillmentStatus !== "shipped";
-  const boostExpiry = listing?.boostExpiresAt ? new Date(listing.boostExpiresAt) : null;
+    listing?.status === "pending" && Boolean(currentUserId && isOwner);
+  const canSellerShip =
+    isSellerPending && listing?.fulfillmentStatus !== "shipped";
+  const boostExpiry = listing?.boostExpiresAt
+    ? new Date(listing.boostExpiresAt)
+    : null;
   const isBoosted = Boolean(
-    boostExpiry && Number.isFinite(boostExpiry.getTime()) && boostExpiry > new Date()
+    boostExpiry &&
+    Number.isFinite(boostExpiry.getTime()) &&
+    boostExpiry > new Date(),
   );
   const boostLevel = Number(listing?.boostLevel || 0);
 
@@ -100,7 +104,7 @@ export default function ListingCard({
         </div>
         <span
           className={`rounded-full px-2 py-1 text-xs font-semibold ${statusClass(
-            listing.status
+            listing.status,
           )}`}
         >
           {listing.status?.[0]?.toUpperCase() + listing.status?.slice(1)}
@@ -125,7 +129,9 @@ export default function ListingCard({
         </div>
       )}
 
-      <p className="mb-3 line-clamp-2 text-sm text-slate-600">{listing.description}</p>
+      <p className="mb-3 line-clamp-2 text-sm text-slate-600">
+        {listing.description}
+      </p>
       <p className="mb-2 text-xl font-bold text-slate-900">
         ₦{((listing.price || 0) / 100).toLocaleString()}
       </p>
@@ -156,7 +162,10 @@ export default function ListingCard({
         <p>Protected by escrow</p>
         {listing?.status === "pending" && (
           <p>
-            Order stage: {listing?.fulfillmentStatus === "shipped" ? "Shipped" : "Awaiting seller"}
+            Order stage:{" "}
+            {listing?.fulfillmentStatus === "shipped"
+              ? "Shipped"
+              : "Awaiting seller"}
           </p>
         )}
         {isSellerPending && (
@@ -172,7 +181,7 @@ export default function ListingCard({
           </p>
         )}
         {listing?.status === "sold" && (
-          <p className="rounded bg-slate-100 px-2 py-1 text-slate-700">
+          <p className="rounded w-fit bg-slate-100 px-2 py-1 text-slate-700">
             Order completed.
           </p>
         )}
@@ -183,7 +192,7 @@ export default function ListingCard({
         <div className="flex flex-wrap gap-2">
           <Link
             href={`/marketplace/${listing._id}`}
-            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
             View
           </Link>
@@ -191,7 +200,7 @@ export default function ListingCard({
           {isLoggedIn && showSave && typeof onToggleFavorite === "function" && (
             <button
               onClick={() => onToggleFavorite(listing._id)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium ${
+              className={`rounded-md px-2 py-1.5 text-xs font-medium ${
                 isSaved
                   ? "bg-slate-800 text-white hover:bg-slate-900"
                   : "border border-slate-300 text-slate-700 hover:bg-slate-50"
@@ -201,14 +210,17 @@ export default function ListingCard({
             </button>
           )}
 
-          {listing.status === "active" && isLoggedIn && !isOwner && typeof onBuy === "function" && (
-            <button
-              onClick={() => onBuy(listing._id)}
-              className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
-            >
-              Buy Now
-            </button>
-          )}
+          {listing.status === "active" &&
+            isLoggedIn &&
+            !isOwner &&
+            typeof onBuy === "function" && (
+              <button
+                onClick={() => onBuy(listing._id)}
+                className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-700"
+              >
+                Buy Now
+              </button>
+            )}
 
           {listing.status === "active" &&
             isLoggedIn &&

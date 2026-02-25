@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Header from "@/components/Header";
 import ListingCard from "@/components/marketplace/ListingCard";
 import ConfirmModal from "@/components/ConfirmModal";
 
@@ -138,7 +139,8 @@ export default function Marketplace() {
   const router = useRouter();
 
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("token") : null;
     setIsLoggedIn(Boolean(token));
 
     fetchListings();
@@ -166,7 +168,7 @@ export default function Marketplace() {
       setDefaultDeliveryAddress(
         res.data.defaultDeliveryAddress
           ? normalizeDeliveryAddress(res.data.defaultDeliveryAddress)
-          : null
+          : null,
       );
       localStorage.setItem("userId", res.data._id);
       setIsLoggedIn(true);
@@ -181,7 +183,8 @@ export default function Marketplace() {
 
   const fetchListings = async () => {
     try {
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+      const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
       const res = await api.get("/marketplace/listings", {
         params: { includeSold: true },
         headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -189,7 +192,10 @@ export default function Marketplace() {
       setListings(res.data.listings || []);
       showMessage(res.data.message || "", "neutral");
     } catch (err) {
-      showMessage(err.response?.data?.message || "Market load scatter o!", "error");
+      showMessage(
+        err.response?.data?.message || "Market load scatter o!",
+        "error",
+      );
     }
   };
 
@@ -198,7 +204,9 @@ export default function Marketplace() {
       const res = await api.get("/marketplace/favorites", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setSavedListingIds((res.data.savedListingIds || []).map((id) => id.toString()));
+      setSavedListingIds(
+        (res.data.savedListingIds || []).map((id) => id.toString()),
+      );
     } catch (err) {
       console.error("Favorites load error:", err.response?.data || err.message);
       setSavedListingIds([]);
@@ -212,7 +220,10 @@ export default function Marketplace() {
       });
       setMarketplacePolicy(res.data || null);
     } catch (err) {
-      console.error("Marketplace policy load error:", err.response?.data || err.message);
+      console.error(
+        "Marketplace policy load error:",
+        err.response?.data || err.message,
+      );
       setMarketplacePolicy(null);
     }
   };
@@ -226,7 +237,10 @@ export default function Marketplace() {
       });
       setWalletData(res.data || null);
     } catch (err) {
-      showMessage(err.response?.data?.message || "Wallet load scatter o!", "error");
+      showMessage(
+        err.response?.data?.message || "Wallet load scatter o!",
+        "error",
+      );
       setWalletData(null);
     } finally {
       setIsWalletLoading(false);
@@ -250,8 +264,18 @@ export default function Marketplace() {
       const res = await api.get("/marketplace/categories");
       setCategories(res.data.categories || []);
     } catch (err) {
-      showMessage(err.response?.data?.message || "Categories load scatter o!", "error");
-      setCategories(["Electronics", "Fashion", "Home", "Food", "Services", "Others"]);
+      showMessage(
+        err.response?.data?.message || "Categories load scatter o!",
+        "error",
+      );
+      setCategories([
+        "Electronics",
+        "Fashion",
+        "Home",
+        "Food",
+        "Services",
+        "Others",
+      ]);
     }
   };
 
@@ -270,20 +294,26 @@ export default function Marketplace() {
 
     if (activeView === "saved") {
       filtered = filtered.filter((listing) =>
-        savedListingIds.includes(listing._id?.toString())
+        savedListingIds.includes(listing._id?.toString()),
       );
     }
 
     if (selectedCategory !== "all") {
-      filtered = filtered.filter((listing) => listing.category === selectedCategory);
+      filtered = filtered.filter(
+        (listing) => listing.category === selectedCategory,
+      );
     }
 
     if (selectedStatus !== "all") {
-      filtered = filtered.filter((listing) => listing.status === selectedStatus);
+      filtered = filtered.filter(
+        (listing) => listing.status === selectedStatus,
+      );
     }
 
     if (selectedFlair !== "all") {
-      filtered = filtered.filter((listing) => listing.userId?.flair === selectedFlair);
+      filtered = filtered.filter(
+        (listing) => listing.userId?.flair === selectedFlair,
+      );
     }
 
     if (searchTerm.trim()) {
@@ -291,16 +321,20 @@ export default function Marketplace() {
       filtered = filtered.filter(
         (listing) =>
           listing.title.toLowerCase().includes(term) ||
-          listing.description.toLowerCase().includes(term)
+          listing.description.toLowerCase().includes(term),
       );
     }
 
     if (minPrice) {
-      filtered = filtered.filter((listing) => listing.price / 100 >= Number(minPrice));
+      filtered = filtered.filter(
+        (listing) => listing.price / 100 >= Number(minPrice),
+      );
     }
 
     if (maxPrice) {
-      filtered = filtered.filter((listing) => listing.price / 100 <= Number(maxPrice));
+      filtered = filtered.filter(
+        (listing) => listing.price / 100 <= Number(maxPrice),
+      );
     }
 
     if (sortBy === "price_low") {
@@ -315,7 +349,7 @@ export default function Marketplace() {
 
     if (activeView === "my_listings") {
       filtered = filtered.filter(
-        (listing) => toId(listing.userId) === currentUserId
+        (listing) => toId(listing.userId) === currentUserId,
       );
     }
 
@@ -323,7 +357,8 @@ export default function Marketplace() {
       filtered = filtered.filter(
         (listing) =>
           toId(listing.buyerId) === currentUserId ||
-          (toId(listing.userId) === currentUserId && listing.status === "pending")
+          (toId(listing.userId) === currentUserId &&
+            listing.status === "pending"),
       );
     }
 
@@ -343,28 +378,30 @@ export default function Marketplace() {
   ]);
 
   const myListingsCount = listings.filter(
-    (listing) => toId(listing.userId) === currentUserId
+    (listing) => toId(listing.userId) === currentUserId,
   ).length;
   const myPendingOrdersCount = listings.filter(
     (listing) =>
       toId(listing.buyerId) === currentUserId ||
-      (toId(listing.userId) === currentUserId && listing.status === "pending")
+      (toId(listing.userId) === currentUserId && listing.status === "pending"),
   ).length;
   const sellerPendingOrdersCount = listings.filter(
     (listing) =>
-      toId(listing.userId) === currentUserId && listing.status === "pending"
+      toId(listing.userId) === currentUserId && listing.status === "pending",
   ).length;
   const buyerPendingOrdersCount = listings.filter(
-    (listing) => toId(listing.buyerId) === currentUserId && listing.status === "pending"
+    (listing) =>
+      toId(listing.buyerId) === currentUserId && listing.status === "pending",
   ).length;
   const listingUsagePercent = marketplacePolicy?.activeListingLimit
     ? Math.min(
-      100,
-      Math.round(
-        ((marketplacePolicy.activeListingCount || 0) / marketplacePolicy.activeListingLimit) *
-        100
+        100,
+        Math.round(
+          ((marketplacePolicy.activeListingCount || 0) /
+            marketplacePolicy.activeListingLimit) *
+            100,
+        ),
       )
-    )
     : 0;
 
   const handleImageUpload = async (event) => {
@@ -373,7 +410,9 @@ export default function Marketplace() {
 
     setIsUploadingImages(true);
     try {
-      const encodedImages = await Promise.all(files.map((file) => toDataUrl(file)));
+      const encodedImages = await Promise.all(
+        files.map((file) => toDataUrl(file)),
+      );
       setImageUrls((prev) => [...prev, ...encodedImages].slice(0, 8));
     } catch (err) {
       showMessage("Image upload scatter—try again.", "error");
@@ -443,10 +482,13 @@ export default function Marketplace() {
       fetchMarketplacePolicy(token);
     } catch (err) {
       const serverMessage = err.response?.data?.message;
-      if (err.response?.status === 403 && err.response?.data?.upgradeSuggested) {
+      if (
+        err.response?.status === 403 &&
+        err.response?.data?.upgradeSuggested
+      ) {
         showMessage(
           `${serverMessage} Upgrade on Premium page to increase your seller limit.`,
-          "warning"
+          "warning",
         );
       } else {
         showMessage(serverMessage || "Listing scatter o!", "error");
@@ -466,11 +508,16 @@ export default function Marketplace() {
       const res = await api.post(
         `/marketplace/favorites/${listingId}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
-      setSavedListingIds((res.data.savedListings || []).map((id) => id.toString()));
+      setSavedListingIds(
+        (res.data.savedListings || []).map((id) => id.toString()),
+      );
     } catch (err) {
-      showMessage(err.response?.data?.message || "Save listing scatter o!", "error");
+      showMessage(
+        err.response?.data?.message || "Save listing scatter o!",
+        "error",
+      );
     }
   };
 
@@ -559,7 +606,7 @@ export default function Marketplace() {
       const res = await api.post(
         `/marketplace/buy/${pendingBuyListingId}`,
         { orderDetails },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (saveDeliveryAsDefault) {
         const normalizedAddress = normalizeDeliveryAddress(orderDetails);
@@ -567,12 +614,12 @@ export default function Marketplace() {
           await api.patch(
             "/users/me/profile",
             { defaultDeliveryAddress: normalizedAddress },
-            { headers: { Authorization: `Bearer ${token}` } }
+            { headers: { Authorization: `Bearer ${token}` } },
           );
         } catch (saveErr) {
           console.error(
             "Save default delivery address error:",
-            saveErr.response?.data || saveErr.message
+            saveErr.response?.data || saveErr.message,
           );
         }
         setDefaultDeliveryAddress(normalizedAddress);
@@ -599,12 +646,15 @@ export default function Marketplace() {
       const res = await api.post(
         `/marketplace/ship/${id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       showMessage(res.data.message || "Order marked shipped.", "success");
       fetchListings();
     } catch (err) {
-      showMessage(err.response?.data?.message || "Ship update scatter o!", "error");
+      showMessage(
+        err.response?.data?.message || "Ship update scatter o!",
+        "error",
+      );
     }
   };
 
@@ -620,7 +670,7 @@ export default function Marketplace() {
       const res = await api.post(
         `/marketplace/release/${id}`,
         {},
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       showMessage(res.data.message, "success");
       fetchListings();
@@ -660,7 +710,7 @@ export default function Marketplace() {
         const res = await api.post(
           `/marketplace/listings/${selectedBoostListingId}/boost`,
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         showMessage(res.data.message || "Listing boosted.", "success");
         setWalletModalOpen(false);
@@ -670,9 +720,12 @@ export default function Marketplace() {
         const res = await api.post(
           "/api/premium/subscribe-with-wallet",
           {},
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
-        showMessage(res.data.message || "Premium activated from wallet.", "success");
+        showMessage(
+          res.data.message || "Premium activated from wallet.",
+          "success",
+        );
       }
 
       await Promise.all([
@@ -682,7 +735,10 @@ export default function Marketplace() {
         fetchWalletData(token),
       ]);
     } catch (err) {
-      showMessage(err.response?.data?.message || "Wallet action scatter o!", "error");
+      showMessage(
+        err.response?.data?.message || "Wallet action scatter o!",
+        "error",
+      );
     } finally {
       setIsWalletActionLoading(false);
       setIsBoosting(false);
@@ -719,19 +775,27 @@ export default function Marketplace() {
     return `${time} • ${month} ${day}, ${year}`;
   };
 
-  const isTierLimitMessage = message.toLowerCase().includes("tier limit reached");
+  const isTierLimitMessage = message
+    .toLowerCase()
+    .includes("tier limit reached");
   const boostCostKobo = Number(marketplacePolicy?.boostCostKobo || 0);
   const walletAvailable = Number(walletData?.availableBalance || 0);
   const walletHeld = Number(walletData?.heldBalance || 0);
-  const walletTotal = Number(walletData?.balance || walletAvailable + walletHeld);
-  const walletEntries = Array.isArray(walletData?.entries) ? walletData.entries.slice(0, 8) : [];
-  const actionCostKobo = walletModalContext === "premium" ? PREMIUM_PRICE_KOBO : boostCostKobo;
+  const walletTotal = Number(
+    walletData?.balance || walletAvailable + walletHeld,
+  );
+  const walletEntries = Array.isArray(walletData?.entries)
+    ? walletData.entries.slice(0, 8)
+    : [];
+  const actionCostKobo =
+    walletModalContext === "premium" ? PREMIUM_PRICE_KOBO : boostCostKobo;
   const actionCtaLabel =
     walletModalContext === "premium"
       ? `Pay ${formatKobo(PREMIUM_PRICE_KOBO)} and Activate Premium`
       : `Pay ${formatKobo(boostCostKobo)} and Start Boost`;
   const hasEnoughWalletForAction = walletAvailable >= actionCostKobo;
-  const isBoostActionReady = walletModalContext !== "boost" || Boolean(selectedBoostListingId);
+  const isBoostActionReady =
+    walletModalContext !== "boost" || Boolean(selectedBoostListingId);
   const messageClass =
     messageTone === "error"
       ? "border-red-200 bg-red-50 text-red-700"
@@ -743,108 +807,90 @@ export default function Marketplace() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6 pb-20">
-      <div className="max-w-7xl mx-auto mb-4">
-        <div className="rounded-lg border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Marketplace</h1>
-                <p className="text-sm text-slate-600">
-                  Buy trusted listings, sell quickly, and settle safely with escrow.
+      <div className="max-w-7.5xl mx-auto mb-4">
+        <Header
+          title="Marketplace"
+          subtitle="Buy trusted listings, sell quickly, and settle safely with escrow."
+          isLoggedIn={isLoggedIn}
+          onLogout={handleLogout}
+          loginHref="/login"
+          extraLinks={
+            isAdmin
+              ? [{ href: "/marketplace/wallet", label: "Platform Wallet" }]
+              : []
+          }
+        />
+        <div className="rounded-b-lg border border-slate-200 border-t-0 bg-white p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              {
+                key: "browse",
+                label: "Browse",
+                value: listings.length,
+                sub: "All listings",
+              },
+              {
+                key: "sell",
+                label: "Sell",
+                value: "Quick Post",
+                sub: "Create or edit listing",
+              },
+              {
+                key: "my_listings",
+                label: "My Listings",
+                value: myListingsCount,
+                sub: "Seller inventory",
+              },
+              {
+                key: "orders",
+                label: "Orders",
+                value: myPendingOrdersCount,
+                sub:
+                  sellerPendingOrdersCount > 0
+                    ? `${sellerPendingOrdersCount} waiting buyer confirmation`
+                    : buyerPendingOrdersCount > 0
+                      ? `${buyerPendingOrdersCount} awaiting your delivery confirmation`
+                      : "Pending confirmations",
+              },
+              {
+                key: "saved",
+                label: "Saved",
+                value: savedListingIds.length,
+                sub: "Favorite items",
+              },
+            ].map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setActiveView(item.key)}
+                className={`rounded-lg border p-3 text-left ${
+                  activeView === item.key
+                    ? "border-green-300 bg-green-50"
+                    : "border-slate-200 bg-white"
+                }`}
+              >
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  {item.label}
                 </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Link href="/" className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50">
-                  Home
-                </Link>
-                {isLoggedIn && currentUserId && (
-                  <Link
-                    href={`/users/${currentUserId}`}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    My Profile
-                  </Link>
-                )}
-                {isLoggedIn && currentUserId && (
-                  <Link
-                    href="/wallet"
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    My Wallet
-                  </Link>
-                )}
-                {isAdmin && (
-                  <Link
-                    href="/marketplace/wallet"
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-                  >
-                    Platform Wallet
-                  </Link>
-                )}
-                {isLoggedIn ? (
-                  <button
-                    onClick={handleLogout}
-                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700"
-                  >
-                    Logout
-                  </button>
-                ) : (
-                  <Link
-                    href="/login"
-                    className="rounded-md bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700"
-                  >
-                    Login
-                  </Link>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-4">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                { key: "browse", label: "Browse", value: listings.length, sub: "All listings" },
-                { key: "sell", label: "Sell", value: "Quick Post", sub: "Create or edit listing" },
-                { key: "my_listings", label: "My Listings", value: myListingsCount, sub: "Seller inventory" },
-                {
-                  key: "orders",
-                  label: "Orders",
-                  value: myPendingOrdersCount,
-                  sub:
-                    sellerPendingOrdersCount > 0
-                      ? `${sellerPendingOrdersCount} waiting buyer confirmation`
-                      : buyerPendingOrdersCount > 0
-                        ? `${buyerPendingOrdersCount} awaiting your delivery confirmation`
-                        : "Pending confirmations",
-                },
-                { key: "saved", label: "Saved", value: savedListingIds.length, sub: "Favorite items" },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => setActiveView(item.key)}
-                  className={`rounded-lg border p-3 text-left ${activeView === item.key
-                      ? "border-green-300 bg-green-50"
-                      : "border-slate-200 bg-white"
-                    }`}
-                >
-                  <p className="text-xs uppercase tracking-wide text-slate-500">{item.label}</p>
-                  <p className="text-lg font-semibold text-slate-900">{item.value}</p>
-                  <p className="text-xs text-slate-600">{item.sub}</p>
-                </button>
-              ))}
-            </div>
+                <p className="text-lg font-semibold text-slate-900">
+                  {item.value}
+                </p>
+                <p className="text-xs text-slate-600">{item.sub}</p>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto">
-        {isLoggedIn && sellerPendingOrdersCount > 0 && activeView !== "orders" && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-            You have {sellerPendingOrdersCount} pending order
-            {sellerPendingOrdersCount === 1 ? "" : "s"} in escrow. Open the
-            Orders tab to track delivery confirmation.
-          </div>
-        )}
+      <div className="max-w-7.5xl mx-auto">
+        {isLoggedIn &&
+          sellerPendingOrdersCount > 0 &&
+          activeView !== "orders" && (
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+              You have {sellerPendingOrdersCount} pending order
+              {sellerPendingOrdersCount === 1 ? "" : "s"} in escrow. Open the
+              Orders tab to track delivery confirmation.
+            </div>
+          )}
 
         {message && (
           <div className={`mb-4 rounded-lg border p-3 text-sm ${messageClass}`}>
@@ -869,15 +915,20 @@ export default function Marketplace() {
               <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
-                    <p className="text-xs uppercase tracking-wide text-slate-500">Seller Policy</p>
+                    <p className="text-xs uppercase tracking-wide text-slate-500">
+                      Seller Policy
+                    </p>
                     <p className="text-sm font-semibold text-slate-900">
-                      {marketplacePolicy.tier === "premium" ? "Premium Seller" : "Free Seller"}
+                      {marketplacePolicy.tier === "premium"
+                        ? "Premium Seller"
+                        : "Free Seller"}
                     </p>
                   </div>
                   <div className="text-right text-xs text-slate-600">
                     <p>Commission: {marketplacePolicy.commissionPercent}%</p>
                     <p>
-                      Boost: {marketplacePolicy.boostCostLabel} / {marketplacePolicy.boostHours}h
+                      Boost: {marketplacePolicy.boostCostLabel} /{" "}
+                      {marketplacePolicy.boostHours}h
                     </p>
                   </div>
                 </div>
@@ -885,7 +936,8 @@ export default function Marketplace() {
                   <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
                     <span>Active Listings</span>
                     <span>
-                      {marketplacePolicy.activeListingCount}/{marketplacePolicy.activeListingLimit}
+                      {marketplacePolicy.activeListingCount}/
+                      {marketplacePolicy.activeListingLimit}
                     </span>
                   </div>
                   <div className="h-2 overflow-hidden rounded bg-slate-200">
@@ -897,7 +949,8 @@ export default function Marketplace() {
                 </div>
                 {marketplacePolicy.tier === "free" && (
                   <p className="mt-2 text-xs text-slate-600">
-                    Premium sellers get higher listing limits and lower marketplace fees.
+                    Premium sellers get higher listing limits and lower
+                    marketplace fees.
                   </p>
                 )}
               </div>
@@ -923,7 +976,9 @@ export default function Marketplace() {
               />
 
               <div className="rounded-lg border border-slate-200 p-3">
-                <p className="mb-2 text-sm font-medium text-slate-700">Listing Images (up to 8)</p>
+                <p className="mb-2 text-sm font-medium text-slate-700">
+                  Listing Images (up to 8)
+                </p>
                 <div className="mb-2 flex flex-wrap gap-2">
                   <input
                     type="file"
@@ -954,12 +1009,17 @@ export default function Marketplace() {
                   </button>
                 </div>
                 {isUploadingImages && (
-                  <p className="mb-2 text-xs text-slate-500">Uploading images...</p>
+                  <p className="mb-2 text-xs text-slate-500">
+                    Uploading images...
+                  </p>
                 )}
                 {imageUrls.length > 0 && (
                   <div className="grid grid-cols-4 gap-2 md:grid-cols-8">
                     {imageUrls.map((url, index) => (
-                      <div key={`${url}-${index}`} className="relative overflow-hidden rounded border border-slate-200">
+                      <div
+                        key={`${url}-${index}`}
+                        className="relative overflow-hidden rounded border border-slate-200"
+                      >
                         <img
                           src={getImageSrc(url)}
                           alt={`Listing ${index + 1}`}
@@ -1013,7 +1073,10 @@ export default function Marketplace() {
         {activeView === "sell" && !isLoggedIn && (
           <div className="mb-4 rounded-lg border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
             Login to create or edit listings.
-            <Link href="/login" className="ml-1 font-semibold text-green-700 hover:underline">
+            <Link
+              href="/login"
+              className="ml-1 font-semibold text-green-700 hover:underline"
+            >
               Go to login
             </Link>
           </div>
@@ -1049,7 +1112,9 @@ export default function Marketplace() {
             >
               {STATUS_OPTIONS.map((status) => (
                 <option key={status} value={status}>
-                  {status === "all" ? "All Status" : status[0].toUpperCase() + status.slice(1)}
+                  {status === "all"
+                    ? "All Status"
+                    : status[0].toUpperCase() + status.slice(1)}
                 </option>
               ))}
             </select>
@@ -1101,13 +1166,14 @@ export default function Marketplace() {
               Reset Filters
             </button>
             <p className="self-center text-sm text-slate-500">
-              {filteredListings.length} result{filteredListings.length === 1 ? "" : "s"}
+              {filteredListings.length} result
+              {filteredListings.length === 1 ? "" : "s"}
             </p>
           </div>
         </div>
 
         {filteredListings.length > 0 ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             {filteredListings.map((listing) => (
               <ListingCard
                 key={listing._id}
@@ -1129,7 +1195,8 @@ export default function Marketplace() {
           </div>
         ) : (
           <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-600">
-            No listings match this filter set. Try adjusting search, price, or status.
+            No listings match this filter set. Try adjusting search, price, or
+            status.
           </div>
         )}
       </div>
@@ -1153,7 +1220,9 @@ export default function Marketplace() {
         <div className="fixed inset-0 z-[55] flex items-center justify-center bg-slate-900/50 p-4">
           <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 shadow-xl">
             <div className="mb-3">
-              <h3 className="text-lg font-semibold text-slate-900">Delivery Details</h3>
+              <h3 className="text-lg font-semibold text-slate-900">
+                Delivery Details
+              </h3>
               <p className="text-sm text-slate-600">
                 Only you and the seller can see this address after checkout.
               </p>
@@ -1177,14 +1246,18 @@ export default function Marketplace() {
                 type="text"
                 placeholder="Address line 1 *"
                 value={orderDetails.addressLine1}
-                onChange={(e) => updateOrderDetail("addressLine1", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("addressLine1", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <input
                 type="text"
                 placeholder="Address line 2"
                 value={orderDetails.addressLine2}
-                onChange={(e) => updateOrderDetail("addressLine2", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("addressLine2", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <input
@@ -1205,13 +1278,17 @@ export default function Marketplace() {
                 type="text"
                 placeholder="Postal code"
                 value={orderDetails.postalCode}
-                onChange={(e) => updateOrderDetail("postalCode", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("postalCode", e.target.value)
+                }
                 className="rounded-lg border border-slate-300 p-2 text-slate-800"
               />
               <textarea
                 placeholder="Delivery note (landmark, preferred time)"
                 value={orderDetails.deliveryNote}
-                onChange={(e) => updateOrderDetail("deliveryNote", e.target.value)}
+                onChange={(e) =>
+                  updateOrderDetail("deliveryNote", e.target.value)
+                }
                 className="h-20 rounded-lg border border-slate-300 p-2 text-slate-800 md:col-span-2"
               />
               <label className="flex items-center gap-2 text-sm text-slate-700 md:col-span-2">
@@ -1241,7 +1318,9 @@ export default function Marketplace() {
                 onClick={confirmBuyOrder}
                 className="rounded-md bg-emerald-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmittingBuyOrder ? "Placing Order..." : "Place Order with Escrow"}
+                {isSubmittingBuyOrder
+                  ? "Placing Order..."
+                  : "Place Order with Escrow"}
               </button>
             </div>
           </div>
@@ -1270,10 +1349,13 @@ export default function Marketplace() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
-                  {walletModalContext === "premium" ? "Upgrade via Wallet" : "Boost via Wallet"}
+                  {walletModalContext === "premium"
+                    ? "Upgrade via Wallet"
+                    : "Boost via Wallet"}
                 </h3>
                 <p className="text-sm text-slate-600">
-                  Stay on marketplace, pay from wallet, and watch activity update live.
+                  Stay on marketplace, pay from wallet, and watch activity
+                  update live.
                 </p>
               </div>
               <button
@@ -1290,28 +1372,42 @@ export default function Marketplace() {
 
             <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
-                <p className="text-base font-semibold text-slate-900">{formatKobo(walletTotal)}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Total
+                </p>
+                <p className="text-base font-semibold text-slate-900">
+                  {formatKobo(walletTotal)}
+                </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Available</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Available
+                </p>
                 <p className="text-base font-semibold text-emerald-700">
                   {formatKobo(walletAvailable)}
                 </p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-500">Held</p>
-                <p className="text-base font-semibold text-amber-700">{formatKobo(walletHeld)}</p>
+                <p className="text-xs uppercase tracking-wide text-slate-500">
+                  Held
+                </p>
+                <p className="text-base font-semibold text-amber-700">
+                  {formatKobo(walletHeld)}
+                </p>
               </div>
             </div>
 
             <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
               <p className="text-sm text-slate-700">
-                Charge now: <span className="font-semibold">{formatKobo(actionCostKobo)}</span>
+                Charge now:{" "}
+                <span className="font-semibold">
+                  {formatKobo(actionCostKobo)}
+                </span>
               </p>
               {!hasEnoughWalletForAction && (
                 <p className="mt-1 text-xs text-red-700">
-                  Insufficient available balance. Fund your wallet and try again.
+                  Insufficient available balance. Fund your wallet and try
+                  again.
                 </p>
               )}
               <div className="mt-3 flex flex-wrap gap-2">
@@ -1338,25 +1434,36 @@ export default function Marketplace() {
             </div>
 
             <div className="mt-4">
-              <h4 className="text-sm font-semibold text-slate-900">Recent Wallet Activity</h4>
+              <h4 className="text-sm font-semibold text-slate-900">
+                Recent Wallet Activity
+              </h4>
               <div className="mt-2 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
                 {isWalletLoading ? (
-                  <p className="p-3 text-sm text-slate-500">Loading wallet activity...</p>
+                  <p className="p-3 text-sm text-slate-500">
+                    Loading wallet activity...
+                  </p>
                 ) : walletEntries.length === 0 ? (
-                  <p className="p-3 text-sm text-slate-500">No wallet activity yet.</p>
+                  <p className="p-3 text-sm text-slate-500">
+                    No wallet activity yet.
+                  </p>
                 ) : (
                   <div className="divide-y divide-slate-200">
                     {walletEntries.map((entry) => {
                       const effect = Number(entry.walletEffect || 0);
                       return (
-                        <div key={entry._id || entry.reference} className="p-3 text-sm">
+                        <div
+                          key={entry._id || entry.reference}
+                          className="p-3 text-sm"
+                        >
                           <div className="flex items-center justify-between gap-3">
                             <p className="font-medium text-slate-800">
                               {entry.entryKind || entry.type || "activity"}
                             </p>
                             <p
                               className={
-                                effect >= 0 ? "font-semibold text-emerald-700" : "font-semibold text-red-700"
+                                effect >= 0
+                                  ? "font-semibold text-emerald-700"
+                                  : "font-semibold text-red-700"
                               }
                             >
                               {effect >= 0 ? "+" : "-"}
@@ -1364,7 +1471,9 @@ export default function Marketplace() {
                             </p>
                           </div>
                           <p className="mt-0.5 text-xs text-slate-500">
-                            {new Date(entry.date || Date.now()).toLocaleString("en-NG")}
+                            {new Date(entry.date || Date.now()).toLocaleString(
+                              "en-NG",
+                            )}
                           </p>
                         </div>
                       );
@@ -1381,8 +1490,12 @@ export default function Marketplace() {
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/40 p-4">
           <div className="w-full max-w-xs rounded-xl border border-emerald-200 bg-white p-6 text-center shadow-xl">
             <div className="mx-auto mb-3 h-12 w-12 rounded-full border-4 border-emerald-200 border-t-emerald-600 animate-spin" />
-            <p className="text-sm font-semibold text-emerald-700">Boost Activated</p>
-            <p className="mt-1 text-xs text-slate-500">Updating listing visibility...</p>
+            <p className="text-sm font-semibold text-emerald-700">
+              Boost Activated
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              Updating listing visibility...
+            </p>
           </div>
         </div>
       )}

@@ -1,15 +1,28 @@
 // frontend/src/components/Header.tsx
 "use client";
 
+import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+type HeaderLink = {
+  href: string;
+  label: string;
+};
+
 interface HeaderProps {
   title: string;
+  subtitle?: string;
   isLoggedIn?: boolean; // Optional, for pages needing logout
   onLogout?: () => void; // Optional, for logout action
   compact?: boolean;
+  links?: HeaderLink[];
+  extraLinks?: HeaderLink[];
+  includeDefaultLinks?: boolean;
+  includeProfileLink?: boolean;
+  loginHref?: string;
+  rightActions?: ReactNode;
   secondaryLink?: {
     href: string;
     label: string;
@@ -18,9 +31,16 @@ interface HeaderProps {
 
 export default function Header({
   title,
+  subtitle,
   isLoggedIn,
   onLogout,
   compact = false,
+  links,
+  extraLinks = [],
+  includeDefaultLinks = true,
+  includeProfileLink = true,
+  loginHref,
+  rightActions,
   secondaryLink = { href: "/premium", label: "Premium" },
 }: HeaderProps) {
   const router = useRouter();
@@ -45,16 +65,21 @@ export default function Header({
     { href: "/contests", label: "Contests" },
   ];
 
-  const linksWithProfile = myProfileHref
-    ? [...baseLinks, { href: myProfileHref, label: "My Profile" }]
-    : baseLinks;
+  const autoLinks = [
+    ...(includeDefaultLinks ? baseLinks : []),
+    ...(includeProfileLink && myProfileHref
+      ? [{ href: myProfileHref, label: "My Profile" }]
+      : []),
+    ...(secondaryLink ? [secondaryLink] : []),
+    ...extraLinks,
+  ];
 
-  const navLinks = secondaryLink
-    ? [...linksWithProfile, secondaryLink].filter(
-        (link, index, all) =>
-          index === all.findIndex((candidate) => candidate.href === link.href)
-      )
-    : linksWithProfile;
+  const dedupedAutoLinks = autoLinks.filter(
+    (link, index, all) =>
+      index === all.findIndex((candidate) => candidate.href === link.href)
+  );
+
+  const navLinks = links ?? dedupedAutoLinks;
 
   const handleLogout = () => {
     if (onLogout) onLogout();
@@ -71,25 +96,29 @@ export default function Header({
       }`}
     >
       <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-        <h1
-          className={`font-bold text-center md:text-left break-words ${
-            compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl"
-          }`}
-        >
-          {title}
-        </h1>
+        <div className="text-center md:text-left">
+          <h1
+            className="font-bold break-words text-2xl md:text-3xl"
+          >
+            {title}
+          </h1>
+          {subtitle && (
+            <p className="mt-1 text-sm text-green-100">
+              {subtitle}
+            </p>
+          )}
+        </div>
         <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`text-green-100 hover:text-white font-medium ${
-                compact ? "text-xs md:text-sm" : "text-sm"
-              }`}
+              className="text-green-100 hover:text-white font-medium text-sm"
             >
               {link.label}
             </Link>
           ))}
+          {rightActions}
           {isLoggedIn && (
             <button
               onClick={handleLogout}
@@ -97,6 +126,14 @@ export default function Header({
             >
               Logout
             </button>
+          )}
+          {!isLoggedIn && loginHref && (
+            <Link
+              href={loginHref}
+              className="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm"
+            >
+              Login
+            </Link>
           )}
         </div>
       </div>

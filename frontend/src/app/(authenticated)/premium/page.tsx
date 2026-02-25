@@ -582,7 +582,7 @@ function PremiumPageContent() {
 
   return (
     <div className="min-h-screen bg-slate-100 p-4 md:p-6">
-      <div className="max-w-7xl mx-auto mb-4">
+      <div className="max-w-7.5xl mx-auto mb-4">
         <Header
           title="NaijaTalk Premium"
           isLoggedIn={true}
