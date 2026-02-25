@@ -2,42 +2,76 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import { isAxiosError } from "axios";
 import api from "@/utils/api";
-import { useRouter } from "next/navigation";
+import { trackEvent } from "@/utils/analytics";
+import { getAuthErrorMessage, getAuthErrorStatus } from "@/utils/authErrorMessage";
+import Link from "next/link";
 
 export default function Signup() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [message, setMessage] = useState<string>("");
-  const router = useRouter(); // Add this
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [didSignup, setDidSignup] = useState(false);
+  const [lastSignupEmail, setLastSignupEmail] = useState("");
 
   const handleSignup = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setMessage("");
     try {
       const res = await api.post<{ message: string }>("/auth/signup", {
         email,
         password,
       });
       setMessage(res.data.message);
-      setEmail(""); // Clear fields
+      setDidSignup(true);
+      setLastSignupEmail(email.trim().toLowerCase());
       setPassword("");
-      setTimeout(() => router.push("/login"), 1000); // Redirect to login
+      trackEvent("auth_signup_success");
     } catch (err: unknown) {
-      if (isAxiosError<{ message?: string }>(err)) {
-        setMessage(err.response?.data?.message || "Signup scatter o!");
-      } else {
-        setMessage("Signup scatter o!");
-      }
+      setMessage(getAuthErrorMessage(err, "Signup scatter o!"));
+      trackEvent("auth_signup_failed", { status: getAuthErrorStatus(err) });
+      setDidSignup(false);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (!lastSignupEmail) return;
+    try {
+      setIsResending(true);
+      const res = await api.post<{ message: string }>("/auth/resend-verification", {
+        email: lastSignupEmail,
+      });
+      setMessage(res.data.message || "Verification mail don resend.");
+      trackEvent("auth_resend_verification", { source: "signup" });
+    } catch (err: unknown) {
+      setMessage(getAuthErrorMessage(err, "Resend scatter o!"));
+    } finally {
+      setIsResending(false);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
+        <div className="mb-4 flex items-center justify-between text-sm">
+          <Link href="/" className="text-slate-600 hover:text-slate-900 hover:underline">
+            Return to Home
+          </Link>
+          <Link href="/login" className="text-green-700 hover:text-green-800 hover:underline">
+            Sign in
+          </Link>
+        </div>
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Join NaijaTalk
         </h1>
+        <p className="mb-4 text-sm text-slate-600">
+          Create your account, then verify your email before login.
+        </p>
         <form onSubmit={handleSignup}>
           <div className="mb-4">
             <input
@@ -46,6 +80,8 @@ export default function Signup() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              required
+              autoComplete="email"
             />
           </div>
           <div className="mb-6">
@@ -55,17 +91,42 @@ export default function Signup() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-600 text-gray-800"
+              required
+              minLength={8}
+              autoComplete="new-password"
             />
+            <p className="mt-1 text-xs text-slate-500">
+              Use at least 8 characters.
+            </p>
           </div>
           <button
             type="submit"
-            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700"
+            disabled={isSubmitting}
+            className="w-full bg-green-600 text-white p-3 rounded-lg hover:bg-green-700 disabled:bg-green-400"
           >
-            Sign Up
+            {isSubmitting ? "Creating account..." : "Sign Up"}
           </button>
         </form>
         {message && (
           <p className="mt-4 text-center text-sm text-gray-600">{message}</p>
+        )}
+        {didSignup && (
+          <div className="mt-4 space-y-2">
+            <button
+              type="button"
+              onClick={handleResendVerification}
+              disabled={isResending}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            >
+              {isResending ? "Resending..." : "Resend Verification Email"}
+            </button>
+            <Link
+              href="/login"
+              className="block w-full rounded-lg bg-green-700 px-3 py-2 text-center text-sm text-white hover:bg-green-800"
+            >
+              Go to Login
+            </Link>
+          </div>
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
@@ -176,8 +177,7 @@ export default function Marketplace() {
       console.error("Fetch user error:", err.response?.data || err.message);
       setIsLoggedIn(false);
       setIsAdmin(false);
-      localStorage.removeItem("token");
-      localStorage.removeItem("userId");
+      clearStoredAuth();
     }
   };
 
@@ -750,8 +750,7 @@ export default function Marketplace() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearStoredAuth();
     setIsLoggedIn(false);
     setCurrentUserId(null);
     setIsAdmin(false);
@@ -998,7 +997,7 @@ export default function Marketplace() {
                         handleAddManualImage();
                       }
                     }}
-                    className="min-w-[220px] flex-1 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800"
+                    className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-800 sm:min-w-[220px] sm:flex-1"
                   />
                   <button
                     type="button"

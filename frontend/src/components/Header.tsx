@@ -1,8 +1,10 @@
 // frontend/src/components/Header.tsx
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 type HeaderLink = {
@@ -43,6 +45,8 @@ export default function Header({
   secondaryLink = { href: "/premium", label: "Premium" },
 }: HeaderProps) {
   const auth = useAuth();
+  const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const effectiveIsLoggedIn = isLoggedIn ?? auth.isLoggedIn;
   const myProfileHref = auth.userId ? `/users/${auth.userId}` : null;
 
@@ -79,16 +83,20 @@ export default function Header({
     auth.logout("/login");
   };
 
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [pathname]);
+
   return (
     <div
       className={`bg-green-800 text-white shadow-md ${
-        compact ? "rounded-lg px-4 py-3" : "rounded-t-lg p-4"
+        compact ? "rounded-lg px-3 py-3 md:px-4" : "rounded-t-lg p-4"
       }`}
     >
-      <div className="flex flex-col gap-3 md:flex-row md:justify-between md:items-center">
-        <div className="text-center md:text-left">
+      <div className="flex items-start justify-between gap-3 md:items-center">
+        <div className="min-w-0 flex-1 text-left">
           <h1
-            className="font-bold break-words text-2xl md:text-3xl"
+            className="break-words text-2xl font-bold md:text-3xl"
           >
             {title}
           </h1>
@@ -98,7 +106,18 @@ export default function Header({
             </p>
           )}
         </div>
-        <div className="flex flex-wrap items-center justify-center md:justify-end gap-3 md:gap-4">
+
+        <button
+          type="button"
+          onClick={() => setMobileMenuOpen((prev) => !prev)}
+          className="inline-flex items-center justify-center rounded-md border border-green-600/70 bg-green-700/50 p-2 text-green-100 hover:bg-green-700 md:hidden"
+          aria-expanded={mobileMenuOpen}
+          aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+        >
+          {mobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+        </button>
+
+        <div className="hidden flex-wrap items-center justify-end gap-3 md:flex md:gap-4">
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -127,6 +146,42 @@ export default function Header({
           )}
         </div>
       </div>
+
+      {mobileMenuOpen && (
+        <div className="mt-3 space-y-2 rounded-lg border border-green-700 bg-green-900/40 p-3 md:hidden">
+          <div className="grid grid-cols-2 gap-2">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-md border border-green-700 bg-green-800/30 px-3 py-2 text-center text-sm font-medium text-green-100 hover:bg-green-700/60"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          {rightActions}
+          <div className="pt-1">
+            {effectiveIsLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="w-full rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
+              >
+                Logout
+              </button>
+            ) : (
+              loginHref && (
+                <Link
+                  href={loginHref}
+                  className="block w-full rounded-lg bg-green-600 px-3 py-2 text-center text-sm font-medium text-white hover:bg-green-700"
+                >
+                  Login
+                </Link>
+              )
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { isAxiosError } from "axios";
 import api from "../../../utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Head from "next/head";
@@ -356,7 +357,7 @@ function ThreadsContent() {
         setMessage(errorMsg);
         if (err.response?.status === 401) {
           setMessage("Token don expire—abeg login again!");
-          localStorage.removeItem("token");
+          clearStoredAuth();
           setTimeout(() => router.push("/login"), 1000);
         }
       } else {
@@ -367,7 +368,7 @@ function ThreadsContent() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearStoredAuth();
     setIsLoggedIn(false);
     setCurrentUserId(null);
     setCurrentUserRole(null);

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import Header from "@/components/Header";
@@ -63,8 +64,7 @@ export default function UserProfile() {
   }, [id]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearStoredAuth();
     setIsLoggedIn(false);
     setIsOwnerProfile(false);
     router.push("/login");
@@ -282,8 +282,8 @@ export default function UserProfile() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-100 p-6">
-        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-4 text-slate-600 md:p-6">
           Loading profile...
         </div>
       </div>
@@ -292,8 +292,8 @@ export default function UserProfile() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-100 p-6">
-        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-6 text-slate-600">
+      <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+        <div className="mx-auto max-w-7.5xl rounded-lg border border-slate-200 bg-white p-4 text-slate-600 md:p-6">
           {message || "Profile unavailable."}
         </div>
       </div>

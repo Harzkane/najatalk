@@ -5,7 +5,14 @@ import axios from "axios";
 import { usePathname, useRouter } from "next/navigation";
 import { clearStoredAuth } from "@/utils/authStorage";
 
-const EXEMPT_PATHS = ["/login", "/signup", "/appeal", "/onboarding/profile"];
+const EXEMPT_PATHS = [
+  "/login",
+  "/signup",
+  "/appeal",
+  "/onboarding/profile",
+  "/forgot-password",
+  "/reset-password",
+];
 
 export default function ProfileCompletionGate({ children }: { children: ReactNode }) {
   const router = useRouter();

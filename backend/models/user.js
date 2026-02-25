@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema({
     default: false,
   },
   verificationToken: String,
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
+  },
   role: {
     type: String,
     enum: ["user", "mod", "admin", "super_admin"],

@@ -7,8 +7,8 @@ export default function WalletBalanceCards({
   summary = null,
 }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
-      <h2 className="text-xl font-semibold text-green-800 mb-4">Wallet Balance</h2>
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6 md:p-6">
+      <h2 className="mb-4 text-lg font-semibold text-green-800 md:text-xl">Wallet Balance</h2>
       <div className="text-gray-800">
         <p className="text-2xl font-bold">₦{Number(total || 0).toLocaleString()}</p>
         <div className="mt-2 grid grid-cols-1 gap-1 text-sm text-slate-600 md:grid-cols-2">

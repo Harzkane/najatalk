@@ -5,6 +5,8 @@ import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "rea
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
 import api from "../utils/api";
+import { clearStoredAuth } from "../utils/authStorage";
+import { trackEvent } from "../utils/analytics";
 import Link from "next/link";
 import SearchBar from "../components/threads/SearchBar";
 import NewThreadButton from "../components/threads/NewThreadButton";
@@ -141,6 +143,7 @@ function HomeContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [isPremium, setIsPremium] = useState(false);
+  const [isProfileCompleted, setIsProfileCompleted] = useState<boolean | null>(null);
   const [lastVisitAt, setLastVisitAt] = useState<number>(0);
   const [viewedCategories, setViewedCategories] = useState<string[]>([]);
 
@@ -406,6 +409,11 @@ function HomeContent() {
           });
           setIsPremium(res.data.isPremium);
           setCurrentUserId(res.data._id || null);
+          setIsProfileCompleted(
+            typeof res.data.profileCompleted === "boolean"
+              ? res.data.profileCompleted
+              : null,
+          );
           setIsLoggedIn(true);
           if (!res.data.isPremium) {
             await fetchBannerAd();
@@ -413,7 +421,7 @@ function HomeContent() {
           }
         } catch (err) {
           console.error("User check error:", err);
-          localStorage.removeItem("token");
+          clearStoredAuth();
           setIsLoggedIn(false);
           setMessage("Token scatter—abeg login again!");
           setTimeout(() => router.push("/login"), 1000);
@@ -421,6 +429,7 @@ function HomeContent() {
         }
       } else {
         setCurrentUserId(null);
+        setIsProfileCompleted(null);
         await fetchBannerAd();
         await fetchSidebarAds();
       }
@@ -485,7 +494,7 @@ function HomeContent() {
         setMessage(errorMsg);
         if (err.response?.status === 401) {
           setMessage("Token don expire—abeg login again!");
-          localStorage.removeItem("token");
+          clearStoredAuth();
           setTimeout(() => router.push("/login"), 1000);
         } else if (
           err.response?.status === 403 &&
@@ -501,8 +510,9 @@ function HomeContent() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearStoredAuth();
     setIsLoggedIn(false);
+    setCurrentUserId(null);
     router.push("/login");
   };
 
@@ -593,6 +603,7 @@ function HomeContent() {
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/login"
+                  onClick={() => trackEvent("home_guest_cta_click", { target: "login" })}
                   className="inline-flex items-center gap-1 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
                 >
                   <LogIn className="h-4 w-4" />
@@ -600,6 +611,7 @@ function HomeContent() {
                 </Link>
                 <Link
                   href="/signup"
+                  onClick={() => trackEvent("home_guest_cta_click", { target: "signup" })}
                   className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
                 >
                   <PenSquare className="h-4 w-4" />
@@ -607,6 +619,83 @@ function HomeContent() {
                 </Link>
               </div>
             </div>
+          </div>
+        )}
+        {isLoggedIn && (
+          <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-4 shadow-sm">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-sky-900">
+                  Welcome back. Continue from where you stopped.
+                </p>
+                <p className="mt-1 text-xs text-sky-800">
+                  Jump to your most-used areas and recent interests.
+                </p>
+                {isProfileCompleted === false && (
+                  <p className="mt-2 text-xs font-medium text-amber-700">
+                    Profile setup still pending. Complete onboarding to unlock full features.
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link
+                  href="/threads"
+                  onClick={() => trackEvent("home_continue_click", { target: "threads" })}
+                  className="rounded-md border border-sky-300 bg-white px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
+                >
+                  Continue Threads
+                </Link>
+                <Link
+                  href="/marketplace"
+                  onClick={() => trackEvent("home_continue_click", { target: "marketplace" })}
+                  className="rounded-md border border-sky-300 bg-white px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
+                >
+                  Continue Marketplace
+                </Link>
+                {isProfileCompleted === false && (
+                  <Link
+                    href="/onboarding/profile"
+                    onClick={() => trackEvent("home_continue_click", { target: "onboarding_profile" })}
+                    className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+                  >
+                    Complete Profile
+                  </Link>
+                )}
+              </div>
+            </div>
+            {(recentSearches.length > 0 || viewedCategories.length > 0) && (
+              <div className="mt-3 border-t border-sky-200 pt-3">
+                <p className="text-[11px] font-semibold uppercase tracking-wide text-sky-700">
+                  Recent interests
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {recentSearches.slice(0, 3).map((item) => (
+                    <button
+                      key={`recent-${item}`}
+                      onClick={() => {
+                        trackEvent("home_recent_interest_click", { kind: "search", value: item });
+                        handleSearch(item);
+                      }}
+                      className="rounded-full border border-sky-300 bg-white px-2.5 py-1 text-[11px] text-sky-800 hover:bg-sky-100"
+                    >
+                      Search: {item}
+                    </button>
+                  ))}
+                  {viewedCategories.slice(0, 3).map((item) => (
+                    <button
+                      key={`viewed-${item}`}
+                      onClick={() => {
+                        trackEvent("home_recent_interest_click", { kind: "category", value: item });
+                        handleCategoryFilter(item);
+                      }}
+                      className="rounded-full border border-sky-300 bg-white px-2.5 py-1 text-[11px] text-sky-800 hover:bg-sky-100"
+                    >
+                      Category: {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
         <div className="mt-2 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -1018,7 +1107,7 @@ function HomeContent() {
 }
 
 function HomeLoading() {
-  return <div className="min-h-screen bg-slate-100 p-6">Loading homepage...</div>;
+  return <div className="min-h-screen bg-slate-100 p-4 md:p-6">Loading homepage...</div>;
 }
 
 export default function Home() {

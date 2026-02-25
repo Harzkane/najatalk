@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
 import { useRouter } from "next/navigation";
+import { clearStoredAuth } from "@/utils/authStorage";
+import { trackEvent } from "@/utils/analytics";
 
 export default function ProfileOnboardingPage() {
   const router = useRouter();
@@ -63,8 +65,7 @@ export default function ProfileOnboardingPage() {
         if (err.isAxiosError) {
           setMessage(err.response?.data?.message || "Profile load scatter o!");
           if (err.response?.status === 401) {
-            localStorage.removeItem("token");
-            localStorage.removeItem("userId");
+            clearStoredAuth();
             router.replace("/login");
             return;
           }
@@ -125,6 +126,7 @@ export default function ProfileOnboardingPage() {
       setMessage(res.data?.message || "Profile updated.");
 
       if (res.data?.profileCompleted) {
+        trackEvent("onboarding_profile_completed");
         router.replace("/marketplace");
       }
     } catch (err) {

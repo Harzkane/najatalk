@@ -1,3 +1,8 @@
+// cd frontend
+// npx playwright test e2e/authenticated-ui.spec.ts
+// npx playwright test e2e/public-smoke.spec.ts e2e/authenticated-ui.spec.ts
+
+
 import { test, expect, request as playwrightRequest, type BrowserContext, type Page } from "@playwright/test";
 
 const uiBaseUrl = (process.env.E2E_UI_BASE_URL || "http://localhost:3000").replace(/\/$/, "");
@@ -93,6 +98,19 @@ const seedSessionInBrowser = async (
   _page: Page,
   session: Session
 ) => {
+  const uiUrl = new URL(uiBaseUrl);
+  await context.addCookies([
+    {
+      name: "nt_auth",
+      value: "1",
+      domain: uiUrl.hostname,
+      path: "/",
+      httpOnly: false,
+      secure: uiUrl.protocol === "https:",
+      sameSite: "Lax",
+      expires: Math.floor(Date.now() / 1000) + 60 * 60,
+    },
+  ]);
   await context.addInitScript(
     ([token, userId]) => {
       localStorage.setItem("token", token);
@@ -136,6 +154,20 @@ test("authenticated user sees logout in header", async ({ context, page }) => {
   await expect(page.getByRole("button", { name: /^logout$/i })).toBeVisible({
     timeout: 30_000,
   });
+});
+
+test("authenticated user is redirected away from login page", async ({ context, page }) => {
+  test.skip(
+    !userEmail || !userPassword,
+    "E2E_UI_USER_EMAIL/PASSWORD (or E2E_USER_EMAIL/PASSWORD) not configured"
+  );
+
+  const session = await login(userEmail, userPassword);
+  await ensureProfileComplete(session.token, session.userId, userEmail);
+  await seedSessionInBrowser(context, page, session);
+
+  await page.goto(`${uiBaseUrl}/login`);
+  await expect(page).toHaveURL(/\/marketplace/);
 });
 
 test("authenticated admin can open admin dashboard", async ({ context, page }) => {

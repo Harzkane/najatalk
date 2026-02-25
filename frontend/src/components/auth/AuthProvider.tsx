@@ -15,6 +15,7 @@ import {
   clearStoredAuth,
   getStoredAuth,
   setStoredAuth,
+  syncAuthCookie,
 } from "@/utils/authStorage";
 
 type AuthContextValue = {
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const stored = getStoredAuth();
     setToken(stored.token);
     setUserId(stored.userId);
+    syncAuthCookie();
   }, []);
 
   useEffect(() => {

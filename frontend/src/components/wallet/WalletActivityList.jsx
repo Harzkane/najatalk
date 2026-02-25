@@ -2,8 +2,8 @@
 
 export default function WalletActivityList({ transactions = [], formatDate }) {
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6">
-      <h2 className="text-xl font-semibold text-green-800 mb-4">Wallet Activity</h2>
+    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 md:p-6">
+      <h2 className="mb-4 text-lg font-semibold text-green-800 md:text-xl">Wallet Activity</h2>
       {transactions.length > 0 ? (
         <div className="space-y-4">
           {transactions.map((tx) => (

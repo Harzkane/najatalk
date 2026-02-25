@@ -52,3 +52,16 @@ export const sendVerificationEmail = async (email, token) => {
     throw err;
   }
 };
+
+export const sendPasswordResetEmail = async (email, token) => {
+  try {
+    return await sendEmail({
+      to: email,
+      subject: "Reset Your NaijaTalk Password",
+      text: `Use this link to reset your password: ${process.env.FRONTEND_URL}/reset-password/${token}`,
+    });
+  } catch (err) {
+    console.error("Password reset email send error:", err);
+    throw err;
+  }
+};

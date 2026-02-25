@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { isAxiosError } from "axios";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Header from "@/components/Header";
@@ -223,8 +224,7 @@ function ContestsContent() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearStoredAuth();
     setCurrentUserId(null);
     setIsLoggedIn(false);
     router.push("/login");
@@ -294,7 +294,7 @@ function ContestsContent() {
   }, [threadId, listingId, myThreads, myListings, submissionTitle]);
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-6">
       <div className="mx-auto max-w-7.5xl">
         <Header
           title="NaijaTalk Contests"
@@ -595,7 +595,7 @@ function ContestsContent() {
 }
 
 function ContestsLoading() {
-  return <div className="min-h-screen bg-slate-100 p-6 text-center text-sm text-slate-600">Loading contests...</div>;
+  return <div className="min-h-screen bg-slate-100 p-4 text-center text-sm text-slate-600 md:p-6">Loading contests...</div>;
 }
 
 export default function Contests() {

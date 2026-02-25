@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import { useRouter, useParams } from "next/navigation";
 import Header from "../../../../components/Header";
 import WalletBalanceCards from "../../../../components/wallet/WalletBalanceCards";
@@ -335,13 +336,12 @@ export default function SellerWallet() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearStoredAuth();
     router.push("/login");
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 p-6">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-6">
       <div className="max-w-7.5xl mx-auto mb-3">
         <Header
           title="Seller Wallet"
@@ -369,7 +369,7 @@ export default function SellerWallet() {
         />
 
         {isSelf && (
-          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 mb-6">
+          <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-6 md:p-6">
             <h2 className="text-xl font-semibold text-green-800 mb-4">
               Request Payout
             </h2>

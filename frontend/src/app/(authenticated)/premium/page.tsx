@@ -4,6 +4,7 @@
 import { useState, useEffect, Suspense, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import Link from "next/link";
 import Header from "../../../components/Header";
 import axios from "axios";
@@ -554,7 +555,7 @@ function PremiumPageContent() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+    clearStoredAuth();
     router.push("/login");
   };
 

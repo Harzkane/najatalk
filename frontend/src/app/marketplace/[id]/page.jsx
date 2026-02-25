@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import api from "@/utils/api";
+import { clearStoredAuth } from "@/utils/authStorage";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import ConfirmModal from "@/components/ConfirmModal";
@@ -143,8 +144,7 @@ export default function ListingDetailPage() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("userId");
+    clearStoredAuth();
     setIsLoggedIn(false);
     setCurrentUserId(null);
     router.push("/login");

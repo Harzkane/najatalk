@@ -38,7 +38,7 @@ api.interceptors.response.use(
           path === "/wallet" ||
           /^\/users\/[^/]+\/wallet(\/|$)/.test(path) ||
           path === "/marketplace/wallet";
-        const isAuthPage = /^\/(login|signup|verify)(\/|$)/.test(path);
+        const isAuthPage = /^\/(login|signup|verify|forgot-password|reset-password)(\/|$)/.test(path);
         if (isProtectedPath && !isAuthPage) {
           window.location.assign("/login");
         }
