@@ -9,6 +9,7 @@ import { setStoredAuth } from "@/utils/authStorage";
 import { trackEvent } from "@/utils/analytics";
 import { getAuthErrorMessage, getAuthErrorStatus } from "@/utils/authErrorMessage";
 import Link from "next/link";
+import AuthPageHeaderLinks from "@/components/auth/AuthPageHeaderLinks";
 
 function LoginContent() {
   const [email, setEmail] = useState<string>("");
@@ -101,14 +102,7 @@ function LoginContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
-        <div className="mb-4 flex items-center justify-between text-sm">
-          <Link href="/" className="text-slate-600 hover:text-slate-900 hover:underline">
-            Return to Home
-          </Link>
-          <Link href="/signup" className="text-green-700 hover:text-green-800 hover:underline">
-            Create account
-          </Link>
-        </div>
+        <AuthPageHeaderLinks rightHref="/signup" rightLabel="Create account" />
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Login to NaijaTalk
         </h1>

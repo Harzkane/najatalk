@@ -1,8 +1,11 @@
+import HomeLink from "@/components/navigation/HomeLink";
+
 export default function ContestTermsPage() {
   return (
     <main className="min-h-screen bg-slate-100 px-4 py-8">
       <div className="mx-auto max-w-3xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">NaijaTalk Contest Terms</h1>
+        <HomeLink />
+        <h1 className="mt-4 text-2xl font-bold text-slate-900">NaijaTalk Contest Terms</h1>
         <p className="mt-2 text-sm text-slate-600">Version: 2026-02-21</p>
 
         <section className="mt-6 space-y-3 text-sm leading-6 text-slate-700">

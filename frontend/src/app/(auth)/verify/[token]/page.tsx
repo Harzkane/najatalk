@@ -4,12 +4,14 @@ import { useEffect, useState, Suspense } from "react";
 import { isAxiosError } from "axios";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/utils/api";
+import AuthPageHeaderLinks from "@/components/auth/AuthPageHeaderLinks";
 
 // Loading component
 function VerifyLoading() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
+        <AuthPageHeaderLinks rightHref="/login" rightLabel="Back to Login" />
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Verify Your Email
         </h1>
@@ -43,6 +45,7 @@ function VerifyContent() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-100">
       <div className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 w-full max-w-md">
+        <AuthPageHeaderLinks rightHref="/login" rightLabel="Back to Login" />
         <h1 className="text-3xl font-bold text-green-800 mb-6">
           Verify Your Email
         </h1>

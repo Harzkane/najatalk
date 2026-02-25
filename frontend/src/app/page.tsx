@@ -1,7 +1,14 @@
 // frontend/src/app/page.tsx
 "use client";
 
-import { Suspense, useState, useEffect, useRef, useCallback, useMemo } from "react";
+import {
+  Suspense,
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { isAxiosError } from "axios";
 import api from "../utils/api";
@@ -70,7 +77,13 @@ type Ad = {
 };
 
 type SortMode = "latest" | "top" | "unanswered";
-type ActiveFilter = "all" | "forYou" | "unread" | "following" | "solved" | "mostActive";
+type ActiveFilter =
+  | "all"
+  | "forYou"
+  | "unread"
+  | "following"
+  | "solved"
+  | "mostActive";
 const HOME_CATEGORIES = ["General", "Gist", "Politics", "Romance"] as const;
 
 const parseSortMode = (value: string | null): SortMode => {
@@ -143,7 +156,9 @@ function HomeContent() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<ActiveFilter>("all");
   const [isPremium, setIsPremium] = useState(false);
-  const [isProfileCompleted, setIsProfileCompleted] = useState<boolean | null>(null);
+  const [isProfileCompleted, setIsProfileCompleted] = useState<boolean | null>(
+    null,
+  );
   const [lastVisitAt, setLastVisitAt] = useState<number>(0);
   const [viewedCategories, setViewedCategories] = useState<string[]>([]);
 
@@ -206,7 +221,8 @@ function HomeContent() {
     return sortedThreads.filter((thread) => {
       if (activeFilter === "all") return true;
       if (activeFilter === "mostActive") return getReplyCount(thread) >= 5;
-      if (activeFilter === "solved") return Boolean((thread as { isSolved?: boolean }).isSolved);
+      if (activeFilter === "solved")
+        return Boolean((thread as { isSolved?: boolean }).isSolved);
       if (activeFilter === "following") {
         if (!currentUserId) return false;
         const bookmarks = (thread as { bookmarks?: unknown[] }).bookmarks || [];
@@ -231,7 +247,13 @@ function HomeContent() {
       }
       return true;
     });
-  }, [sortedThreads, activeFilter, currentUserId, lastVisitAt, viewedCategories]);
+  }, [
+    sortedThreads,
+    activeFilter,
+    currentUserId,
+    lastVisitAt,
+    viewedCategories,
+  ]);
   const hasAnyThreads = threads.length > 0;
   const communityMetrics = useMemo(() => {
     const now = new Date();
@@ -341,7 +363,9 @@ function HomeContent() {
         setViewedCategories([]);
       }
     }
-    const cachedLastVisit = Number(localStorage.getItem("homeLastVisitAt") || "0");
+    const cachedLastVisit = Number(
+      localStorage.getItem("homeLastVisitAt") || "0",
+    );
     setLastVisitAt(Number.isFinite(cachedLastVisit) ? cachedLastVisit : 0);
     localStorage.setItem("homeLastVisitAt", String(Date.now()));
   }, []);
@@ -539,7 +563,12 @@ function HomeContent() {
   };
 
   const handleLoadMore = async () => {
-    if (!hasMoreThreads || isLoadingMore || isLoadingThreads || searchQuery.trim()) {
+    if (
+      !hasMoreThreads ||
+      isLoadingMore ||
+      isLoadingThreads ||
+      searchQuery.trim()
+    ) {
       return;
     }
     await fetchThreads(threadsPage + 1, true);
@@ -549,7 +578,10 @@ function HomeContent() {
     const category = String(thread.category || "").trim();
     if (!category) return;
     setViewedCategories((prev) => {
-      const next = [category, ...prev.filter((item) => item.toLowerCase() !== category.toLowerCase())].slice(0, 8);
+      const next = [
+        category,
+        ...prev.filter((item) => item.toLowerCase() !== category.toLowerCase()),
+      ].slice(0, 8);
       localStorage.setItem("homeViewedCategories", JSON.stringify(next));
       return next;
     });
@@ -597,13 +629,16 @@ function HomeContent() {
                   New to NaijaTalk?
                 </p>
                 <p className="mt-1 text-sm text-emerald-800">
-                  Join to post threads, save marketplace listings, enter contests, and access wallet tools.
+                  Join to post threads, save marketplace listings, enter
+                  contests, and access wallet tools.
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/login"
-                  onClick={() => trackEvent("home_guest_cta_click", { target: "login" })}
+                  onClick={() =>
+                    trackEvent("home_guest_cta_click", { target: "login" })
+                  }
                   className="inline-flex items-center gap-1 rounded-md bg-green-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-800"
                 >
                   <LogIn className="h-4 w-4" />
@@ -611,7 +646,9 @@ function HomeContent() {
                 </Link>
                 <Link
                   href="/signup"
-                  onClick={() => trackEvent("home_guest_cta_click", { target: "signup" })}
+                  onClick={() =>
+                    trackEvent("home_guest_cta_click", { target: "signup" })
+                  }
                   className="inline-flex items-center gap-1 rounded-md border border-emerald-300 bg-white px-3 py-1.5 text-sm font-medium text-emerald-800 hover:bg-emerald-100"
                 >
                   <PenSquare className="h-4 w-4" />
@@ -633,21 +670,26 @@ function HomeContent() {
                 </p>
                 {isProfileCompleted === false && (
                   <p className="mt-2 text-xs font-medium text-amber-700">
-                    Profile setup still pending. Complete onboarding to unlock full features.
+                    Profile setup still pending. Complete onboarding to unlock
+                    full features.
                   </p>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
                   href="/threads"
-                  onClick={() => trackEvent("home_continue_click", { target: "threads" })}
+                  onClick={() =>
+                    trackEvent("home_continue_click", { target: "threads" })
+                  }
                   className="rounded-md border border-sky-300 bg-white px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
                 >
                   Continue Threads
                 </Link>
                 <Link
                   href="/marketplace"
-                  onClick={() => trackEvent("home_continue_click", { target: "marketplace" })}
+                  onClick={() =>
+                    trackEvent("home_continue_click", { target: "marketplace" })
+                  }
                   className="rounded-md border border-sky-300 bg-white px-3 py-1.5 text-xs font-medium text-sky-800 hover:bg-sky-100"
                 >
                   Continue Marketplace
@@ -655,7 +697,11 @@ function HomeContent() {
                 {isProfileCompleted === false && (
                   <Link
                     href="/onboarding/profile"
-                    onClick={() => trackEvent("home_continue_click", { target: "onboarding_profile" })}
+                    onClick={() =>
+                      trackEvent("home_continue_click", {
+                        target: "onboarding_profile",
+                      })
+                    }
                     className="rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
                   >
                     Complete Profile
@@ -673,7 +719,10 @@ function HomeContent() {
                     <button
                       key={`recent-${item}`}
                       onClick={() => {
-                        trackEvent("home_recent_interest_click", { kind: "search", value: item });
+                        trackEvent("home_recent_interest_click", {
+                          kind: "search",
+                          value: item,
+                        });
                         handleSearch(item);
                       }}
                       className="rounded-full border border-sky-300 bg-white px-2.5 py-1 text-[11px] text-sky-800 hover:bg-sky-100"
@@ -685,7 +734,10 @@ function HomeContent() {
                     <button
                       key={`viewed-${item}`}
                       onClick={() => {
-                        trackEvent("home_recent_interest_click", { kind: "category", value: item });
+                        trackEvent("home_recent_interest_click", {
+                          kind: "category",
+                          value: item,
+                        });
                         handleCategoryFilter(item);
                       }}
                       className="rounded-full border border-sky-300 bg-white px-2.5 py-1 text-[11px] text-sky-800 hover:bg-sky-100"
@@ -747,7 +799,7 @@ function HomeContent() {
 
       <div className="mx-auto grid max-w-7.5xl grid-cols-1 gap-4 lg:grid-cols-[220px_minmax(0,1fr)_260px]">
         <div className="w-full">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-10">
             <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <FolderTree className="h-3.5 w-3.5" />
               Categories
@@ -805,7 +857,7 @@ function HomeContent() {
             </p>
           )}
 
-          <div className="sticky top-20 z-20 mb-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:flex-row md:items-center md:justify-between">
+          <div className="sticky top-0 z-20 mb-2 flex flex-col gap-2 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:flex-row md:items-center md:justify-between">
             <h2 className="flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-slate-500">
               <MessageCircle className="h-4 w-4" />
               Latest Discussions
@@ -881,9 +933,15 @@ function HomeContent() {
               {filteredThreads.map((thread, index) => {
                 const latestReplyMeta = getLatestReplyMeta(thread);
                 const latestReplyName = getEmailHandle(latestReplyMeta?.email);
-                const isSolved = Boolean((thread as { isSolved?: boolean }).isSolved);
-                const isSticky = Boolean((thread as { isSticky?: boolean }).isSticky);
-                const isLocked = Boolean((thread as { isLocked?: boolean }).isLocked);
+                const isSolved = Boolean(
+                  (thread as { isSolved?: boolean }).isSolved,
+                );
+                const isSticky = Boolean(
+                  (thread as { isSticky?: boolean }).isSticky,
+                );
+                const isLocked = Boolean(
+                  (thread as { isLocked?: boolean }).isLocked,
+                );
                 const isHot = getReplyCount(thread) >= 10;
 
                 return (
@@ -1070,7 +1128,7 @@ function HomeContent() {
               Review Unanswered
             </button>
           </div>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-20">
+          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-10">
             <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               <Megaphone className="h-3.5 w-3.5" />
               Sponsored
@@ -1107,7 +1165,11 @@ function HomeContent() {
 }
 
 function HomeLoading() {
-  return <div className="min-h-screen bg-slate-100 p-4 md:p-6">Loading homepage...</div>;
+  return (
+    <div className="min-h-screen bg-slate-100 p-4 md:p-6">
+      Loading homepage...
+    </div>
+  );
 }
 
 export default function Home() {
