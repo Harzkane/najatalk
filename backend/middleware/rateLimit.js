@@ -95,6 +95,13 @@ export const writeActionLimiter = createRateLimiter({
   message: "Too many write actions in a short time. Please wait.",
 });
 
+export const searchActionLimiter = createRateLimiter({
+  id: "search-action",
+  windowMs: 10 * 60 * 1000,
+  max: 180,
+  message: "Too many search actions in a short time. Please wait.",
+});
+
 export const adminMutationLimiter = createRateLimiter({
   id: "admin-mutation",
   windowMs: 10 * 60 * 1000,

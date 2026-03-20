@@ -9,7 +9,8 @@ import AuthPageHeaderLinks from "@/components/auth/AuthPageHeaderLinks";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
-  const { token } = useParams<{ token: string }>();
+  const params = useParams<{ token: string }>();
+  const token = params?.token;
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -23,6 +24,10 @@ export default function ResetPasswordPage() {
     }
     if (password !== confirmPassword) {
       setMessage("Passwords no match.");
+      return;
+    }
+    if (!token) {
+      setMessage("Reset token no dey.");
       return;
     }
     try {

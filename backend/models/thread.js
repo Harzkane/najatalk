@@ -1,5 +1,6 @@
 // backend/models/thread.js
 import mongoose from "mongoose";
+import { DEFAULT_THREAD_CATEGORY } from "../utils/threadCategories.js";
 
 const threadSchema = new mongoose.Schema({
   title: {
@@ -20,7 +21,7 @@ const threadSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    default: "General",
+    default: DEFAULT_THREAD_CATEGORY,
   },
   createdAt: {
     type: Date,

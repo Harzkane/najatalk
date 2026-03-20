@@ -19,3 +19,45 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@keyframes search-float-soft {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes search-float-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(10px, -8px, 0);
+  }
+}
+
+@keyframes search-float-orbit {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-8px, -12px, 0) scale(1.04);
+  }
+}
+
+.search-float-soft {
+  animation: search-float-soft 7s ease-in-out infinite;
+}
+
+.search-float-drift {
+  animation: search-float-drift 9s ease-in-out infinite;
+}
+
+.search-float-orbit {
+  animation: search-float-orbit 11s ease-in-out infinite;
+}

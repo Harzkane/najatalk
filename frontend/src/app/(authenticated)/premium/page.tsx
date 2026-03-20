@@ -174,6 +174,7 @@ function PremiumPageContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
 
   const fetchUserAds = async () => {
     try {
@@ -277,7 +278,7 @@ function PremiumPageContent() {
         setUserAds(adsRes.data.ads);
         await fetchBillingHistory(billingStatusFilter, 1);
 
-        const reference = searchParams.get("reference");
+        const reference = resolvedSearchParams.get("reference");
         if (reference && !userRes.data.isPremium)
           await verifyPayment(reference);
       } catch (err) {
@@ -286,7 +287,7 @@ function PremiumPageContent() {
       }
     };
     checkPremiumAndWallet();
-  }, [router, searchParams, fetchBillingHistory, billingStatusFilter]);
+  }, [router, resolvedSearchParams, fetchBillingHistory, billingStatusFilter]);
 
   useEffect(() => {
     fetchBillingHistory(billingStatusFilter, billingPage);

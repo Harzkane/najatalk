@@ -1,25 +1,32 @@
 // frontend/src/app/layout.tsx
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { CSSProperties } from "react";
 import "./globals.css";
 import PopupAdWrapper from "../components/home/PopupAdWrapper"; // New client component
 import ProfileCompletionGate from "../components/auth/ProfileCompletionGate";
 import { AuthProvider } from "../components/auth/AuthProvider";
 import SiteFooter from "../components/SiteFooter";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "NaijaTalk",
-  description: "NaijaTalk community forum",
+  title: {
+    default: "NaijaTalk",
+    template: "%s | NaijaTalk",
+  },
+  description:
+    "NaijaTalk is a Nigerian-first public forum for news, jobs, japa plans, football, local life, and everyday gist.",
+  openGraph: {
+    title: "NaijaTalk",
+    description:
+      "Search conversations, scan hot categories, and follow what Nigerians are discussing right now.",
+    siteName: "NaijaTalk",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NaijaTalk",
+    description:
+      "Search conversations, scan hot categories, and follow what Nigerians are discussing right now.",
+  },
 };
 
 export default function RootLayout({
@@ -36,7 +43,15 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className="antialiased"
+        style={
+          {
+            "--font-geist-sans":
+              '"Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif',
+            "--font-geist-mono":
+              '"SFMono-Regular", "Menlo", "Monaco", "Courier New", monospace',
+          } as CSSProperties
+        }
       >
         <AuthProvider>
           <ProfileCompletionGate>

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const isProtectedPath = (pathname: string) => {
-  if (/^\/(threads|premium|admin)(\/|$)/.test(pathname)) return true;
+  if (/^\/(premium|admin)(\/|$)/.test(pathname)) return true;
   if (pathname === "/wallet") return true;
   if (pathname === "/marketplace/wallet") return true;
   if (/^\/users\/[^/]+\/wallet(\/|$)/.test(pathname)) return true;

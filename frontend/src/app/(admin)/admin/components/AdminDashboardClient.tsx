@@ -57,6 +57,8 @@ import type {
   UserRiskSignalSummary,
   ContestRiskSignalRow,
   ContestRiskSignalSummary,
+  SearchInsightsSummary,
+  SearchInsightRow,
 } from "./types";
 import { ADMIN_SECTION_LABELS, type AdminSectionId } from "./sectionMeta";
 
@@ -226,6 +228,20 @@ export default function AdminDashboardClient({
       solved: 0,
       reported: 0,
     });
+  const [searchInsightsSummary, setSearchInsightsSummary] =
+    useState<SearchInsightsSummary>({
+      totalSearches: 0,
+      noResultSearches: 0,
+      uniqueQueries: 0,
+      suggestionClicks: 0,
+      resultClicks: 0,
+      categoryFilterUses: 0,
+    });
+  const [topSearchQueries, setTopSearchQueries] = useState<SearchInsightRow[]>([]);
+  const [topNoResultQueries, setTopNoResultQueries] = useState<SearchInsightRow[]>([]);
+  const [topSuggestionQueries, setTopSuggestionQueries] = useState<SearchInsightRow[]>([]);
+  const [topClickedQueries, setTopClickedQueries] = useState<SearchInsightRow[]>([]);
+  const [topCategoryFilters, setTopCategoryFilters] = useState<SearchInsightRow[]>([]);
   const [threadsQuery, setThreadsQuery] = useState("");
   const [threadsStatusFilter, setThreadsStatusFilter] = useState<
     "all" | "locked" | "sticky" | "solved"
@@ -938,6 +954,52 @@ export default function AdminDashboardClient({
       setAdminContests([]);
     }
   }, [contestsQuery, contestsStatusFilter, contestsPage, contestsPageSize]);
+
+  const fetchSearchInsights = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await api.get<{
+        summary: SearchInsightsSummary;
+        topQueries: SearchInsightRow[];
+        topNoResultQueries: SearchInsightRow[];
+        topSuggestionQueries: SearchInsightRow[];
+        topClickedQueries: SearchInsightRow[];
+        topCategoryFilters: SearchInsightRow[];
+      }>("/threads/admin/search-insights", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSearchInsightsSummary(
+        res.data.summary || {
+          totalSearches: 0,
+          noResultSearches: 0,
+          uniqueQueries: 0,
+          suggestionClicks: 0,
+          resultClicks: 0,
+          categoryFilterUses: 0,
+        },
+      );
+      setTopSearchQueries(res.data.topQueries || []);
+      setTopNoResultQueries(res.data.topNoResultQueries || []);
+      setTopSuggestionQueries(res.data.topSuggestionQueries || []);
+      setTopClickedQueries(res.data.topClickedQueries || []);
+      setTopCategoryFilters(res.data.topCategoryFilters || []);
+    } catch (err) {
+      console.error("Fetch search insights error:", err);
+      setSearchInsightsSummary({
+        totalSearches: 0,
+        noResultSearches: 0,
+        uniqueQueries: 0,
+        suggestionClicks: 0,
+        resultClicks: 0,
+        categoryFilterUses: 0,
+      });
+      setTopSearchQueries([]);
+      setTopNoResultQueries([]);
+      setTopSuggestionQueries([]);
+      setTopClickedQueries([]);
+      setTopCategoryFilters([]);
+    }
+  }, []);
 
   useEffect(() => {
     setSelectedUserIds((prev) =>
@@ -1860,6 +1922,7 @@ export default function AdminDashboardClient({
         }
         if (shouldLoad("premium")) fetchPremiumPaymentsAudit();
         if (isOverviewScope) {
+          fetchSearchInsights();
           fetchSlaSnapshot();
           triggerExternalSlaAlerts();
         }
@@ -1890,6 +1953,7 @@ export default function AdminDashboardClient({
     fetchPlatformWalletOverview,
     fetchPlatformWalletEntries,
     fetchPremiumPaymentsAudit,
+    fetchSearchInsights,
     fetchSlaSnapshot,
     triggerExternalSlaAlerts,
     focusSection,
@@ -2875,12 +2939,19 @@ export default function AdminDashboardClient({
                   fetchPlatformWalletOverview();
                   fetchPlatformWalletEntries();
                   fetchPremiumPaymentsAudit();
+                  fetchSearchInsights();
                   fetchSlaSnapshot();
                   triggerExternalSlaAlerts();
                 }}
                 riskSignalsCount={
                   userRiskSummary.totalFlagged + contestRiskSummary.totalFlagged
                 }
+                searchInsightsSummary={searchInsightsSummary}
+                topSearchQueries={topSearchQueries}
+                topNoResultQueries={topNoResultQueries}
+                topSuggestionQueries={topSuggestionQueries}
+                topClickedQueries={topClickedQueries}
+                topCategoryFilters={topCategoryFilters}
                 apiHealthStatus={slaApiHealthStatus}
                 readinessStatus={slaReadinessStatus}
                 databaseStatus={slaDatabaseStatus}

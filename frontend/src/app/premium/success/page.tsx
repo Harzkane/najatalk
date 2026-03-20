@@ -27,6 +27,7 @@ function PremiumSuccessContent() {
   const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
 
   const verifyPayment = useCallback(
     async (reference: string) => {
@@ -64,7 +65,7 @@ function PremiumSuccessContent() {
   );
 
   useEffect(() => {
-    const reference = searchParams.get("reference");
+    const reference = resolvedSearchParams.get("reference");
     console.log("Search Params:", { reference });
 
     if (reference) {
@@ -74,7 +75,7 @@ function PremiumSuccessContent() {
       setError("Payment failed or incomplete. Please retry from premium page.");
       setIsProcessing(false);
     }
-  }, [searchParams, verifyPayment]);
+  }, [resolvedSearchParams, verifyPayment]);
 
   return (
     <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">

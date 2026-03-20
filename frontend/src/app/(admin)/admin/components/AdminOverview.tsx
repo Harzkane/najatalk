@@ -15,6 +15,41 @@ type AdminOverviewProps = {
   mismatchedUsersCount: number;
   highSeverityMismatchCount: number;
   riskSignalsCount: number;
+  searchInsightsSummary: {
+    totalSearches: number;
+    noResultSearches: number;
+    uniqueQueries: number;
+    suggestionClicks: number;
+    resultClicks: number;
+    categoryFilterUses: number;
+  };
+  topSearchQueries: Array<{
+    query: string;
+    count: number;
+    lastSearchedAt: string | null;
+    category?: string | null;
+  }>;
+  topNoResultQueries: Array<{
+    query: string;
+    count: number;
+    lastSearchedAt: string | null;
+  }>;
+  topSuggestionQueries: Array<{
+    query: string;
+    count: number;
+    lastSearchedAt: string | null;
+  }>;
+  topClickedQueries: Array<{
+    query: string;
+    count: number;
+    lastSearchedAt: string | null;
+  }>;
+  topCategoryFilters: Array<{
+    query: string;
+    count: number;
+    lastSearchedAt: string | null;
+    category?: string | null;
+  }>;
   apiHealthStatus: string;
   readinessStatus: string;
   databaseStatus: string;
@@ -47,6 +82,12 @@ export default function AdminOverview({
   mismatchedUsersCount,
   highSeverityMismatchCount,
   riskSignalsCount,
+  searchInsightsSummary,
+  topSearchQueries,
+  topNoResultQueries,
+  topSuggestionQueries,
+  topClickedQueries,
+  topCategoryFilters,
   apiHealthStatus,
   readinessStatus,
   databaseStatus,
@@ -172,6 +213,161 @@ export default function AdminOverview({
         <div className="rounded-xl border border-fuchsia-200 bg-fuchsia-50 p-4">
           <p className="text-xs uppercase tracking-wide text-fuchsia-700">Risk Signals</p>
           <p className="mt-1 text-3xl font-semibold text-fuchsia-900">{riskSignalsCount}</p>
+        </div>
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-xs uppercase tracking-wide text-slate-600">Search Insights (7d)</p>
+          <p className="text-xs text-slate-500">Live signals from forum discovery.</p>
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Total Searches</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.totalSearches}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">No-result Searches</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.noResultSearches}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Unique Queries</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.uniqueQueries}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Suggestion Clicks</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.suggestionClicks}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Result Clicks</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.resultClicks}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Category Filter Uses</p>
+            <p className="mt-1 text-lg font-semibold text-slate-900">
+              {searchInsightsSummary.categoryFilterUses}
+            </p>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Top Searches</p>
+            <div className="mt-2 space-y-2">
+              {topSearchQueries.length ? (
+                topSearchQueries.map((row) => (
+                  <div
+                    key={`top-${row.query}`}
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{row.query}</p>
+                      <p className="text-xs text-slate-500">
+                        {row.category ? `Category: ${row.category}` : "All categories"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                      {row.count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No search data yet.</p>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Top No-result Queries</p>
+            <div className="mt-2 space-y-2">
+              {topNoResultQueries.length ? (
+                topNoResultQueries.map((row) => (
+                  <div
+                    key={`no-result-${row.query}`}
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-slate-900">{row.query}</p>
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800">
+                      {row.count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No no-result searches yet.</p>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Top Suggestion Clicks</p>
+            <div className="mt-2 space-y-2">
+              {topSuggestionQueries.length ? (
+                topSuggestionQueries.map((row) => (
+                  <div
+                    key={`suggestion-${row.query}`}
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-slate-900">{row.query}</p>
+                    <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800">
+                      {row.count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No suggestion click data yet.</p>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Top Result-click Queries</p>
+            <div className="mt-2 space-y-2">
+              {topClickedQueries.length ? (
+                topClickedQueries.map((row) => (
+                  <div
+                    key={`click-${row.query}`}
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-slate-900">{row.query}</p>
+                    <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-800">
+                      {row.count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No result clicks recorded yet.</p>
+              )}
+            </div>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <p className="text-xs uppercase tracking-wide text-slate-500">Top Category Filters</p>
+            <div className="mt-2 space-y-2">
+              {topCategoryFilters.length ? (
+                topCategoryFilters.map((row) => (
+                  <div
+                    key={`filter-${row.query}`}
+                    className="flex items-start justify-between gap-3 border-b border-slate-100 pb-2 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-slate-900">
+                      {row.category || row.query}
+                    </p>
+                    <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-800">
+                      {row.count}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-slate-500">No category filter data yet.</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
       <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">

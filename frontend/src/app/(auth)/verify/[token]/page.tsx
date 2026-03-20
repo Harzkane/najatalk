@@ -24,7 +24,8 @@ function VerifyLoading() {
 // Main content component that uses useParams
 function VerifyContent() {
   const router = useRouter();
-  const { token } = useParams<{ token: string }>();
+  const params = useParams<{ token: string }>();
+  const token = params?.token;
   const [message, setMessage] = useState<string>("Verifying your email...");
 
   useEffect(() => {

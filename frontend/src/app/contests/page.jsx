@@ -11,6 +11,7 @@ import Header from "@/components/Header";
 function ContestsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
   const [contests, setContests] = useState([]);
   const [selectedContest, setSelectedContest] = useState(null);
   const [submissions, setSubmissions] = useState([]);
@@ -261,9 +262,9 @@ function ContestsContent() {
   }, []);
 
   useEffect(() => {
-    const contestIdFromQuery = searchParams.get("contestId");
-    const threadIdFromQuery = searchParams.get("threadId");
-    const from = searchParams.get("from");
+    const contestIdFromQuery = resolvedSearchParams.get("contestId");
+    const threadIdFromQuery = resolvedSearchParams.get("threadId");
+    const from = resolvedSearchParams.get("from");
     if (!contestIdFromQuery) return;
     openContest(contestIdFromQuery);
     if (threadIdFromQuery) {
@@ -275,7 +276,7 @@ function ContestsContent() {
       );
     }
     router.replace("/contests");
-  }, [searchParams, openContest, router]);
+  }, [resolvedSearchParams, openContest, router]);
 
   useEffect(() => {
     if (submissionTitle.trim()) return;

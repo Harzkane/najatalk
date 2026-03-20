@@ -29,9 +29,10 @@ function AppealContent() {
   const [appealStatus, setAppealStatus] = useState<string | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
 
   useEffect(() => {
-    const fromBan = searchParams.get("fromBan");
+    const fromBan = resolvedSearchParams.get("fromBan");
     if (!fromBan) {
       setMessage("Abeg, login first to appeal!");
       setTimeout(() => router.push("/login"), 1000);
@@ -69,7 +70,7 @@ function AppealContent() {
       }
     };
     checkAppealStatus();
-  }, [email, password, router, searchParams]);
+  }, [email, password, resolvedSearchParams, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

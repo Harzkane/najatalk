@@ -9,6 +9,10 @@ import Header from "@/components/Header";
 import ListingCard from "@/components/marketplace/ListingCard";
 import TrustBadge from "@/components/marketplace/TrustBadge";
 import RichTextEditor from "@/components/threads/RichTextEditor";
+import {
+  DEFAULT_THREAD_CATEGORY,
+  THREAD_CATEGORY_DEFINITIONS,
+} from "@/utils/threadCategories";
 
 const MARKETPLACE_TABS = ["all", "active", "pending", "sold"];
 const PROFILE_SECTIONS = [
@@ -42,7 +46,7 @@ export default function UserProfile() {
   const [newThreadDraft, setNewThreadDraft] = useState({
     title: "",
     body: "<p></p>",
-    category: "General",
+    category: DEFAULT_THREAD_CATEGORY,
   });
   const [isCreatingThread, setIsCreatingThread] = useState(false);
   const [editingThread, setEditingThread] = useState(null);
@@ -144,7 +148,11 @@ export default function UserProfile() {
     String(value).replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
 
   const openCreateThreadModal = () => {
-    setNewThreadDraft({ title: "", body: "<p></p>", category: "General" });
+    setNewThreadDraft({
+      title: "",
+      body: "<p></p>",
+      category: DEFAULT_THREAD_CATEGORY,
+    });
     setIsCreateModalOpen(true);
   };
 
@@ -158,7 +166,9 @@ export default function UserProfile() {
     const title = String(newThreadDraft.title || "").trim();
     const body = String(newThreadDraft.body || "");
     const bodyText = getPlainTextFromRich(body);
-    const category = String(newThreadDraft.category || "General").trim() || "General";
+    const category =
+      String(newThreadDraft.category || DEFAULT_THREAD_CATEGORY).trim() ||
+      DEFAULT_THREAD_CATEGORY;
 
     if (title.length < 6) {
       setMessage("Thread title should be at least 6 characters.");
@@ -200,7 +210,7 @@ export default function UserProfile() {
       _id: thread._id,
       title: thread.title || "",
       body: thread.body || "",
-      category: thread.category || "General",
+      category: thread.category || DEFAULT_THREAD_CATEGORY,
     });
   };
 
@@ -216,7 +226,9 @@ export default function UserProfile() {
     const title = String(editingThread.title || "").trim();
     const body = String(editingThread.body || "");
     const bodyText = getPlainTextFromRich(body);
-    const category = String(editingThread.category || "General").trim() || "General";
+    const category =
+      String(editingThread.category || DEFAULT_THREAD_CATEGORY).trim() ||
+      DEFAULT_THREAD_CATEGORY;
 
     if (title.length < 6) {
       setMessage("Thread title should be at least 6 characters.");
@@ -662,10 +674,11 @@ export default function UserProfile() {
                 }
                 className="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
               >
-                <option value="General">General</option>
-                <option value="Gist">Gist</option>
-                <option value="Politics">Politics</option>
-                <option value="Romance">Romance</option>
+                {THREAD_CATEGORY_DEFINITIONS.map((threadCategory) => (
+                  <option key={threadCategory.id} value={threadCategory.label}>
+                    {threadCategory.label}
+                  </option>
+                ))}
               </select>
               <div className="flex items-center justify-end gap-2">
                 <button
@@ -734,10 +747,11 @@ export default function UserProfile() {
                 }
                 className="w-full rounded-md border border-slate-300 bg-white p-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600"
               >
-                <option value="General">General</option>
-                <option value="Gist">Gist</option>
-                <option value="Politics">Politics</option>
-                <option value="Romance">Romance</option>
+                {THREAD_CATEGORY_DEFINITIONS.map((threadCategory) => (
+                  <option key={threadCategory.id} value={threadCategory.label}>
+                    {threadCategory.label}
+                  </option>
+                ))}
               </select>
               <div className="flex items-center justify-end gap-2">
                 <button

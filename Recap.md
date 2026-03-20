@@ -1,3 +1,6 @@
+PATH="/usr/local/opt/node@22/bin:$PATH"
+
+
 https://github.com/flarum/framework?tab=readme-ov-file 
 
 primetaker10@gmail.com

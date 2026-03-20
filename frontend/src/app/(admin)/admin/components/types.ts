@@ -305,6 +305,22 @@ export type PremiumAuditSummary = {
   initiatedCount: number;
 };
 
+export type SearchInsightsSummary = {
+  totalSearches: number;
+  noResultSearches: number;
+  uniqueQueries: number;
+  suggestionClicks: number;
+  resultClicks: number;
+  categoryFilterUses: number;
+};
+
+export type SearchInsightRow = {
+  query: string;
+  count: number;
+  lastSearchedAt: string | null;
+  category?: string | null;
+};
+
 export type AdminManagedUser = {
   _id: string;
   email: string;

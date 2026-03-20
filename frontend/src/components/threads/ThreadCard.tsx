@@ -6,6 +6,7 @@ import { isAxiosError } from "axios";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import api from "@/utils/api";
+import { useAuth } from "@/components/auth/AuthProvider";
 import RichTextEditor from "./RichTextEditor";
 import {
   normalizeContentForRender,
@@ -16,7 +17,12 @@ import {
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null;
+  userId: {
+    _id: string;
+    username?: string | null;
+    flair?: string;
+    avatarUrl?: string | null;
+  } | null;
   createdAt: string;
   parentReplyId?: string | null;
   likes?: string[];
@@ -26,7 +32,12 @@ type Thread = {
   _id: string;
   title: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null;
+  userId: {
+    _id: string;
+    username?: string | null;
+    flair?: string;
+    avatarUrl?: string | null;
+  } | null;
   category: string;
   createdAt: string;
   updatedAt?: string;
@@ -55,7 +66,7 @@ interface ThreadCardProps {
   currentUserId?: string | null;
   currentUserRole?: "user" | "mod" | "admin" | "super_admin" | null;
   onThreadUpdated?: () => Promise<void> | void;
-  replyingToEmail?: string | null;
+  replyingToUsername?: string | null;
   focusReplyId?: string | null;
   focusReplyPathIds?: ReadonlySet<string>;
   isLastSibling?: boolean;
@@ -68,10 +79,9 @@ interface ThreadCardProps {
 const MAX_VISUAL_REPLY_DEPTH = 2;
 const REPLIES_PAGE_SIZE = 10;
 
-const emailToHandle = (email?: string | null) => {
-  if (!email) return "unknown";
-  const handle = email.split("@")[0]?.trim();
-  return handle || "unknown";
+const getPublicHandle = (user?: { username?: string | null } | null) => {
+  if (user?.username?.trim()) return user.username.trim();
+  return "unknown";
 };
 
 const ThreadCard: FC<ThreadCardProps> = ({
@@ -90,7 +100,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   currentUserId = null,
   currentUserRole = null,
   onThreadUpdated,
-  replyingToEmail = null,
+  replyingToUsername = null,
   focusReplyId = null,
   focusReplyPathIds,
   isLastSibling = false,
@@ -129,6 +139,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const cardRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
+  const auth = useAuth();
 
   const isThread = useCallback(
     (t: Thread | Reply): t is Thread => !isReply && "title" in t,
@@ -165,8 +176,8 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const depthClass =
     visualDepth === 0 ? "" : visualDepth === 1 ? "ml-1" : "ml-2";
   const isFlattenedReply = isReply && depth > MAX_VISUAL_REPLY_DEPTH;
-  const replyingToHandle = emailToHandle(replyingToEmail);
-  const replyAuthorHandle = emailToHandle(thread.userId?.email || null);
+  const replyingToHandle = replyingToUsername || "unknown";
+  const replyAuthorHandle = getPublicHandle(thread.userId);
   const replyAuthorInitial = replyAuthorHandle.slice(0, 1).toUpperCase();
   const replyBgToneClass = (() => {
     if (!isReply) return "bg-white";
@@ -288,6 +299,16 @@ const ThreadCard: FC<ThreadCardProps> = ({
     setReportFormOpen(true);
     setReplyComposerOpen(false);
   }, [setReplyComposerOpen, setReportFormOpen]);
+  const redirectToLogin = useCallback(() => {
+    router.push("/login");
+    if (typeof window !== "undefined") {
+      window.setTimeout(() => {
+        if (window.location.pathname !== "/login") {
+          window.location.assign("/login");
+        }
+      }, 75);
+    }
+  }, [router]);
 
   const handleReplyClick = () => {
     if (!canReplyToThread) {
@@ -296,7 +317,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
     setReplyError("");
@@ -480,7 +501,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     if (isLikeLoading) return;
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -515,7 +536,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -542,7 +563,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     }
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -567,7 +588,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     if (isReply || !isThread(thread) || isBookmarkLoading) return;
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -596,7 +617,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     if (!isThread(thread) || !canToggleSolved || isSolvedLoading) return;
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
 
@@ -620,7 +641,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
   const handleReport = () => {
     const token = localStorage.getItem("token");
     if (!token) {
-      router.push("/login");
+      redirectToLogin();
       return;
     }
     setReplyError("");
@@ -662,7 +683,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
     try {
       const token = localStorage.getItem("token");
       if (!token) {
-        router.push("/login");
+        redirectToLogin();
         return;
       }
       const payload = {
@@ -687,6 +708,16 @@ const ThreadCard: FC<ThreadCardProps> = ({
       }
       setIsTipping(false);
     }
+  };
+
+  const handleTipClick = () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      redirectToLogin();
+      return;
+    }
+    setReplyError("");
+    setShowTipModal(true);
   };
 
   return (
@@ -782,11 +813,11 @@ const ThreadCard: FC<ThreadCardProps> = ({
                   href={`/users/${thread.userId._id}`}
                   className="font-medium text-blue-700 hover:underline"
                 >
-                  {thread.userId?.email || "Unknown Oga"}
+                  {getPublicHandle(thread.userId)}
                 </Link>
               ) : (
                 <span className="font-medium">
-                  {thread.userId?.email || "Unknown Oga"}
+                  {getPublicHandle(thread.userId)}
                 </span>
               )}
               {thread.userId?.flair && (
@@ -943,23 +974,38 @@ const ThreadCard: FC<ThreadCardProps> = ({
           </button>
 
           {!isReply && (
-            <button
-              className={`hidden sm:flex items-center gap-1 text-xs ${
-                isBookmarked ? "text-blue-600" : "hover:text-blue-600"
-              }`}
-              onClick={handleBookmarkToggle}
-              disabled={isBookmarkLoading}
-            >
-              <span
-                className="material-icons-outlined"
-                style={{ fontSize: "12px" }}
+            auth.isLoggedIn ? (
+              <button
+                className={`hidden sm:flex items-center gap-1 text-xs ${
+                  isBookmarked ? "text-blue-600" : "hover:text-blue-600"
+                }`}
+                onClick={handleBookmarkToggle}
+                disabled={isBookmarkLoading}
               >
-                bookmark
-              </span>
-              <span className="text-xs">
-                Save {bookmarksCount > 0 ? `(${bookmarksCount})` : ""}
-              </span>
-            </button>
+                <span
+                  className="material-icons-outlined"
+                  style={{ fontSize: "12px" }}
+                >
+                  bookmark
+                </span>
+                <span className="text-xs">
+                  Save {bookmarksCount > 0 ? `(${bookmarksCount})` : ""}
+                </span>
+              </button>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden sm:flex items-center gap-1 text-xs hover:text-blue-600"
+              >
+                <span
+                  className="material-icons-outlined"
+                  style={{ fontSize: "12px" }}
+                >
+                  bookmark
+                </span>
+                <span className="text-xs">Save</span>
+              </Link>
+            )
           )}
 
           {!isReply && canToggleSolved && (
@@ -986,7 +1032,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
             className={`hidden sm:flex items-center gap-1 text-xs ${
               hasTipped ? "text-gray-400" : "hover:text-yellow-600"
             }`}
-            onClick={() => !hasTipped && setShowTipModal(true)}
+            onClick={() => !hasTipped && handleTipClick()}
             disabled={hasTipped}
           >
             <span
@@ -1114,7 +1160,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
                 </button>
               </div>
               <p className="text-sm text-gray-600 mb-4">
-                How much you wan tip {thread.userId?.email || "this oga"}?
+                How much you wan tip {getPublicHandle(thread.userId)}?
               </p>
               <div className="flex gap-2 mb-4">
                 {[50, 100, 200].map((amt) => (
@@ -1190,7 +1236,7 @@ const ThreadCard: FC<ThreadCardProps> = ({
               currentUserId={currentUserId}
               currentUserRole={currentUserRole}
               onThreadUpdated={onThreadUpdated}
-              replyingToEmail={thread.userId?.email || null}
+              replyingToUsername={thread.userId?.username || null}
               focusReplyId={focusReplyId}
               focusReplyPathIds={resolvedFocusPathIds}
               isLastSibling={

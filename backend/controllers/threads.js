@@ -2,13 +2,24 @@
 import Thread from "../models/thread.js";
 import Reply from "../models/reply.js";
 import Report from "../models/report.js";
+import SearchQueryLog from "../models/searchQueryLog.js";
 import mongoose from "mongoose";
 import { hasAnyPermission, hasPermission } from "../utils/permissions.js";
+import {
+  DEFAULT_THREAD_CATEGORY,
+  normalizeThreadCategory,
+} from "../utils/threadCategories.js";
 import {
   richTextHtmlToPlainText,
   sanitizePlainText,
   sanitizeRichTextHtml,
 } from "../utils/richTextSanitizer.js";
+import {
+  buildRegexClauses,
+  buildSearchTerms,
+  normalizeSearchQuery,
+  scoreThreadSearchResult,
+} from "../utils/threadSearch.js";
 
 const isAdmin = (user) => hasPermission(user, "platform.admin");
 const isStaff = (user) =>
@@ -20,6 +31,12 @@ const canManageSolvedState = (user, thread) =>
 
 const bannedKeywords = ["419", "whatsapp me", "click here", "free money"];
 const REPLY_COOLDOWN_MS = 30 * 1000;
+const SEARCH_EVENT_TYPES = new Set([
+  "search_submit",
+  "suggestion_click",
+  "result_click",
+  "category_filter",
+]);
 
 const containsBannedContent = (text) => {
   const lowerText = String(text || "")
@@ -66,8 +83,9 @@ const enrichThreadsWithReplyStats = async (threads) => {
         replyCount: 1,
         latestReplyAt: 1,
         latestReplyUser: {
-          email: "$latestReplyUser.email",
+          username: "$latestReplyUser.username",
           flair: "$latestReplyUser.flair",
+          avatarUrl: "$latestReplyUser.avatarUrl",
         },
       },
     },
@@ -85,10 +103,12 @@ const enrichThreadsWithReplyStats = async (threads) => {
       ...baseThread,
       replyCount: Number(stats?.replyCount || 0),
       latestReplyAt: stats?.latestReplyAt || null,
-      latestReplyUser: stats?.latestReplyUser?.email
+      latestReplyUser:
+        stats?.latestReplyUser?.username || stats?.latestReplyUser?.avatarUrl
         ? {
-            email: stats.latestReplyUser.email,
+            username: stats.latestReplyUser.username || null,
             flair: stats.latestReplyUser.flair || null,
+            avatarUrl: stats.latestReplyUser.avatarUrl || null,
           }
         : null,
     };
@@ -101,7 +121,9 @@ export const createThread = async (req, res) => {
     const safeTitle = sanitizePlainText(title, 100);
     const safeBodyHtml = sanitizeRichTextHtml(body);
     const safeBodyText = richTextHtmlToPlainText(safeBodyHtml);
-    const safeCategory = sanitizePlainText(category || "General", 40) || "General";
+    const safeCategory = normalizeThreadCategory(
+      sanitizePlainText(category || DEFAULT_THREAD_CATEGORY, 40),
+    );
 
     if (!safeTitle || !safeBodyText)
       return res.status(400).json({ message: "Title or body no dey!" });
@@ -114,7 +136,7 @@ export const createThread = async (req, res) => {
       title: safeTitle,
       body: safeBodyHtml || safeBodyText,
       userId: req.user._id,
-      category: safeCategory, // Explicit fallback
+      category: safeCategory,
     });
     await thread.save();
 
@@ -147,8 +169,10 @@ export const updateThread = async (req, res) => {
       : String(thread.body || "");
     const safeBodyText = richTextHtmlToPlainText(safeBodyHtml);
     const safeCategory = hasCategory
-      ? sanitizePlainText(req.body.category || "General", 40) || "General"
-      : thread.category || "General";
+      ? normalizeThreadCategory(
+          sanitizePlainText(req.body.category || DEFAULT_THREAD_CATEGORY, 40),
+        )
+      : normalizeThreadCategory(thread.category || DEFAULT_THREAD_CATEGORY);
 
     if (!safeTitle || !safeBodyText) {
       return res.status(400).json({ message: "Title or body no dey!" });
@@ -180,7 +204,7 @@ export const getThreads = async (req, res) => {
 
     const [rawThreads, total] = await Promise.all([
       Thread.find()
-      .populate("userId", "email flair username avatarUrl")
+      .populate("userId", "username flair avatarUrl")
       .sort({ isSticky: -1, createdAt: -1 })
       .skip(skip)
       .limit(pageSize)
@@ -303,12 +327,12 @@ export const getThreadById = async (req, res) => {
   const { id } = req.params;
   try {
     const thread = await Thread.findById(id)
-      .populate("userId", "email flair username avatarUrl")
+      .populate("userId", "username flair avatarUrl")
       .lean();
     if (!thread) return res.status(404).json({ message: "Thread no dey!" });
 
     const replies = await Reply.find({ threadId: id })
-      .populate("userId", "email flair username avatarUrl")
+      .populate("userId", "username flair avatarUrl")
       .sort({ createdAt: -1 });
     res.json({ ...thread, replies });
   } catch (err) {
@@ -317,28 +341,476 @@ export const getThreadById = async (req, res) => {
 };
 
 export const searchThreads = async (req, res) => {
-  const { q } = req.query;
+  const {
+    q,
+    category: categoryQuery,
+    unansweredOnly: unansweredOnlyQuery,
+    page: pageQuery,
+    pageSize: pageSizeQuery,
+    sort: sortQuery,
+  } = req.query;
   try {
-    if (!q)
-      return res
-        .status(400)
-        .json({ message: "Search wetin? Abeg drop query!" });
-    const rawThreads = await Thread.find(
-      { $text: { $search: q } },
-      { score: { $meta: "textScore" } }
-    )
-      .populate("userId", "email flair username avatarUrl")
-      .sort({ score: { $meta: "textScore" } })
-      .limit(10)
-      .lean();
-    const threads = await enrichThreadsWithReplyStats(rawThreads);
+    const normalizedQuery = normalizeSearchQuery(q);
+    const pageRaw = Number.parseInt(String(pageQuery || "1"), 10);
+    const pageSizeRaw = Number.parseInt(String(pageSizeQuery || "20"), 10);
+    const page = Number.isFinite(pageRaw) ? Math.max(pageRaw, 1) : 1;
+    const pageSize = Number.isFinite(pageSizeRaw)
+      ? Math.min(Math.max(pageSizeRaw, 1), 50)
+      : 20;
+    const skip = (page - 1) * pageSize;
+    const requestedSort = String(sortQuery || "relevance").trim();
+    const sortMode =
+      requestedSort === "latest" || requestedSort === "mostActive"
+        ? requestedSort
+        : "relevance";
+
+    const normalizedCategory = categoryQuery
+      ? normalizeThreadCategory(
+          sanitizePlainText(categoryQuery || DEFAULT_THREAD_CATEGORY, 40),
+        )
+      : null;
+    const categoryFilter = normalizedCategory ? { category: normalizedCategory } : {};
+    const unansweredOnly =
+      String(unansweredOnlyQuery || "").trim() === "1" ||
+      String(unansweredOnlyQuery || "").trim().toLowerCase() === "true";
+
+    if (!normalizedQuery) {
+      return res.json({
+        threads: [],
+        pagination: {
+          page,
+          pageSize,
+          total: 0,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
+        search: {
+          query: "",
+          category: normalizedCategory,
+          sort: sortMode,
+          unansweredOnly,
+          resultCount: 0,
+        },
+        ranking: {
+          mode: sortMode,
+          signals: [],
+        },
+        message: "Search wetin? Abeg drop query!",
+      });
+    }
+
+    const searchTerms = buildSearchTerms(normalizedQuery);
+    const regexClauses = buildRegexClauses(searchTerms);
+
+    const [textMatches, regexMatches] = await Promise.all([
+      Thread.find(
+        {
+          ...categoryFilter,
+          $text: { $search: searchTerms.join(" ") },
+        },
+        { score: { $meta: "textScore" } },
+      )
+        .populate("userId", "username flair avatarUrl")
+        .sort({ score: { $meta: "textScore" } })
+        .limit(24)
+        .lean(),
+      regexClauses.length
+        ? Thread.find({
+            ...categoryFilter,
+            $or: regexClauses,
+          })
+            .populate("userId", "username flair avatarUrl")
+            .sort({ createdAt: -1 })
+            .limit(24)
+            .lean()
+        : Promise.resolve([]),
+    ]);
+
+    const mergedMatches = [...textMatches, ...regexMatches].reduce((acc, thread) => {
+      const key = String(thread._id);
+      if (!acc.has(key)) {
+        acc.set(key, thread);
+        return acc;
+      }
+      const existing = acc.get(key);
+      if (Number(thread.score || 0) > Number(existing?.score || 0)) {
+        acc.set(key, { ...existing, ...thread });
+      }
+      return acc;
+    }, new Map());
+
+    const enrichedThreads = await enrichThreadsWithReplyStats([
+      ...mergedMatches.values(),
+    ]);
+    const rankedThreads = enrichedThreads
+      .filter((thread) => (unansweredOnly ? Number(thread.replyCount || 0) === 0 : true))
+      .map((thread) => {
+        const bodyText = richTextHtmlToPlainText(thread.body || "");
+        return {
+          ...thread,
+          bodyText,
+          searchScore: scoreThreadSearchResult(
+            { ...thread, bodyText },
+            normalizedQuery,
+            searchTerms,
+          ),
+        };
+      })
+      .sort((a, b) => {
+        const latestActivityDiff =
+          new Date(b.latestReplyAt || b.createdAt).getTime() -
+          new Date(a.latestReplyAt || a.createdAt).getTime();
+        if (sortMode === "latest") return latestActivityDiff;
+        if (sortMode === "mostActive") {
+          const replyDiff = Number(b.replyCount || 0) - Number(a.replyCount || 0);
+          if (replyDiff !== 0) return replyDiff;
+          return latestActivityDiff;
+        }
+        const scoreDiff = Number(b.searchScore || 0) - Number(a.searchScore || 0);
+        if (scoreDiff !== 0) return scoreDiff;
+        return latestActivityDiff;
+      })
+      .map(({ bodyText, searchScore, ...thread }) => thread);
+    const total = rankedThreads.length;
+    const paginatedThreads = rankedThreads.slice(skip, skip + pageSize);
 
     res.json({
-      threads,
-      message: "Search results dey here—enjoy!",
+      threads: paginatedThreads,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(Math.ceil(total / pageSize), 1),
+        hasNext: skip + paginatedThreads.length < total,
+        hasPrev: page > 1,
+      },
+      search: {
+        query: normalizedQuery,
+        category: normalizedCategory,
+        sort: sortMode,
+        unansweredOnly,
+        resultCount: total,
+      },
+      ranking: {
+        mode: sortMode,
+        signals: [
+          "title_match",
+          "body_match",
+          "exact_phrase",
+          "category_match",
+          "recency",
+          "reply_count",
+          "like_count",
+          "bookmark_count",
+          "thread_freshness",
+          "engagement_velocity",
+        ],
+      },
+      message: paginatedThreads.length
+        ? unansweredOnly
+          ? normalizedCategory
+            ? `Unanswered search results for "${normalizedQuery}" in ${normalizedCategory}.`
+            : `Unanswered search results for "${normalizedQuery}".`
+          : normalizedCategory
+            ? `Search results for "${normalizedQuery}" in ${normalizedCategory}.`
+            : `Search results for "${normalizedQuery}".`
+        : unansweredOnly
+          ? normalizedCategory
+            ? `No unanswered gist match "${normalizedQuery}" for ${normalizedCategory} yet.`
+            : `No unanswered gist match "${normalizedQuery}" yet.`
+          : normalizedCategory
+            ? `No gist match "${normalizedQuery}" for ${normalizedCategory} yet.`
+            : `No gist match "${normalizedQuery}" yet.`,
     });
   } catch (err) {
     res.status(500).json({ message: "Search scatter: " + err.message });
+  }
+};
+
+export const trackSearchQuery = async (req, res) => {
+  try {
+    const rawQuery = sanitizePlainText(req.body?.query || "", 160);
+    const normalizedQuery = normalizeSearchQuery(rawQuery);
+    const eventTypeRaw = sanitizePlainText(req.body?.eventType || "search_submit", 40);
+    const eventType = SEARCH_EVENT_TYPES.has(eventTypeRaw)
+      ? eventTypeRaw
+      : "search_submit";
+
+    if (eventType !== "category_filter" && !normalizedQuery) {
+      return res.status(400).json({ message: "Search query no dey." });
+    }
+
+    const safeCategory = req.body?.category
+      ? normalizeThreadCategory(
+        sanitizePlainText(req.body.category || DEFAULT_THREAD_CATEGORY, 40),
+      )
+      : null;
+    const resultCountRaw = Number.parseInt(String(req.body?.resultCount || "0"), 10);
+    const resultCount = Number.isFinite(resultCountRaw) ? Math.max(resultCountRaw, 0) : 0;
+    const source = sanitizePlainText(req.body?.source || "web", 40) || "web";
+    const threadId = mongoose.Types.ObjectId.isValid(String(req.body?.threadId || ""))
+      ? new mongoose.Types.ObjectId(String(req.body.threadId))
+      : null;
+
+    if (eventType === "category_filter" && !safeCategory) {
+      return res.status(400).json({ message: "Category filter no dey." });
+    }
+
+    await SearchQueryLog.create({
+      query: rawQuery || null,
+      normalizedQuery,
+      eventType,
+      category: safeCategory,
+      source,
+      resultCount,
+      hadResults: eventType === "search_submit" ? resultCount > 0 : false,
+      threadId,
+    });
+
+    return res.status(201).json({ message: "Search tracked." });
+  } catch (err) {
+    return res.status(500).json({ message: "Search tracking scatter: " + err.message });
+  }
+};
+
+export const getTrendingSearchQueries = async (_req, res) => {
+  try {
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const rows = await SearchQueryLog.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: since },
+          eventType: "search_submit",
+          normalizedQuery: { $exists: true, $ne: "" },
+        },
+      },
+      {
+        $group: {
+          _id: "$normalizedQuery",
+          count: { $sum: 1 },
+          lastSearchedAt: { $max: "$createdAt" },
+        },
+      },
+      { $sort: { count: -1, lastSearchedAt: -1 } },
+      { $limit: 8 },
+    ]);
+
+    return res.json({
+      queries: rows.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+      })),
+      message: "Trending search queries loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Trending searches scatter: " + err.message });
+  }
+};
+
+export const getSearchInsightsForAdmin = async (req, res) => {
+  try {
+    if (!isAdmin(req.user)) {
+      return res.status(403).json({ message: "Abeg, admins only!" });
+    }
+
+    const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const matchStage = { createdAt: { $gte: since } };
+
+    const [
+      summaryAgg,
+      topQueries,
+      topNoResultQueries,
+      topSuggestionQueries,
+      topClickedQueries,
+      topCategoryFilters,
+    ] = await Promise.all([
+      SearchQueryLog.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalSearches: {
+              $sum: { $cond: [{ $eq: ["$eventType", "search_submit"] }, 1, 0] },
+            },
+            noResultSearches: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ["$eventType", "search_submit"] },
+                      { $eq: ["$hadResults", false] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            suggestionClicks: {
+              $sum: { $cond: [{ $eq: ["$eventType", "suggestion_click"] }, 1, 0] },
+            },
+            resultClicks: {
+              $sum: { $cond: [{ $eq: ["$eventType", "result_click"] }, 1, 0] },
+            },
+            categoryFilterUses: {
+              $sum: { $cond: [{ $eq: ["$eventType", "category_filter"] }, 1, 0] },
+            },
+            uniqueQueries: {
+              $addToSet: {
+                $cond: [
+                  { $eq: ["$eventType", "search_submit"] },
+                  "$normalizedQuery",
+                  null,
+                ],
+              },
+            },
+          },
+        },
+        {
+          $project: {
+            totalSearches: 1,
+            noResultSearches: 1,
+            suggestionClicks: 1,
+            resultClicks: 1,
+            categoryFilterUses: 1,
+            uniqueQueries: {
+              $size: { $setDifference: ["$uniqueQueries", [null, ""]] },
+            },
+          },
+        },
+      ]),
+      SearchQueryLog.aggregate([
+        { $match: { ...matchStage, eventType: "search_submit" } },
+        {
+          $group: {
+            _id: "$normalizedQuery",
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+            category: { $last: "$category" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 8 },
+      ]),
+      SearchQueryLog.aggregate([
+        {
+          $match: {
+            ...matchStage,
+            eventType: "search_submit",
+            hadResults: false,
+          },
+        },
+        {
+          $group: {
+            _id: "$normalizedQuery",
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 8 },
+      ]),
+      SearchQueryLog.aggregate([
+        { $match: { ...matchStage, eventType: "suggestion_click" } },
+        {
+          $group: {
+            _id: "$normalizedQuery",
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 8 },
+      ]),
+      SearchQueryLog.aggregate([
+        {
+          $match: {
+            ...matchStage,
+            eventType: "result_click",
+            normalizedQuery: { $exists: true, $ne: "" },
+          },
+        },
+        {
+          $group: {
+            _id: "$normalizedQuery",
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 8 },
+      ]),
+      SearchQueryLog.aggregate([
+        {
+          $match: {
+            ...matchStage,
+            eventType: "category_filter",
+            category: { $exists: true, $ne: null },
+          },
+        },
+        {
+          $group: {
+            _id: "$category",
+            count: { $sum: 1 },
+            lastSearchedAt: { $max: "$createdAt" },
+          },
+        },
+        { $sort: { count: -1, lastSearchedAt: -1 } },
+        { $limit: 8 },
+      ]),
+    ]);
+
+    const summary = summaryAgg[0] || {
+      totalSearches: 0,
+      noResultSearches: 0,
+      uniqueQueries: 0,
+      suggestionClicks: 0,
+      resultClicks: 0,
+      categoryFilterUses: 0,
+    };
+
+    return res.json({
+      summary: {
+        totalSearches: Number(summary.totalSearches || 0),
+        noResultSearches: Number(summary.noResultSearches || 0),
+        uniqueQueries: Number(summary.uniqueQueries || 0),
+        suggestionClicks: Number(summary.suggestionClicks || 0),
+        resultClicks: Number(summary.resultClicks || 0),
+        categoryFilterUses: Number(summary.categoryFilterUses || 0),
+      },
+      topQueries: topQueries.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+        category: row.category || null,
+      })),
+      topNoResultQueries: topNoResultQueries.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+      })),
+      topSuggestionQueries: topSuggestionQueries.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+      })),
+      topClickedQueries: topClickedQueries.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+      })),
+      topCategoryFilters: topCategoryFilters.map((row) => ({
+        query: row._id,
+        count: Number(row.count || 0),
+        lastSearchedAt: row.lastSearchedAt || null,
+        category: row._id || null,
+      })),
+      message: "Search insights loaded.",
+    });
+  } catch (err) {
+    return res.status(500).json({ message: "Search insights scatter: " + err.message });
   }
 };
 

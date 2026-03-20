@@ -4,9 +4,10 @@ import { useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 
 export default function ThreadDetailRedirect() {
-  const { id } = useParams();
+  const params = useParams();
   const router = useRouter();
-  const threadId = Array.isArray(id) ? id[0] : id;
+  const rawId = params?.id;
+  const threadId = Array.isArray(rawId) ? rawId[0] : rawId;
 
   useEffect(() => {
     if (!threadId) return;

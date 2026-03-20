@@ -1,0 +1,121 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e7]:
+        - heading "The culture" [level=1] [ref=e9]
+        - generic [ref=e10]:
+          - link "Home" [ref=e11] [cursor=pointer]:
+            - /url: /
+          - link "Threads" [ref=e12] [cursor=pointer]:
+            - /url: /threads
+          - link "Marketplace" [ref=e13] [cursor=pointer]:
+            - /url: /marketplace
+          - link "Wallet" [ref=e14] [cursor=pointer]:
+            - /url: /wallet
+          - link "Premium" [ref=e15] [cursor=pointer]:
+            - /url: /premium
+          - link "Contests" [ref=e16] [cursor=pointer]:
+            - /url: /contests
+          - link "Login" [ref=e17] [cursor=pointer]:
+            - /url: /login
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e24]:
+            - link "The culture" [ref=e25] [cursor=pointer]:
+              - /url: /threads/67be51c2797c0af66060bb9b
+            - button "3 Replies" [ref=e26] [cursor=pointer]
+            - generic [ref=e27]:
+              - generic [ref=e28]:
+                - text: by
+                - link "harunbah93" [ref=e29] [cursor=pointer]:
+                  - /url: /users/67be32bef373a7352b0c354c
+                - generic [ref=e30]: Oga at the Top
+                - text: ": 12:26am On Feb 26, 2025"
+                - generic [ref=e31]: • Updated 12:04am On Feb 25, 2026
+                - text: • General
+              - button "expand_less +3" [ref=e32] [cursor=pointer]:
+                - generic [ref=e33]: expand_less
+                - generic [ref=e34]: "+3"
+          - generic [ref=e35]:
+            - paragraph [ref=e37]: the culture we value . . .
+            - generic [ref=e38]:
+              - button "reply Reply" [ref=e39] [cursor=pointer]:
+                - generic [ref=e40]: reply
+                - generic [ref=e41]: Reply
+              - button "flag Report" [ref=e42] [cursor=pointer]:
+                - generic [ref=e43]: flag
+                - generic [ref=e44]: Report
+              - button "thumb_up Like (1)" [ref=e45] [cursor=pointer]:
+                - generic [ref=e46]: thumb_up
+                - generic [ref=e47]: Like (1)
+              - button "bookmark Save" [ref=e48] [cursor=pointer]:
+                - generic [ref=e49]: bookmark
+                - generic [ref=e50]: Save
+              - button "monetization_on Tip" [ref=e51] [cursor=pointer]:
+                - generic [ref=e52]: monetization_on
+                - generic [ref=e53]: Tip
+              - button "share Share" [ref=e54] [cursor=pointer]:
+                - generic [ref=e55]: share
+                - generic [ref=e56]: Share
+              - button "English" [ref=e57] [cursor=pointer]:
+                - generic [ref=e58]: English
+          - generic [ref=e60]:
+            - button "H" [ref=e62] [cursor=pointer]
+            - generic [ref=e65]:
+              - generic [ref=e66]:
+                - text: by
+                - link "harzkane" [ref=e67] [cursor=pointer]:
+                  - /url: /users/67bdd7393417dff455b2c0bc
+                - generic [ref=e68]: Verified G
+                - text: ": 2:33pm On Feb 26, 2025"
+              - button "chat +2" [ref=e69] [cursor=pointer]:
+                - generic [ref=e70]: chat
+                - generic [ref=e71]: "+2"
+            - generic [ref=e72]:
+              - paragraph [ref=e74]: Culture is everything.
+              - generic [ref=e75]:
+                - button "reply Reply" [ref=e76] [cursor=pointer]:
+                  - generic [ref=e77]: reply
+                  - generic [ref=e78]: Reply
+                - button "flag Report" [ref=e79] [cursor=pointer]:
+                  - generic [ref=e80]: flag
+                  - generic [ref=e81]: Report
+                - button "thumb_up Like" [ref=e82] [cursor=pointer]:
+                  - generic [ref=e83]: thumb_up
+                  - generic [ref=e84]: Like
+                - button "monetization_on Tip" [ref=e85] [cursor=pointer]:
+                  - generic [ref=e86]: monetization_on
+                  - generic [ref=e87]: Tip
+                - button "share Share" [ref=e88] [cursor=pointer]:
+                  - generic [ref=e89]: share
+                  - generic [ref=e90]: Share
+                - button "English" [ref=e91] [cursor=pointer]:
+                  - generic [ref=e92]: English
+        - link "← Back to all threads" [ref=e94] [cursor=pointer]:
+          - /url: /threads
+    - contentinfo [ref=e95]:
+      - generic [ref=e96]:
+        - paragraph [ref=e97]: © 2026 NaijaTalk. Community-first forum for real conversations.
+        - navigation [ref=e98]:
+          - link "Terms of Service" [ref=e99] [cursor=pointer]:
+            - /url: /terms
+          - link "Privacy Policy" [ref=e100] [cursor=pointer]:
+            - /url: /privacy
+          - link "Moderation & Appeals" [ref=e101] [cursor=pointer]:
+            - /url: /moderation
+          - link "Contest Terms" [ref=e102] [cursor=pointer]:
+            - /url: /contests/terms
+          - link "Contest Policy" [ref=e103] [cursor=pointer]:
+            - /url: /contests/policy
+  - status [ref=e104]:
+    - generic [ref=e105]:
+      - img [ref=e107]
+      - generic [ref=e109]:
+        - text: Static route
+        - button "Hide static indicator" [ref=e110] [cursor=pointer]:
+          - img [ref=e111]
+  - alert [ref=e114]
+```

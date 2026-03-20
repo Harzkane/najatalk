@@ -34,7 +34,7 @@ api.interceptors.response.use(
         clearStoredAuth();
         const path = window.location.pathname;
         const isProtectedPath =
-          /^\/(threads|premium|admin)(\/|$)/.test(path) ||
+          /^\/(premium|admin)(\/|$)/.test(path) ||
           path === "/wallet" ||
           /^\/users\/[^/]+\/wallet(\/|$)/.test(path) ||
           path === "/marketplace/wallet";

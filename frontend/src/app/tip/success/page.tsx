@@ -27,6 +27,7 @@ function TipSuccessContent() {
   const [message, setMessage] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
 
   const verifyTip = useCallback(
     async (reference: string, receiverId: string) => {
@@ -61,8 +62,8 @@ function TipSuccessContent() {
   );
 
   useEffect(() => {
-    const reference = searchParams.get("reference");
-    const receiverId = searchParams.get("receiverId");
+    const reference = resolvedSearchParams.get("reference");
+    const receiverId = resolvedSearchParams.get("receiverId");
     console.log("Search Params:", { reference, receiverId });
 
     if (reference && receiverId) {
@@ -72,7 +73,7 @@ function TipSuccessContent() {
       setMessage("Tip failed or incomplete—abeg try again!");
       setIsProcessing(false);
     }
-  }, [searchParams, verifyTip]);
+  }, [resolvedSearchParams, verifyTip]);
 
   return (
     <div className="min-h-screen bg-slate-100 p-6 flex items-center justify-center">

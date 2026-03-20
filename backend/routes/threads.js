@@ -6,6 +6,9 @@ import {
   getThreadById,
   createReply,
   searchThreads,
+  trackSearchQuery,
+  getSearchInsightsForAdmin,
+  getTrendingSearchQueries,
   listThreadsForAdmin,
   getAdminThreadDetails,
   reportThread,
@@ -24,14 +27,21 @@ import {
   reportReply,
 } from "../controllers/threads.js";
 import { authMiddleware } from "../middleware/auth.js";
-import { reportActionLimiter, writeActionLimiter } from "../middleware/rateLimit.js";
+import {
+  reportActionLimiter,
+  searchActionLimiter,
+  writeActionLimiter,
+} from "../middleware/rateLimit.js";
 
 const router = express.Router();
 
 router.post("/", authMiddleware, writeActionLimiter, createThread);
 router.get("/", getThreads);
 router.get("/search", searchThreads);
+router.get("/search/trending", getTrendingSearchQueries);
+router.post("/search/track", searchActionLimiter, trackSearchQuery);
 router.get("/reports", authMiddleware, getReports);
+router.get("/admin/search-insights", authMiddleware, getSearchInsightsForAdmin);
 router.get("/admin/all", authMiddleware, listThreadsForAdmin);
 router.get("/admin/:id", authMiddleware, getAdminThreadDetails);
 

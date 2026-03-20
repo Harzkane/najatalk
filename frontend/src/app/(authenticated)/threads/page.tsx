@@ -1,7 +1,7 @@
 // frontend/src/app/(authenticated)/threads/page.tsx
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import { isAxiosError } from "axios";
 import api from "../../../utils/api";
 import { clearStoredAuth } from "@/utils/authStorage";
@@ -14,6 +14,11 @@ import NewThreadButton from "../../../components/threads/NewThreadButton";
 import formatDate from "../../../utils/formatDate";
 import SponsoredAdCard from "../../../components/ads/SponsoredAdCard";
 import Header from "../../../components/Header";
+import {
+  DEFAULT_THREAD_CATEGORY,
+  THREAD_CATEGORY_DEFINITIONS,
+} from "../../../utils/threadCategories";
+import { SEARCH_TAG_DEFINITIONS } from "../../../utils/searchTags";
 
 type Thread = {
   _id: string;
@@ -21,9 +26,8 @@ type Thread = {
   body: string;
   userId: {
     _id: string;
-    email: string;
+    username?: string | null;
     flair?: string;
-    username?: string;
     avatarUrl?: string | null;
   } | null;
   category: string;
@@ -40,7 +44,7 @@ type Thread = {
 type Reply = {
   _id: string;
   body: string;
-  userId: { _id: string; email: string; flair?: string } | null;
+  userId: { _id: string; username?: string | null; flair?: string } | null;
   createdAt: string;
   parentReplyId?: string | null;
 };
@@ -48,6 +52,36 @@ type Reply = {
 type SearchResponse = {
   threads: Thread[];
   message: string;
+  pagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  search?: {
+    query: string;
+    category?: string | null;
+    sort: "relevance" | "latest" | "mostActive";
+    unansweredOnly: boolean;
+    resultCount: number;
+  };
+  ranking?: {
+    mode: "relevance" | "latest" | "mostActive";
+    signals: string[];
+  };
+};
+
+type TrendingSearchQuery = {
+  query: string;
+  count: number;
+  lastSearchedAt?: string | null;
+};
+
+type SearchInteractionOptions = {
+  origin?: "submit" | "suggestion";
+  suggestionKind?: "category" | "tag" | "trending" | "recent";
 };
 
 type Ad = {
@@ -85,6 +119,13 @@ function ThreadsContent() {
   >(null);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [trendingSearchQueries, setTrendingSearchQueries] = useState<
+    TrendingSearchQuery[]
+  >([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchSortMode, setSearchSortMode] = useState<
+    "relevance" | "latest" | "mostActive" | "unanswered"
+  >("relevance");
   const [activeFilter, setActiveFilter] = useState<
     "all" | "unanswered" | "solved" | "bookmarked"
   >("all");
@@ -98,12 +139,13 @@ function ThreadsContent() {
   );
   const router = useRouter();
   const searchParams = useSearchParams();
-  const threadId = searchParams.get("id");
-  const replyId = searchParams.get("replyId");
-  const composeMode = searchParams.get("compose") === "1";
-  const contestId = searchParams.get("contestId");
-  const contestTitle = searchParams.get("contestTitle");
-  const returnTo = searchParams.get("returnTo") || "/contests";
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
+  const threadId = resolvedSearchParams.get("id");
+  const replyId = resolvedSearchParams.get("replyId");
+  const composeMode = resolvedSearchParams.get("compose") === "1";
+  const contestId = resolvedSearchParams.get("contestId");
+  const contestTitle = resolvedSearchParams.get("contestTitle");
+  const returnTo = resolvedSearchParams.get("returnTo") || "/contests";
 
   const newThreadButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -113,12 +155,23 @@ function ThreadsContent() {
     setActiveReportFormId(null);
   }, [selectedThread?._id, replyId]);
 
-  const trendingTopics = [
-    "Suya joints",
-    "NYSC camp",
-    "Lagos traffic",
-    "Best jollof",
-  ];
+  const trendingTopics = useMemo(
+    () => ["Suya joints", "NYSC camp", "Lagos traffic", "Best jollof"],
+    [],
+  );
+  const effectiveTrendingTopics = useMemo(() => {
+    const liveTopics = trendingSearchQueries.map((row) => row.query);
+    return [...new Set([...liveTopics, ...trendingTopics])].slice(0, 8);
+  }, [trendingSearchQueries, trendingTopics]);
+  const featuredCategories = useMemo(
+    () =>
+      THREAD_CATEGORY_DEFINITIONS.filter((category) =>
+        ["Trending", "News", "Football", "Jobs", "Japa", "Local Life"].includes(
+          category.label,
+        ),
+      ),
+    [],
+  );
 
   const verifyTip = useCallback(
     async (reference: string, receiverId: string) => {
@@ -165,9 +218,9 @@ function ThreadsContent() {
     const token = localStorage.getItem("token");
     setIsLoggedIn(!!token);
 
-    const reference = searchParams.get("reference");
-    const receiverId = searchParams.get("receiverId");
-    const tipStatus = searchParams.get("tip");
+    const reference = resolvedSearchParams.get("reference");
+    const receiverId = resolvedSearchParams.get("receiverId");
+    const tipStatus = resolvedSearchParams.get("tip");
 
     if (reference && receiverId && !tipStatus) verifyTip(reference, receiverId);
     else if (tipStatus === "success") {
@@ -202,7 +255,22 @@ function ThreadsContent() {
       }
     };
     checkPremiumAndAds();
-  }, [threadId, searchParams, verifyTip, router]);
+  }, [threadId, resolvedSearchParams, verifyTip, router]);
+
+  useEffect(() => {
+    const fetchTrendingSearchQueries = async () => {
+      try {
+        const res = await api.get<{
+          queries: TrendingSearchQuery[];
+        }>("/threads/search/trending");
+        setTrendingSearchQueries(res.data.queries || []);
+      } catch (err) {
+        console.error("Trending searches fetch error:", err);
+        setTrendingSearchQueries([]);
+      }
+    };
+    fetchTrendingSearchQueries();
+  }, []);
 
   const fetchBannerAd = async () => {
     try {
@@ -265,24 +333,37 @@ function ThreadsContent() {
   };
 
   const handleSearch = useCallback(
-    async (query: string) => {
+    async (query: string, _options?: SearchInteractionOptions) => {
       setSearchQuery(query);
+      setActiveFilter("all");
       try {
-        const res = await api.get<SearchResponse>(`/threads/search?q=${query}`);
-        setThreads(res.data.threads);
+        const res = await api.get<SearchResponse>("/threads/search", {
+          params: {
+            q: query,
+            category: selectedCategory || undefined,
+            sort:
+              searchSortMode === "latest" || searchSortMode === "mostActive"
+                ? searchSortMode
+                : undefined,
+            unansweredOnly: searchSortMode === "unanswered" ? "1" : undefined,
+          },
+        });
+        setThreads(res.data.threads || []);
         setMessage(res.data.message);
         setSelectedThread(null);
 
         if (query.trim()) {
-          const updatedSearches = [
-            query,
-            ...recentSearches.filter((s) => s !== query),
-          ].slice(0, 5);
-          setRecentSearches(updatedSearches);
-          localStorage.setItem(
-            "recentSearches",
-            JSON.stringify(updatedSearches),
-          );
+          setRecentSearches((prev) => {
+            const updatedSearches = [
+              query,
+              ...prev.filter((s) => s !== query),
+            ].slice(0, 5);
+            localStorage.setItem(
+              "recentSearches",
+              JSON.stringify(updatedSearches),
+            );
+            return updatedSearches;
+          });
         }
       } catch (err: unknown) {
         if (isAxiosError<{ message?: string }>(err)) {
@@ -292,8 +373,13 @@ function ThreadsContent() {
         }
       }
     },
-    [recentSearches],
+    [searchSortMode, selectedCategory],
   );
+
+  useEffect(() => {
+    if (selectedThread || !searchQuery.trim()) return;
+    void handleSearch(searchQuery);
+  }, [handleSearch, searchQuery, searchSortMode, selectedThread]);
 
   const fetchThreads = async () => {
     try {
@@ -375,6 +461,26 @@ function ThreadsContent() {
     router.push("/login");
   };
 
+  const handleCategoryFilter = (category: string | null) => {
+    setSelectedCategory(category);
+    setActiveFilter("all");
+    setSearchQuery("");
+    setSelectedThread(null);
+    if (!category) {
+      void fetchThreads();
+      return;
+    }
+    const filtered = threads.filter(
+      (thread) => thread.category.toLowerCase() === category.toLowerCase(),
+    );
+    setThreads(filtered);
+    setMessage(
+      filtered.length
+        ? `${filtered.length} thread${filtered.length > 1 ? "s" : ""} in ${category}`
+        : `No threads in ${category} yet—start one!`,
+    );
+  };
+
   const filteredThreads = threads.filter((thread) => {
     if (activeFilter === "all") return true;
     if (activeFilter === "unanswered") return getReplyCount(thread) === 0;
@@ -424,8 +530,88 @@ function ThreadsContent() {
               <SearchBar
                 onSearch={handleSearch}
                 recentSearches={recentSearches}
-                trendingTopics={trendingTopics}
+                trendingTopics={effectiveTrendingTopics}
+                suggestedCategories={featuredCategories.map((category) => category.label)}
+                suggestedTags={SEARCH_TAG_DEFINITIONS}
+                selectedCategoryLabel={selectedCategory}
+                helperText={
+                  selectedCategory
+                    ? `Search is currently focused on ${selectedCategory}. Reset the category to search everything.`
+                    : "Search understands topics like Abuja rent, jobs, japa, football, gist, campus life, and local Nigerian conversations."
+                }
               />
+              <div className="mt-2 border-t border-slate-100 pt-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Explore categories
+                  </span>
+                  {featuredCategories.map((category) => {
+                    const isActive = selectedCategory === category.label;
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => handleCategoryFilter(category.label)}
+                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                          isActive
+                            ? "border-emerald-600 bg-emerald-600 text-white"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100"
+                        }`}
+                      >
+                        {category.label}
+                      </button>
+                    );
+                  })}
+                  {selectedCategory && (
+                    <button
+                      type="button"
+                      onClick={() => handleCategoryFilter(null)}
+                      className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    Try tags
+                  </span>
+                  {SEARCH_TAG_DEFINITIONS.slice(0, 6).map((tag) => (
+                    <button
+                      key={tag.id}
+                      type="button"
+                      onClick={() => handleSearch(tag.query)}
+                      className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
+                    >
+                      #{tag.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!selectedThread && searchQuery.trim() && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {([
+                { id: "relevance", label: "Relevance" },
+                { id: "latest", label: "Latest" },
+                { id: "mostActive", label: "Most Active" },
+                { id: "unanswered", label: "Unanswered" },
+              ] as const).map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => setSearchSortMode(option.id)}
+                  className={`rounded-full border px-3 py-1 text-xs font-semibold ${
+                    searchSortMode === option.id
+                      ? "border-green-600 bg-green-600 text-white"
+                      : "border-slate-300 bg-white text-slate-600 hover:border-green-400 hover:text-green-700"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
             </div>
           )}
 
@@ -609,7 +795,7 @@ function ThreadsContent() {
               ? `Contest Entry for "${contestTitle}"\n\nMy submission:\n1. \n2. \n3. `
               : ""
           }
-          initialCategory="Gist"
+          initialCategory={DEFAULT_THREAD_CATEGORY}
         />
       </div>
     </>

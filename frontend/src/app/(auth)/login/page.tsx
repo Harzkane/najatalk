@@ -20,6 +20,7 @@ function LoginContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+  const resolvedSearchParams = searchParams ?? new URLSearchParams();
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
@@ -37,7 +38,7 @@ function LoginContent() {
       console.log("Logged in User ID:", res.data.userId);
       setEmail("");
       setPassword("");
-      const nextPath = searchParams.get("next");
+      const nextPath = resolvedSearchParams.get("next");
       let destination = "/marketplace";
       try {
         const completenessRes = await api.get("/users/me/profile-completeness", {

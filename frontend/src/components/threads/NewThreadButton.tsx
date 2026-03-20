@@ -3,6 +3,10 @@ import { useEffect, useMemo, useState, type RefObject } from "react";
 import { PenSquare, X } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import { escapeHtml, richHtmlToPlainText, sanitizeRichHtml } from "./richText";
+import {
+  DEFAULT_THREAD_CATEGORY,
+  THREAD_CATEGORY_DEFINITIONS,
+} from "@/utils/threadCategories";
 
 interface NewThreadButtonProps {
   isLoggedIn: boolean;
@@ -25,7 +29,7 @@ const NewThreadButton = ({
   initialOpen = false,
   initialTitle = "",
   initialBody = "",
-  initialCategory = "General",
+  initialCategory = DEFAULT_THREAD_CATEGORY,
 }: NewThreadButtonProps) => {
   const toEditorContent = (raw: string) => {
     const trimmed = (raw || "").trim();
@@ -91,7 +95,7 @@ const NewThreadButton = ({
       await onSubmit(title, sanitizedHtml || bodyText, category);
       setTitle("");
       setBodyHtml("<p></p>");
-      setCategory("General");
+      setCategory(DEFAULT_THREAD_CATEGORY);
       setIsTouched(false);
       setIsExpanded(false);
     } finally {
@@ -175,10 +179,11 @@ const NewThreadButton = ({
                 onChange={(e) => setCategory(e.target.value)}
                 className="mb-3 w-full rounded-lg border border-slate-300 bg-white p-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-green-600"
               >
-                <option value="General">General</option>
-                <option value="Gist">Gist</option>
-                <option value="Politics">Politics</option>
-                <option value="Romance">Romance</option>
+                {THREAD_CATEGORY_DEFINITIONS.map((threadCategory) => (
+                  <option key={threadCategory.id} value={threadCategory.label}>
+                    {threadCategory.label}
+                  </option>
+                ))}
               </select>
               <button
                 type="submit"
