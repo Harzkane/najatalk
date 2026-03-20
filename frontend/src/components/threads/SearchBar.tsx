@@ -94,7 +94,7 @@ const SearchBar = ({
             onChange={(e) => setQuery(e.target.value)}
             onFocus={handleFocus}
             onKeyDown={handleKeyDown}
-            className={`w-full rounded-xl border border-white/80 bg-white/92 p-3 pl-10 pr-28 text-gray-800 shadow-sm transition-shadow focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-600 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)] ${
+            className={`w-full rounded-xl border-2 border-slate-300/90 bg-white/96 p-3 pb-12 pl-10 pr-4 text-gray-800 shadow-[0_10px_24px_rgba(15,23,42,0.08)] transition-[border-color,box-shadow,background-color] focus:border-green-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-green-600 focus:shadow-[0_0_0_4px_rgba(34,197,94,0.12)] sm:pb-3 sm:pr-28 ${
               isFocused ? "rounded-b-none" : ""
             }`}
           />
@@ -106,8 +106,7 @@ const SearchBar = ({
           </span>
           <button
             onClick={handleSearch}
-            className="absolute right-2 top-2 rounded-lg bg-green-600 p-1 text-white shadow-sm hover:bg-green-700"
-            style={{ fontSize: "14px", padding: "6px 10px" }}
+            className="absolute bottom-2 left-2 right-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700 sm:bottom-auto sm:left-auto sm:right-2 sm:top-2 sm:px-[10px] sm:py-[6px] sm:text-[14px]"
           >
             Search am!
           </button>
@@ -117,7 +116,7 @@ const SearchBar = ({
 
       {showSuggestions && (isFocused || query) && (
         <div
-          className="absolute z-50 w-full rounded-b-lg border border-t-0 border-gray-300 bg-white shadow-xl"
+          className="absolute z-[70] max-h-[60vh] w-full overflow-y-auto rounded-b-lg border border-t-0 border-gray-300 bg-white shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {selectedCategoryLabel && (

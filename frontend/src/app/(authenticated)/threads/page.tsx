@@ -129,6 +129,7 @@ function ThreadsContent() {
   const [activeFilter, setActiveFilter] = useState<
     "all" | "unanswered" | "solved" | "bookmarked"
   >("all");
+  const [isDiscoveryExpanded, setIsDiscoveryExpanded] = useState(false);
   const [isVerifyingTip, setIsVerifyingTip] = useState(false);
   const [showRepliesExpanded, setShowRepliesExpanded] = useState(true);
   const [activeReplyComposerId, setActiveReplyComposerId] = useState<
@@ -526,7 +527,27 @@ function ThreadsContent() {
           )}
 
           {!selectedThread && (
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-slate-200 mb-3">
+            <div className="mb-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-800">
+                    Discovery Engine
+                  </p>
+                  <h2 className="mt-1 text-base font-semibold text-slate-900">
+                    Search the gist without losing the thread list.
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Keep search front and center, then open extra discovery tools only when you need them.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsDiscoveryExpanded((value) => !value)}
+                  className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition-colors hover:border-emerald-300 hover:text-emerald-700"
+                >
+                  {isDiscoveryExpanded ? "Hide extras" : "Show discovery tools"}
+                </button>
+              </div>
               <SearchBar
                 onSearch={handleSearch}
                 recentSearches={recentSearches}
@@ -540,54 +561,58 @@ function ThreadsContent() {
                     : "Search understands topics like Abuja rent, jobs, japa, football, gist, campus life, and local Nigerian conversations."
                 }
               />
-              <div className="mt-2 border-t border-slate-100 pt-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Explore categories
-                  </span>
-                  {featuredCategories.map((category) => {
-                    const isActive = selectedCategory === category.label;
-                    return (
+              {(selectedCategory || isDiscoveryExpanded) && (
+                <div className="mt-2 border-t border-slate-100 pt-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                      Explore categories
+                    </span>
+                    {featuredCategories.map((category) => {
+                      const isActive = selectedCategory === category.label;
+                      return (
+                        <button
+                          key={category.id}
+                          type="button"
+                          onClick={() => handleCategoryFilter(category.label)}
+                          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                            isActive
+                              ? "border-emerald-600 bg-emerald-600 text-white"
+                              : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100"
+                          }`}
+                        >
+                          {category.label}
+                        </button>
+                      );
+                    })}
+                    {selectedCategory && (
                       <button
-                        key={category.id}
                         type="button"
-                        onClick={() => handleCategoryFilter(category.label)}
-                        className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
-                          isActive
-                            ? "border-emerald-600 bg-emerald-600 text-white"
-                            : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300 hover:bg-emerald-100"
-                        }`}
+                        onClick={() => handleCategoryFilter(null)}
+                        className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
                       >
-                        {category.label}
+                        Reset
                       </button>
-                    );
-                  })}
-                  {selectedCategory && (
-                    <button
-                      type="button"
-                      onClick={() => handleCategoryFilter(null)}
-                      className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                    >
-                      Reset
-                    </button>
+                    )}
+                  </div>
+                  {isDiscoveryExpanded && (
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                        Try tags
+                      </span>
+                      {SEARCH_TAG_DEFINITIONS.slice(0, 6).map((tag) => (
+                        <button
+                          key={tag.id}
+                          type="button"
+                          onClick={() => handleSearch(tag.query)}
+                          className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
+                        >
+                          #{tag.label}
+                        </button>
+                      ))}
+                    </div>
                   )}
                 </div>
-                <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    Try tags
-                  </span>
-                  {SEARCH_TAG_DEFINITIONS.slice(0, 6).map((tag) => (
-                    <button
-                      key={tag.id}
-                      type="button"
-                      onClick={() => handleSearch(tag.query)}
-                      className="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 hover:bg-sky-100"
-                    >
-                      #{tag.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              )}
             </div>
           )}
 

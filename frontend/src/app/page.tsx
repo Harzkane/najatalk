@@ -1111,7 +1111,7 @@ function HomeContent() {
             </div>
           )}
         </section>
-        <div className="relative mt-2 overflow-visible rounded-[1.35rem] border border-emerald-200/80 bg-[linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.96))] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+        <div className="relative z-30 mt-2 overflow-visible rounded-[1.35rem] border border-emerald-200/80 bg-[linear-gradient(135deg,_rgba(255,255,255,0.98),_rgba(248,250,252,0.96))] p-4 shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
           <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.35rem]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.12),transparent_32%),radial-gradient(circle_at_85%_18%,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_50%_82%,rgba(250,204,21,0.08),transparent_22%)]" />
             <div className="absolute inset-0 opacity-25 [background-image:linear-gradient(rgba(148,163,184,0.1)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.1)_1px,transparent_1px)] [background-size:28px_28px]" />
